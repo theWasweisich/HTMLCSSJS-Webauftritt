@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unser Unternehmen</title>
+
+    <link rel="shortcut icon" href="/assets/icons/favicon-dark.svg" type="image/svg" media="(prefers-color-scheme: no-preference)">
+    <link rel="shortcut icon" href="/assets/icons/favicon-white.svg" type="image/svg" media="(prefers-color-scheme: dark)">
+    <link rel="shortcut icon" href="/assets/icons/favicon-dark.svg" type="image/svg" media="(prefers-color-scheme: light)">
+
+    <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/assets/global/global.js"></script>
+    <script type="module" src="script.js"></script>
+</head>
+
+<body>
+    <nav data-load="true"></nav>
+    <main>
+        <header>
+            <h1>Über Uns</h1>
+        </header>
+        <section>
+            <h2>Transparenz ist uns wichtig</h2>
+            <p>Wir möchten mit unseren Einnahmequellen so transparent wie möglich sein</p>
+            <div class="canvas-wrapper">
+                <canvas id="transparenz-diagram"></canvas>
+                <script>
+                    const transparentDiagram = document.getElementById("transparenz-diagram");
+
+                    Chart.overrides["pie"].plugins.legend.position = 'right'
+
+                    const data = {
+                        labels: [
+                            "Verkauf Ihrer Daten",
+                            "Steuerhinterzieung",
+                            "Verkauf"
+                        ],
+                        datasets: [{
+                            label: "Unternehmenseinkommen",
+                            data: [60, 25, 5],
+                            backgroundColor: [
+                                'rgb(0, 0, 255)',
+                                'rgb(0, 255, 0)',
+                                'rgb(255, 255, 0)'
+                            ],
+                            hoverOffset: 4
+                        }]
+                    };
+
+                    new Chart(transparentDiagram, {
+                        type: 'pie',
+                        data: data
+                    })
+                </script>
+            </div>
+        </section>
+        <section>
+            <h2>Gewinnverteilung</h2>
+            <div class="canvas-wrapper">
+                <canvas id="gewinnverteilung-diagram"></canvas>
+                <script>
+                const gewinnDiagram = document.getElementById('gewinnverteilung-diagram');
+                const dataGewinn = {
+                    labels: [
+                        "Gehälter der Eigentümer",
+                        "Gehälter der Arbeitsnehmer",
+                        "Produktentwicklung"
+                    ],
+                    datasets: [{
+                        label: "Unternehmenseinkommen",
+                        data: [60, 25, 5],
+                        backgroundColor: [
+                            'rgb(255, 0, 255)',
+                            'rgb(0, 255, 0)',
+                            'rgb(255, 255, 0)'
+                        ],
+                        hoverOffset: 4
+                    }]
+                };
+
+                new Chart(gewinnDiagram, {
+                    type: 'bar',
+                    data: dataGewinn
+                });
+
+                </script>
+            </div>
+        </section>
+        <footer data-load="true"></footer>
+    </main>
+</body>
+
+</html>

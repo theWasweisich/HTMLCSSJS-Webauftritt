@@ -1,0 +1,95 @@
+main {
+
+    section,
+    header {
+        margin-inline: .5rem;
+    }
+
+    >header {
+        margin-bottom: 1rem;
+
+        h1 {
+            margin-bottom: 0;
+        }
+
+        span {
+            color: rgb(160, 160, 160);
+        }
+    }
+
+    form {
+        padding-block: 1.5em;
+
+        label:not(:first-child) {
+            padding-top: 0.625rem;
+        }
+
+        /* >* {
+            width: 60%;
+        } */
+
+        input[type="submit"] {
+            margin-top: 0.625rem;
+        }
+
+        .accent-purple {
+            accent-color: rebeccapurple;
+        }
+
+        input,
+        select,
+        label {
+            display: block;
+
+            &:user-invalid {
+                outline-color: red;
+            }
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        #short-inp {
+            min-width: 26ch;
+            field-sizing: content;
+        }
+    }
+}
+
+dialog {
+    max-width: 70%;
+}
+
+.faq-list {
+    li {
+        display: block;
+        text-indent: 3ch;
+        position: relative;
+
+        &::after {
+            content: '? ';
+            display: block;
+            position: absolute;
+            top: 0;
+            left: -2ch;
+        }
+    }
+
+    .faq-answer:not(:last-child) {
+        display: block;
+        padding-bottom: .5em;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    main > section > form > input {
+        width: 100%;
+    }
+}
+
+@media screen and (min-width: 601px) {
+    main > section > form > input {
+        width: 60%;
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "type": "object",
+    "properties": {
+        "accept_kontakt_msgs": {
+            "type": ["object"],
+            "properties": {
+                "serverAccept": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Ob der Server eingehende Kontaktformulare annimt"
+                },
+                "serverSave": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Ob der Server eingehende Kontaktformulare auch abspeichert"
+                }
+            },
+            "required": ["serverAccept", "serverSave"]
+        }
+    },
+    "required": ["accept_kontakt_msgs"]
+}

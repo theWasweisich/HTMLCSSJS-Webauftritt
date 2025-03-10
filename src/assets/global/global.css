@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('/assets/global/variables.css');
+
+::-webkit-scrollbar {
+    width: 1em;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(250, 69%, 48%);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: hsl(300, 50%, 50%);
+    border-radius: 5px;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-image: linear-gradient(to bottom right, hsl(221, 75%, 40%), hsl(179, 69%, 48%));
+}
+
+#navtoggle {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 2rem;
+    aspect-ratio: 1;
+    background-color: var(--header-color);
+    z-index: 50;
+    border-bottom-right-radius: 0.313rem;
+    transition: all var(--nav-duration_open) ease;
+}
+
+#navtoggle.open {
+    margin-left: var(--navbar-width);
+}
+
+#navtoggle > .burger > path {
+    stroke: var(--clr-theme-6);
+    transition: all var(--nav-duration_open) ease;
+}
+
+
+#navtoggle.open > svg path {
+    transform-style: flat;
+    transform-origin: 50% 50%;
+    fill: transparent;
+
+    transform: translateY(-50%);
+    opacity: 0;
+}
+
+nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-x: hidden;
+
+    height: 100%;
+    width: 0;
+    transition: all var(--nav-duration_open) ease;
+
+    display: flex;
+    flex-direction: column;
+
+    z-index: 100;
+
+    background-color: var(--header-color);
+
+    /* border-top-right-radius: 0.625rem; */
+    border-bottom-right-radius: 0.625rem;
+
+    .closebtn {
+        text-align: right;
+    }
+
+    a:nth-last-child(2) {
+        margin-bottom: auto;
+    }
+
+    a,
+    .closebtn {
+        display: block;
+        color: var(--clr-theme-6);
+        background-color: var(--navlink-color);
+        padding: .6rem;
+        text-decoration: none;
+        text-align: end;
+
+        transition: background-color .5s;
+
+        &.active {
+            background-color: color-mix(in srgb, var(--navlink-color) 75%, blue 25%);
+        }
+
+        &:hover {
+            background-color: color(from var(--navlink-color) srgb calc(r * 1.5) calc(g * 1.5) calc(b * 1.5));
+        }
+    }
+
+
+    &.show {
+        width: var(--navbar-width);
+        z-index: 10;
+    }
+}
+
+main {
+    padding-top: 2rem;
+    width: 100%;
+    min-height: 100%;
+}
+
+.wrapper-padding {
+    padding-inline: 1rem;
+}
+
+.footnote {
+    color: gray;
+}
+
+footer {
+    padding-block: 1rem;
+    background-color: var(--footer-color);
+    width: 100%;
+
+    &.stick {
+        position: sticky;
+        bottom: 0;
+
+        a {
+            color: wheat;
+        }
+
+        div.wrapper {
+            margin-left: auto;
+            width: fit-content;
+            margin-right: 2em;
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+        }
+    }
+
+    &:not(&.stick) {
+        border-top: 0.125rem solid black;
+        padding-inline: 1em;
+    }
+}
+
+#cookieBanner {
+    --cookie-banner-clr: firebrick;
+    padding-inline: 2em;
+    border-color: red;
+    background-color: var(--cookie-banner-clr);
+    color-scheme: dark;
+
+    .cookieText {
+        border-radius: .5em;
+        max-height: 5lh;
+        overflow-y: scroll;
+        padding-block: 1em;
+        background-color: color-mix(in srgb, var(--cookie-banner-clr) 75%, black 25%);
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .btns {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: .5em;
+        margin-top: 1em;
+
+        margin-inline: 20%;
+    }
+
+    .btns button[data-btn] {
+        --clr-btn: hsl(100, 50%, 50%);
+        padding: 1em;
+    }
+
+    .btns button:not([data-btn]) {
+        width: min-content;
+        height: min-content;
+        color: hsl(0, 0%, 75%);
+    }
+}
+
+@media only screen and (max-width: 37.5rem) {
+    footer.stick div.wrapper {
+        margin-inline: auto;
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "image": {
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "description": "Der Dateiname in assets/images/",
+                        "minLength": 1
+                    },
+                    "alt": {
+                        "type": "string",
+                        "description": "Bildbeschreibung",
+                        "minLength": 1
+                    }
+                },
+                "required": ["file", "alt"]
+            },
+            "stats": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "examples": [
+                                "Material",
+                                "Gewicht",
+                                "Geschwindigkeit",
+                                "Schaltgänge"
+                            ]
+                        },
+                        "value": { "type": [ "string", "boolean", "number" ] },
+                        "type": {
+                            "type": "string",
+                            "enum": ["plain", "speed", "mass"]
+                        }
+                    },
+                    "required": ["name", "value", "type"]
+                }
+            }
+        }
+    }
+}

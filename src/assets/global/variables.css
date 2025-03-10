@@ -1,0 +1,17 @@
+* {
+
+    --clr-theme-1: #159f67;
+    --clr-theme-2: #28b87b;
+    --clr-theme-3: #66ca96;
+    --clr-theme-4: #ebfff4;
+    --clr-theme-5: #f9bdb3;
+    --clr-theme-6: #f39385;
+
+    --header-color: var(--clr-theme-1);
+    --navlink-color: color-mix(in srgb, var(--clr-theme-2) 20%, black 80%);
+    --footer-color: var(--clr-theme-2);
+    --navbar-width: 10rem;
+
+
+    --nav-duration_open: 500ms;
+}

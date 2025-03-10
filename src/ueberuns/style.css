@@ -1,0 +1,13 @@
+
+canvas {
+    width: 50%;
+}
+
+.canvas-wrapper {
+    max-width: 75%;
+    margin-inline: auto;
+}
+
+main > section:last-of-type {
+    margin-bottom: 2em;
+}

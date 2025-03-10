@@ -1,0 +1,152 @@
+[
+    {
+        "name": "Fahrrad 1",
+        "description": "Sehr schönes Fahrrad!",
+        "image": {
+            "file": "fahrrad1.jpg",
+            "alt": "Fahrrad 1"
+        },
+        "stats": [
+            {
+                "name": "Schaltgänge",
+                "value": 2,
+                "type": "plain"
+            },
+            {
+                "name": "Geschwindigkeit",
+                "value": "100",
+                "type": "speed"
+            },
+            {
+                "name": "Gewicht",
+                "value": "200",
+                "type": "mass"
+            },
+            {
+                "name": "Material",
+                "value": "Stoff",
+                "type": "plain"
+            }
+        ]
+    },
+    {
+        "name": "Fahrrad 3",
+        "description": "Das vielleicht schönste?",
+        "image": {
+            "file": "fahrrad3.jpg",
+            "alt": "Fahrrad 3"
+        },
+        "stats": [
+            {
+                "name": "Geschwindigkeit",
+                "value": 300,
+                "type": "speed"
+            },
+            {
+                "name": "Gewicht",
+                "value": 2,
+                "type": "mass"
+            },
+            {
+                "name": "Material",
+                "value": "Eisen",
+                "type": "plain"
+            },
+            {
+                "name": "Schaltgänge",
+                "value": 10,
+                "type": "plain"
+            }
+        ]
+    },
+    {
+        "name": "Fahrrad 2",
+        "description": "Weiteres schönes Fahrrad!",
+        "image": {
+            "file": "fahrrad2.jpg",
+            "alt": "Fahrrad 2"
+        },
+        "stats": [
+            {
+                "name": "Schaltgänge",
+                "value": 2,
+                "type": "plain"
+            },
+            {
+                "name": "Geschwindigkeit",
+                "value": "200",
+                "type": "speed"
+            },
+            {
+                "name": "Gewicht",
+                "value": "10",
+                "type": "mass"
+            },
+            {
+                "name": "Material",
+                "value": "Bambus",
+                "type": "plain"
+            }
+        ]
+    },
+    {
+        "name": "Fahrrad 4",
+        "description": "nvm, das hier ist schöner",
+        "image": {
+            "file": "fahrrad4.jpg",
+            "alt": "Fahrrad 4"
+        },
+        "stats": [
+            {
+                "name": "Geschwindigkeit",
+                "value": 150,
+                "type": "speed"
+            },
+            {
+                "name": "Gewicht",
+                "value": 50,
+                "type": "mass"
+            },
+            {
+                "name": "Material",
+                "value": "Stein",
+                "type": "plain"
+            },
+            {
+                "name": "Schaltgänge",
+                "value": "1",
+                "type": "plain"
+            }
+        ]
+    },
+    {
+        "name": "Fahrrad 6",
+        "description": "Dies ist auch ein tolles Fahrrad",
+        "image": {
+            "file": "fahrrad6.jpg",
+            "alt": "Fahrrad 6"
+        },
+        "stats": [
+            {
+                "name": "Geschwindigkeit",
+                "value": 270,
+                "type": "speed"
+            },
+            {
+                "name": "Material",
+                "type": "plain",
+                "value": "Radium"
+            },
+            {
+                "name": "Gewicht",
+                "value": 5,
+                "type": "mass"
+            },
+            {
+                "name": "Schaltgänge",
+                "value": 100,
+                "type": "plain"
+            }
+        ]
+    }
+]

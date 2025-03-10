@@ -1,0 +1,115 @@
+
+.cards-grid {
+    margin: 2rem;
+    margin-inline: 5em;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(25em, 1fr));
+    grid-template-rows: masonry; /* Wenn Support? 😕 */
+    gap: 2em;
+    font-size: 1.2rem;
+}
+
+.card {
+    display: grid;
+    grid-template-rows: [image-start] auto [image-end text-start] 1fr [text-end btn-start] auto [btn-end];
+    grid-template-areas: 
+        'image'
+        'text'
+        'btn';
+
+    border-radius: 2em;
+    border: .1em solid black;
+    box-shadow: 0 .5em 1em black;
+    overflow: hidden;
+
+    img {
+        transition: transform 500ms;
+        width: 100%;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+        transform-origin: center;
+    }
+}
+
+.card .product-title {
+    margin: 0;
+}
+
+.card .section-text {
+    padding-inline: 1em;
+    padding-bottom: 1em;
+
+    span.strike {
+        text-decoration: line-through;
+    }
+}
+
+.card .stats {
+    outline: .1em solid black;
+    padding: 2em;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1em;
+    align-items: center;
+
+}
+
+.card .buybtn {
+    --btn-bg-clr: rgb(240, 240, 240);
+    --btn-fg-clr: rgb(40, 40, 60);
+
+    color: var(--btn-fg-clr);
+    background-color: var(--btn-bg-clr);
+
+    display: block;
+    width: 100%;
+    height: 3rem;
+    font-size: 2em;
+    transition: all 500ms;
+}
+
+.card .buybtn:hover {
+    color: var(--btn-bg-clr);
+    background-color: var(--btn-fg-clr);
+}
+
+.card:is(:hover, :focus) img {
+    transform: scale(101%);
+}
+
+#newsticker {
+    position: relative;
+    overflow: hidden;
+    height: fit-content;
+    cursor: default;
+    user-select: none;
+
+    background-color: black;
+
+    >.newsmove {
+        display: flex;
+
+        >span {
+            /* background-color: yellow; */
+            color: white;
+            padding-inline-start: 30%;
+            flex-shrink: 0;
+        }
+
+        animation: newstickermove 30s linear infinite forwards;
+
+        &:hover {
+            animation-play-state: paused;
+        }
+    }
+}
+
+@keyframes newstickermove {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-170%);
+    }
+}
