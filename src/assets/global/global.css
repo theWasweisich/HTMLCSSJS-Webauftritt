@@ -44,7 +44,8 @@ body {
     background-color: var(--header-color);
     z-index: 50;
     border-bottom-right-radius: 0.313rem;
-    transition: all var(--nav-duration_open) ease;
+
+    transition: margin-left var(--btn-transition-duration);
 }
 
 #navtoggle.open {
@@ -52,18 +53,40 @@ body {
 }
 
 #navtoggle > .burger > path {
+    /* --_duration: var(--btn-transition-duration); */
+    --_duration: 2s;
+    --_half-duration: calc(var(--_duration) / 2);
+
     stroke: var(--clr-theme-6);
-    transition: all var(--nav-duration_open) ease;
+    fill: transparent;
+
+    transition: translate var(--_half-duration) linear 0s,
+                opacity 0s linear var(--_half-duration),
+                rotate var(--_half-duration) linear var(--_half-duration)
+    ;
 }
 
 
-#navtoggle.open > svg path {
-    transform-style: flat;
-    transform-origin: 50% 50%;
-    fill: transparent;
+#navtoggle.open > .burger >  path {
+    
 
-    transform: translateY(-50%);
-    opacity: 0;
+    transform-origin: center center;
+    /* stroke: green; */
+
+    &:nth-child(1) { /* Nicht Involviert */
+        translate: 0 5px;
+        opacity: 0;
+    }
+    &:nth-child(2) { /* Involviert */
+        rotate: 45deg;
+    }
+    &:nth-child(3) { /* Involviert */
+        rotate: -45deg;
+    }
+    &:nth-child(4) { /* Nicht Involviert */
+        translate: 0 -5px;
+        opacity: 0;
+        }
 }
 
 nav {
