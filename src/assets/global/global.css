@@ -34,41 +34,44 @@ body {
 }
 
 #navtoggle {
+    display: block;
     display: flex;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
+    place-items: center;
     width: 2rem;
+    margin-left: 0;
     aspect-ratio: 1;
     background-color: var(--header-color);
-    z-index: 50;
     border-bottom-right-radius: 0.313rem;
 
-    transition: margin-left var(--btn-transition-duration);
+    transition: margin-left var(--nav-duration_open);
+
 }
 
 #navtoggle.open {
     margin-left: var(--navbar-width);
+    --_duration: var(--nav-duration_open);
+    --_half-duration: calc(var(--_duration) / 2);
 }
 
 #navtoggle > .burger > path {
-    /* --_duration: var(--btn-transition-duration); */
-    --_duration: 2s;
-    --_half-duration: calc(var(--_duration) / 2);
 
     stroke: var(--clr-theme-6);
     fill: transparent;
 
-    transition: translate var(--_half-duration) linear 0s,
-                opacity 0s linear var(--_half-duration),
-                rotate var(--_half-duration) linear var(--_half-duration)
-    ;
+    opacity: 1;
+    translate: 0;
+
+    transition: rotate var(--_half-duration) linear;
 }
 
 
 #navtoggle.open > .burger >  path {
     
+    transition: translate var(--_half-duration) linear 0s,
+                opacity 0s linear var(--_half-duration),
+                rotate var(--_half-duration) linear var(--_half-duration),
+                transition 0s linear var(--_duration)
+    ;
 
     transform-origin: center center;
     /* stroke: green; */
