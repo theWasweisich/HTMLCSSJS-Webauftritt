@@ -4,10 +4,10 @@
     "express": "^4.21.2",
     "morgan": "^1.10.0"
   },
-  "devDependencies": {
-    "ts-node": "^10.9.2"
-  },
   "scripts": {
     "dev": "node app.js"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }

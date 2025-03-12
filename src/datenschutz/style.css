@@ -2,3 +2,7 @@
 header, section {
     padding-inline: 1rem;
 }
+
+section:has(.revokeBtn) {
+    margin-bottom: 2em;
+}
