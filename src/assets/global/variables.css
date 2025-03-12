@@ -6,6 +6,7 @@
     --clr-theme-4: #ebfff4;
     --clr-theme-5: #f9bdb3;
     --clr-theme-6: #f39385;
+    --clr-text-1: var(--clr-theme-4);
 
     --header-color: var(--clr-theme-1);
     --navlink-color: color-mix(in srgb, var(--clr-theme-2) 20%, black 80%);

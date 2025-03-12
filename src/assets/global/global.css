@@ -27,10 +27,13 @@ body {
 }
 
 body {
+
+    color: var(--clr-text-1);
+
     background-size: cover;
     background-repeat: no-repeat;
     background-position: 0 0;
-    background-image: linear-gradient(to bottom right, hsl(221, 75%, 40%), hsl(179, 69%, 48%));
+    background-image: linear-gradient(to bottom right, #194ab3, hsl(179, 69%, 48%));
 }
 
 #navtoggle {
