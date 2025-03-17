@@ -202,8 +202,8 @@ footer {
 
     .cookieText {
         border-radius: .5em;
-        max-height: 5lh;
-        overflow-y: scroll;
+        max-height: 10.5lh;
+        overflow-y: auto;
         padding-block: 1em;
         background-color: color-mix(in srgb, var(--cookie-banner-clr) 75%, black 25%);
 
@@ -238,5 +238,11 @@ footer {
 @media only screen and (max-width: 37.5rem) {
     footer.stick div.wrapper {
         margin-inline: auto;
+    }
+}
+
+@media (min-width: 37.5rem) {
+    #cookieBanner {
+        max-width: 75%;
     }
 }
