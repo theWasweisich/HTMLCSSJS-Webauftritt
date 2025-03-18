@@ -23,7 +23,7 @@
     overflow: hidden;
 
     .img-wrap {
-        width: 100%;
+        max-width: 100%;
         aspect-ratio: 16/9;
         overflow: hidden;
         object-fit: contain;
