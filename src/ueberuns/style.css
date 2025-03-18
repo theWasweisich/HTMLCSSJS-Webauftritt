@@ -4,8 +4,15 @@ canvas {
 }
 
 .canvas-wrapper {
-    max-width: 75%;
-    margin-inline: auto;
+    width: 100%;
+    
+    > canvas {
+        max-width: 75%;
+        display: block;
+        margin-inline: auto;
+    }
+
+    background-color: var(--clr-theme-0);
 }
 
 main > section:last-of-type {

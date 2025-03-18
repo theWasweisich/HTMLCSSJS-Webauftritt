@@ -14,24 +14,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/assets/global/global.js"></script>
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </head>
 
 <body>
     <nav data-load="true"></nav>
     <main>
         <header>
-            <h1>Über Uns</h1>
+            <div class="wrapper-padding">
+                <h1>Über Uns</h1>
+            </div>
         </header>
         <section>
-            <h2>Transparenz ist uns wichtig</h2>
-            <p>Wir möchten mit unseren Einnahmequellen so transparent wie möglich sein</p>
+            <div class="wrapper-padding">
+                <h2>Transparenz ist uns wichtig</h2>
+                <p>Wir möchten mit unseren Einnahmequellen so transparent wie möglich sein</p>
+            </div>
             <div class="canvas-wrapper">
                 <canvas id="transparenz-diagram"></canvas>
                 <script>
                     const transparentDiagram = document.getElementById("transparenz-diagram");
 
                     Chart.overrides["pie"].plugins.legend.position = 'right'
+                    Chart.defaults.color = "#fff";
 
                     const data = {
                         labels: [
@@ -59,7 +64,9 @@
             </div>
         </section>
         <section>
-            <h2>Gewinnverteilung</h2>
+            <div class="wrapper-padding">
+                <h2>Gewinnverteilung</h2>
+            </div>
             <div class="canvas-wrapper">
                 <canvas id="gewinnverteilung-diagram"></canvas>
                 <script>
