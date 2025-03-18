@@ -37,7 +37,8 @@ body {
 }
 
 #navtoggle {
-    display: block;
+    position: fixed;
+    z-index: 20;
     display: flex;
     place-items: center;
     width: 2rem;
