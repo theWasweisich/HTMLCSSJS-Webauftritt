@@ -1,13 +1,13 @@
 
 class KundenStimmenHandler {
-    static kundenstimmen = document.querySelectorAll('#kundenstimmen>.kundenstimme');
+    static kundenstimmen = document.querySelectorAll('#kundenstimmen .kundenstimme');
     static observer: IntersectionObserver;
 
     public static setup(margin?: string, threshold?: number) {
         if (margin === undefined) { margin = "0px"; }
-        if (threshold === undefined) { threshold = .5 }
+        if (threshold === undefined) { threshold = 0.5 }
 
-        const observerOptions = {
+        const observerOptions: IntersectionObserverInit = {
             root: null,
             rootMargin: margin,
             threshold: threshold
@@ -42,4 +42,6 @@ class KundenStimmenHandler {
     };
 }
 
-KundenStimmenHandler.setup()
+(() => {
+    KundenStimmenHandler.setup("10px", .75);
+})()

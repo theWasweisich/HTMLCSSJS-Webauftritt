@@ -5,7 +5,7 @@ class KundenStimmenHandler {
             margin = "0px";
         }
         if (threshold === undefined) {
-            threshold = .5;
+            threshold = 0.5;
         }
         const observerOptions = {
             root: null,
@@ -33,11 +33,13 @@ class KundenStimmenHandler {
         return isNearViewport;
     }
 }
-KundenStimmenHandler.kundenstimmen = document.querySelectorAll('#kundenstimmen>.kundenstimme');
+KundenStimmenHandler.kundenstimmen = document.querySelectorAll('#kundenstimmen .kundenstimme');
 KundenStimmenHandler.intersectionCallback = (entries, observer) => {
     entries.forEach(entry => {
         let intersecting = entry.isIntersecting;
         entry.target.classList.toggle('visible', intersecting);
     });
 };
-KundenStimmenHandler.setup();
+(() => {
+    KundenStimmenHandler.setup("10px", .75);
+})();
