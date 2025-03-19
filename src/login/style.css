@@ -1,0 +1,27 @@
+
+main {
+    height: 100%;
+}
+
+#loginForm {
+
+    * {
+        display: block;
+    }
+
+    label {
+        width: fit-content;
+    }
+
+    input {
+        accent-color: violet;
+    }
+
+    label.checkbox-label {
+        display: inline;
+    }
+
+    button {
+        display: block;
+    }
+}

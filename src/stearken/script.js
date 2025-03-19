@@ -1,89 +1,70 @@
 "use strict";
 class Hoverer {
-    static setEventListener() {
-        Hoverer.cardwrapper = document.getElementsByClassName("strength-cards")[0];
-        Hoverer.cards = Hoverer.cardwrapper.querySelectorAll(".card");
-        Hoverer.cardwrapper.addEventListener('mouseenter', () => {
-            onmouseenter();
-        });
-        Hoverer.cardwrapper.addEventListener('focusin', () => {
-            onmouseenter();
-        });
-        Hoverer.cardwrapper.addEventListener('mouseleave', () => {
-            onmouseleave();
-        });
-        Hoverer.cardwrapper.addEventListener('focusout', () => {
-            onmouseleave();
-        });
-        Hoverer.cardwrapper.addEventListener('animationstart', () => {
-            Hoverer.cardwrapper.classList.add("animating");
-        });
-        Hoverer.cardwrapper.addEventListener('animationend', () => {
-            Hoverer.cardwrapper.classList.remove("animating");
-        });
-        function onmouseenter() {
-            if (Hoverer.isHovering) {
-                return;
-            }
-            Hoverer.lastMoved = Date.now();
-            Hoverer.isHovering = true;
-            Hoverer.setHover(Hoverer.isHovering);
-        }
-        function onmouseleave() {
-            if (!Hoverer.isHovering) {
-                return;
-            }
-            Hoverer.lastMoved = Date.now();
-            Hoverer.isHovering = false;
-            Hoverer.setHover(Hoverer.isHovering);
-        }
+    constructor(cardwrapper, cards) {
+        this.cardwrapper = cardwrapper;
+        this.cards = cards;
+        this.isHovering = false;
+        this.lastMoved = 0;
+        this.setEventListener();
     }
-    static setHover(hovering) {
+    setEventListener() {
+        this.cardwrapper.addEventListener('mouseenter', () => {
+            onmouseenter();
+        });
+        this.cardwrapper.addEventListener('focusin', () => {
+            onmouseenter();
+        });
+        this.cardwrapper.addEventListener('mouseleave', () => {
+            onmouseleave();
+        });
+        this.cardwrapper.addEventListener('focusout', () => {
+            onmouseleave();
+        });
+        this.cardwrapper.addEventListener('animationstart', () => {
+            this.cardwrapper.classList.add("animating");
+        });
+        this.cardwrapper.addEventListener('animationend', () => {
+            this.cardwrapper.classList.remove("animating");
+        });
+        const onmouseenter = () => {
+            if (this.isHovering) {
+                return;
+            }
+            this.lastMoved = Date.now();
+            this.isHovering = true;
+            this.setHover(this.isHovering);
+        };
+        const onmouseleave = () => {
+            if (!this.isHovering) {
+                return;
+            }
+            this.lastMoved = Date.now();
+            this.isHovering = false;
+            this.setHover(this.isHovering);
+        };
+    }
+    setHover(hovering) {
         if (hovering === undefined) {
             hovering = true;
         }
-        let computedStyle = window.getComputedStyle(Hoverer.cardwrapper);
+        let computedStyle = window.getComputedStyle(this.cardwrapper);
         if (computedStyle.display != "flex") {
             // console.error("No hover animation!")
             return;
         }
-        for (let index = 0; index < Hoverer.cards.length; index++) {
-            const card = Hoverer.cards[index];
+        for (let index = 0; index < this.cards.length; index++) {
+            const card = this.cards[index];
             if (hovering) {
-                card.animate([
-                    {
-                        "translate": Hoverer.originalMove[index],
-                        "rotate": Hoverer.originalRotate[index]
-                    },
-                    {
-                        "translate": Hoverer.move[index],
-                        "rotate": Hoverer.rotate[index]
-                    }
-                ], {
-                    duration: 200,
-                    fill: "forwards"
-                });
+                card.style.translate = Hoverer.move[index];
+                card.style.rotate = Hoverer.rotate[index];
             }
             else {
-                card.animate([
-                    {
-                        "translate": Hoverer.move[index],
-                        "rotate": Hoverer.rotate[index]
-                    },
-                    {
-                        "translate": Hoverer.originalMove[index],
-                        "rotate": Hoverer.originalRotate[index]
-                    }
-                ], {
-                    duration: 200,
-                    fill: "forwards"
-                });
+                card.style.translate = Hoverer.originalMove[index];
+                card.style.rotate = Hoverer.originalRotate[index];
             }
         }
     }
 }
-Hoverer.isHovering = false;
-Hoverer.lastMoved = 0;
 Hoverer.originalMove = [
     "50px 0px",
     "0px 0px",
@@ -108,4 +89,8 @@ Hoverer.rotate = [
     "10deg",
     "5deg"
 ];
-Hoverer.setEventListener();
+(() => {
+    let cardwrapper = document.getElementsByClassName("strength-cards")[0];
+    let cards = cardwrapper.querySelectorAll(".card");
+    let hoverer = new Hoverer(cardwrapper, cards);
+})();

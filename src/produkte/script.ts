@@ -29,35 +29,48 @@ class Bicycle {
 
             math.appendChild(mvalue);
 
-            if (type == "kmh") {
-                let frac = document.createElement('mfrac');
-                let mtext2 = document.createElement('mtext');
-                mtext1.innerText = "km"
-                mtext2.innerText = "h"
-                frac.appendChild(mtext1);
-                frac.appendChild(mtext2);
-                math.appendChild(frac);
-            } else if (type === "kg") {
-                mtext1.innerText = "kg";
-                math.appendChild(mtext1);
-            } else if (type === "plain") {
-                // Nothing to do
+            switch (type) {
+                case "kmh":
+                    let frac = document.createElement('mfrac');
+                    let mtext2 = document.createElement('mtext');
+                    mtext1.innerText = "km"
+                    mtext2.innerText = "h"
+                    frac.appendChild(mtext1);
+                    frac.appendChild(mtext2);
+                    math.appendChild(frac);
+                    break;
+                case "kg":
+                    mtext1.innerText = "kg";
+                    math.appendChild(mtext1);
+                    break;
+                case "plain":
+                    // nothing
+                    break;
+                default:
+                    break;
             }
+
             return math
         }
-        const template = document.querySelector('.card-template') as HTMLTemplateElement | null;
+
+        const template = Bicycle.cardsGrid.querySelector('.card-template') as HTMLTemplateElement | null;
         if (template === null) { throw Error("No template has been found to create a card"); }
-
-        const clone = template.content.cloneNode(true) as DocumentFragment;
-
-        let imageElem = clone.querySelector('.card img') as HTMLImageElement;
-        imageElem.src = this.image.url;
-        imageElem.alt = this.image.alt;
+        var clone: DocumentFragment;
+        clone = template.content.cloneNode(true) as DocumentFragment;
 
         let sectiontext = clone.querySelector(".section-text") as HTMLDivElement;
+        let imageElem = clone.querySelector('.card img') as HTMLImageElement;
+        let sectionheading = sectiontext.querySelector('h2') as HTMLHeadingElement;
+        let description = sectiontext.querySelector('.product-descr') as HTMLParagraphElement;
 
-        (sectiontext.querySelector('h2') as HTMLHeadingElement).textContent = this.name;
-        (sectiontext.querySelector('.product-descr') as HTMLParagraphElement).textContent = this.description;
+        setImgProperties: {
+            imageElem.src = this.image.url;
+            imageElem.alt = this.image.alt;
+        }
+
+
+        sectionheading.textContent = this.name;
+        description.textContent = this.description;
 
         let statsWrapper = clone.querySelector('div.stats') as HTMLDivElement;
 

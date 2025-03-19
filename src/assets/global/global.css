@@ -37,7 +37,8 @@ body {
 }
 
 #navtoggle {
-    display: block;
+    position: fixed;
+    z-index: 20;
     display: flex;
     place-items: center;
     width: 2rem;
@@ -161,7 +162,7 @@ main {
 }
 
 .footnote {
-    color: gray;
+    color: color-mix(in srgb, var(--clr-text-1) 75%, transparent 25%);
 }
 
 footer {
@@ -201,6 +202,7 @@ footer {
     color-scheme: dark;
 
     .cookieText {
+        padding: 1rem;
         border-radius: .5em;
         max-height: 10.5lh;
         overflow-y: auto;

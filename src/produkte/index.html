@@ -8,8 +8,10 @@
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="style.css">
 
-    <!-- Polyfill for MathMl -->
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Polyfill for MathMl
+     async=false, weil sonst die math tags manchmal nicht richtig angezeigt werden
+     -->
+    <script id="MathJax-script" async="false" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <script src="/assets/global/global.js"></script>
     <script defer src="./script.js"></script>

@@ -4,8 +4,20 @@ canvas {
 }
 
 .canvas-wrapper {
-    max-width: 75%;
-    margin-inline: auto;
+    --_bg-clr: var(--clr-theme-0);
+
+    width: 100%;
+    margin-block: 5em;
+    padding-block: .9em;
+
+
+    > canvas {
+        max-width: 75%;
+        display: block;
+        margin-inline: auto;
+    }
+
+    background-color: var(--_bg-clr);
 }
 
 main > section:last-of-type {

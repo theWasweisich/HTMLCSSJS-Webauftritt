@@ -79,7 +79,13 @@ main>.content {
     /* position: relative; */
     display: flex;
     flex-direction: column;
-    gap: 5em;
+    gap: 1em;
+
+    .wrapper-padding {
+        display: flex;
+        flex-direction: column;
+        gap: 2em;
+    }
 }
 
 .kundenstimme {

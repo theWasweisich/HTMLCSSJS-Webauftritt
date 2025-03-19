@@ -9,12 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class FormMaster {
-    static get lastSubmitted() {
-        return Number(localStorage.getItem('lastSubmit'));
-    }
-    static set lastSubmitted(value) {
-        localStorage.setItem('lastSubmit', value.toString());
-    }
     constructor(formRoot) {
         this.formRoot = formRoot;
         const prenameInp = this.formRoot.querySelector("#prename-inp");
@@ -40,6 +34,7 @@ class FormMaster {
                     return;
                 }
             }
+            this.validator();
             let isValid = this.formRoot.checkValidity();
             if (isValid) {
                 this.sendData().then((res) => {
@@ -51,9 +46,16 @@ class FormMaster {
             ;
         });
         this.formRoot.addEventListener('input', e => {
-            this.validator();
+            e.target;
+            this.validator(e.target);
             this.formRoot.reportValidity();
         });
+    }
+    static get lastSubmitted() {
+        return Number(localStorage.getItem('lastSubmit'));
+    }
+    static set lastSubmitted(value) {
+        localStorage.setItem('lastSubmit', value.toString());
     }
     static triggerResponse(success) {
         if (success) {
@@ -68,54 +70,83 @@ class FormMaster {
     /**
      * @returns True if valid, false if invalid
      */
-    validator() {
-        var _a;
+    validator(inputToCheck) {
         var isValid = true;
-        // Required
-        if (this.elements.nameInp.value.replace(" ", "") === "") {
-            this.elements.nameInp.setCustomValidity("Bitte angeben");
-            isValid = false;
-        }
-        else {
-            this.elements.nameInp.setCustomValidity("");
-        }
-        if (this.elements.prenameInp.value === "") {
-            this.elements.prenameInp.setCustomValidity("Bitte angeben");
-            isValid = false;
-        }
-        else {
-            this.elements.nameInp.setCustomValidity("");
-        }
-        for (const word of FormMaster.badWords) {
-            if (this.elements.longInp.value.includes(word)) {
+        const validateNameInputs = () => {
+            // Required
+            if (this.elements.nameInp.value.replace(" ", "") === "") {
+                this.elements.nameInp.setCustomValidity("Bitte angeben");
                 isValid = false;
             }
-            ;
-            if (this.elements.shortInp.value.includes(word)) {
+            else {
+                this.elements.nameInp.setCustomValidity("");
+            }
+            if (this.elements.prenameInp.value === "") {
+                this.elements.prenameInp.setCustomValidity("Bitte angeben");
                 isValid = false;
             }
+            else {
+                this.elements.nameInp.setCustomValidity("");
+            }
+        };
+        const checkForBadWords = () => {
+            for (const word of FormMaster.badWords) {
+                if (this.elements.longInp.value.includes(word)) {
+                    isValid = false;
+                }
+                ;
+                if (this.elements.shortInp.value.includes(word)) {
+                    isValid = false;
+                }
+                ;
+            }
             ;
-        }
-        ;
-        if (!FormMaster.emailRegex.test(this.elements.emailInp.value.toLowerCase())) {
-            this.elements.emailInp.setCustomValidity("Die Email sieht aber nicht gut aus!");
-            isValid = false;
-        }
-        else {
-            this.elements.emailInp.setCustomValidity("");
-        }
-        let selected = (_a = this.elements.topicSel.selectedOptions.item(0)) === null || _a === void 0 ? void 0 : _a.value;
-        this.elements.topicSel.setCustomValidity("");
-        if (selected === "garantie") {
-            this.elements.topicSel.setCustomValidity("Bei uns gibt es keine Garantie!");
-            isValid = false;
-        }
-        else if (selected === "allgemein") {
-            this.elements.topicSel.setCustomValidity("Bitte seien sie etwas genauer");
-            isValid = false;
-        }
-        else {
+        };
+        const checkEmailValidity = () => {
+            if (!FormMaster.emailRegex.test(this.elements.emailInp.value.toLowerCase())) {
+                this.elements.emailInp.setCustomValidity("Die Email sieht aber nicht gut aus!");
+                isValid = false;
+            }
+            else {
+                this.elements.emailInp.setCustomValidity("");
+            }
+        };
+        const checkSelectionValidity = () => {
+            var _a;
+            let selected = (_a = this.elements.topicSel.selectedOptions.item(0)) === null || _a === void 0 ? void 0 : _a.value;
             this.elements.topicSel.setCustomValidity("");
+            if (selected === "garantie") {
+                this.elements.topicSel.setCustomValidity("Bei uns gibt es keine Garantie!");
+                isValid = false;
+            }
+            else if (selected === "allgemein") {
+                this.elements.topicSel.setCustomValidity("Bitte seien sie etwas genauer");
+                isValid = false;
+            }
+            else {
+                this.elements.topicSel.setCustomValidity("");
+            }
+        };
+        if (inputToCheck === undefined) {
+            validateNameInputs();
+            checkForBadWords();
+            checkEmailValidity();
+            checkSelectionValidity();
+            return isValid;
+        }
+        switch (inputToCheck.id) {
+            case "prename-inp":
+            case "name-inp":
+                validateNameInputs();
+                break;
+            case "email-inp":
+                checkEmailValidity();
+                break;
+            case "topic-sel":
+                checkSelectionValidity();
+                break;
+            default:
+                break;
         }
         return isValid;
     }

@@ -1,7 +1,7 @@
 [
     {
         "name": "Fahrrad 1",
-        "description": "Sehr schönes Fahrrad!",
+        "description": "Sehr schönes Fahrrad! mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text",
         "image": {
             "file": "fahrrad1.jpg",
             "alt": "Fahrrad 1"

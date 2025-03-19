@@ -23,35 +23,44 @@ class Bicycle {
             let mvalue = document.createElement('mtext');
             mvalue.innerText = value;
             math.appendChild(mvalue);
-            if (type == "kmh") {
-                let frac = document.createElement('mfrac');
-                let mtext2 = document.createElement('mtext');
-                mtext1.innerText = "km";
-                mtext2.innerText = "h";
-                frac.appendChild(mtext1);
-                frac.appendChild(mtext2);
-                math.appendChild(frac);
-            }
-            else if (type === "kg") {
-                mtext1.innerText = "kg";
-                math.appendChild(mtext1);
-            }
-            else if (type === "plain") {
-                // Nothing to do
+            switch (type) {
+                case "kmh":
+                    let frac = document.createElement('mfrac');
+                    let mtext2 = document.createElement('mtext');
+                    mtext1.innerText = "km";
+                    mtext2.innerText = "h";
+                    frac.appendChild(mtext1);
+                    frac.appendChild(mtext2);
+                    math.appendChild(frac);
+                    break;
+                case "kg":
+                    mtext1.innerText = "kg";
+                    math.appendChild(mtext1);
+                    break;
+                case "plain":
+                    // nothing
+                    break;
+                default:
+                    break;
             }
             return math;
         }
-        const template = document.querySelector('.card-template');
+        const template = Bicycle.cardsGrid.querySelector('.card-template');
         if (template === null) {
             throw Error("No template has been found to create a card");
         }
-        const clone = template.content.cloneNode(true);
-        let imageElem = clone.querySelector('.card img');
-        imageElem.src = this.image.url;
-        imageElem.alt = this.image.alt;
+        var clone;
+        clone = template.content.cloneNode(true);
         let sectiontext = clone.querySelector(".section-text");
-        sectiontext.querySelector('h2').textContent = this.name;
-        sectiontext.querySelector('.product-descr').textContent = this.description;
+        let imageElem = clone.querySelector('.card img');
+        let sectionheading = sectiontext.querySelector('h2');
+        let description = sectiontext.querySelector('.product-descr');
+        setImgProperties: {
+            imageElem.src = this.image.url;
+            imageElem.alt = this.image.alt;
+        }
+        sectionheading.textContent = this.name;
+        description.textContent = this.description;
         let statsWrapper = clone.querySelector('div.stats');
         this.stats.forEach(stat => {
             let keyElem = document.createElement("span");
@@ -99,8 +108,8 @@ function parseJson(data) {
     console.groupEnd();
     cycles.push(cycle);
 }
-function loadBicycles() {
-    return __awaiter(this, arguments, void 0, function* (endpoint = "bicyles.json") {
+function loadBicycles(endpoint = "bicyles.json") {
+    return __awaiter(this, void 0, void 0, function* () {
         const abortSignal = new AbortController();
         let resp = yield fetch(endpoint, {
             signal: abortSignal.signal
