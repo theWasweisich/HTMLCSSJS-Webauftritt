@@ -1,12 +1,9 @@
 
 
 class Hoverer {
-    static isHovering: boolean = false
+    isHovering: boolean = false
 
-    static cardwrapper: HTMLElement
-    static cards: NodeListOf<HTMLElement>;
-
-    static lastMoved: number = 0;
+    lastMoved: number = 0;
     
     static originalMove = [
         "50px 0px",
@@ -35,95 +32,78 @@ class Hoverer {
         "5deg"
     ]
 
-    static setEventListener() {
-        Hoverer.cardwrapper = document.getElementsByClassName("strength-cards")[0] as HTMLDivElement
+    constructor (
+        public cardwrapper: HTMLElement,
+        public cards: NodeListOf<HTMLElement>
+    ) { this.setEventListener(); }
+
+    setEventListener() {
         
-        Hoverer.cards = Hoverer.cardwrapper.querySelectorAll(".card");
-        
-        Hoverer.cardwrapper.addEventListener('mouseenter', () => {
+        this.cardwrapper.addEventListener('mouseenter', () => {
             onmouseenter();
         })
-        Hoverer.cardwrapper.addEventListener('focusin', () => {
+        this.cardwrapper.addEventListener('focusin', () => {
             onmouseenter();
         })
-        Hoverer.cardwrapper.addEventListener('mouseleave', () => {
+        this.cardwrapper.addEventListener('mouseleave', () => {
             onmouseleave()
         });
-        Hoverer.cardwrapper.addEventListener('focusout', () => {
+        this.cardwrapper.addEventListener('focusout', () => {
             onmouseleave();
         })
 
-        Hoverer.cardwrapper.addEventListener('animationstart', () => {
-            Hoverer.cardwrapper.classList.add("animating")
+        this.cardwrapper.addEventListener('animationstart', () => {
+            this.cardwrapper.classList.add("animating")
         });
-        Hoverer.cardwrapper.addEventListener('animationend', () => {
-            Hoverer.cardwrapper.classList.remove("animating");
+        this.cardwrapper.addEventListener('animationend', () => {
+            this.cardwrapper.classList.remove("animating");
         })
-        
-        function onmouseenter() {
 
-            if (Hoverer.isHovering) { return; }
-            Hoverer.lastMoved = Date.now();
-            Hoverer.isHovering = true;
-            Hoverer.setHover(Hoverer.isHovering);
+        const onmouseenter = () => {
+            if (this.isHovering) { return; }
+            this.lastMoved = Date.now();
+            this.isHovering = true;
+            this.setHover(this.isHovering);
         }
-
-        function onmouseleave() {
-
-            if (!Hoverer.isHovering) { return; }
-            Hoverer.lastMoved = Date.now();
-            Hoverer.isHovering = false;
-            Hoverer.setHover(Hoverer.isHovering);
+    
+        const onmouseleave = () => {
+    
+            if (!this.isHovering) { return; }
+            this.lastMoved = Date.now();
+            this.isHovering = false;
+            this.setHover(this.isHovering);
         }
     }
 
 
-    static setHover(): void;
-    static setHover(hovering: boolean): void;
-    static setHover(hovering?: boolean): void {
+    setHover(): void;
+    setHover(hovering: boolean): void;
+    setHover(hovering?: boolean): void {
         if (hovering === undefined) {
             hovering = true
         }
-        let computedStyle = window.getComputedStyle(Hoverer.cardwrapper);
+        let computedStyle = window.getComputedStyle(this.cardwrapper);
         if (computedStyle.display != "flex") {
             // console.error("No hover animation!")
             return;
         }
-        for (let index = 0; index < Hoverer.cards.length; index++) {
-            const card = Hoverer.cards[index];
+        for (let index = 0; index < this.cards.length; index++) {
+            const card = this.cards[index];
             if (hovering) {
-                card.animate([
-                    {
-                        "translate": Hoverer.originalMove[index],
-                        "rotate": Hoverer.originalRotate[index]
-                    },
-                    {
-                        "translate": Hoverer.move[index],
-                        "rotate": Hoverer.rotate[index]
-                    }
-                ],
-                    {
-                        duration: 200,
-                        fill: "forwards"
-                    }
-                )
+                card.style.translate = Hoverer.move[index];
+                card.style.rotate = Hoverer.rotate[index];
             } else {
-                card.animate([
-                    {
-                        "translate": Hoverer.move[index],
-                        "rotate": Hoverer.rotate[index]
-                    },
-                    {
-                        "translate": Hoverer.originalMove[index],
-                        "rotate": Hoverer.originalRotate[index]
-                    }
-                ], {
-                    duration: 200,
-                    fill: "forwards"
-                })
+                card.style.translate = Hoverer.originalMove[index];
+                card.style.rotate = Hoverer.originalRotate[index];
             }
         }
     }
 }
 
-Hoverer.setEventListener()
+(() => {
+    let cardwrapper = document.getElementsByClassName("strength-cards")[0] as HTMLDivElement
+        
+    let cards = cardwrapper.querySelectorAll(".card") as NodeListOf<HTMLElement>;
+
+    let hoverer = new Hoverer(cardwrapper, cards);
+})()

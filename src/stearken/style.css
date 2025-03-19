@@ -19,11 +19,11 @@
     padding: 0.313rem;
 
     border-radius: 1em;
-    transition: all 1s;
+    transition: all 500ms;
 
     box-shadow: 0 0 0.625em black;
 
-    opacity: .95;
+    opacity: 0.97;
 
     backdrop-filter: blur(50px);
 
@@ -37,7 +37,6 @@
         z-index: 1;
         translate: 0;
         rotate: -.5deg;
-        box-shadow: 0 0 0.625em 0.625em black;
         background-color: chocolate;
 
     }
@@ -53,7 +52,7 @@
         rotate: 10deg;
         background-color: magenta;
     }
-    
+
     &:hover {
         box-shadow: 0 0 1.25em 0.313em black;
     }
@@ -63,11 +62,12 @@
     width: 100%;
     display: flex;
     place-content: center;
+    padding-block: 2em;
 
     > img {
         border-radius: 0.313em;
 
-        border-image: conic-gradient();
+        /* border-image: conic-gradient(); */
     }
 }
 
