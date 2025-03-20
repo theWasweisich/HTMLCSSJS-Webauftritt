@@ -16,6 +16,7 @@ interface FeatureFlags {
 import fs from "node:fs/promises";
 import express from 'express';
 import morgan from 'morgan';
+import { v4 as uuidV4 } from "uuid";
 const app = express();
 
 var port = 3000;
@@ -26,7 +27,7 @@ if (customPort !== undefined) {
     port = Number(customPort);
 }
 
-var userAccounts: Array<{ username: string, password: string, type?: "ADMIN" | "USER" }> = [
+const userAccounts: Array<{ username: string, password: string, type?: "ADMIN" | "USER" }> = [
     {
         username: "admin",
         password: "password",
@@ -34,6 +35,18 @@ var userAccounts: Array<{ username: string, password: string, type?: "ADMIN" | "
     }
 ]
 
+
+var valid_auth_tokens: Array<string> = [];
+
+function generateAuthToken(): string {
+    let token = uuidV4();
+    valid_auth_tokens.push(token);
+    return token;
+}
+
+function isAuthTokenValid(token: string): boolean {
+    return valid_auth_tokens.includes(token);
+}
 
 async function getFeatureFlags(): Promise<FeatureFlags> {
     return JSON.parse(await fs.readFile('./feature__flags.json', { encoding: 'utf-8' }));
@@ -90,10 +103,14 @@ app.post("/api/admin/login", (req, res) => {
     const body = req.body;
 
     if (checkAuthCredentials(body.username, body.password)) {
-        res.send("Alles bestens!!!");
+        let response = res.writeHead(200, {
+            "Set-Cookie": `token=${generateAuthToken()}`,
+            "access-control-allow-credentials": "true"
+        })
+        response.send("Alles bestens!!!");
     } else {
         res.status(401).send("Ne, das passt nicht!");
-    }
+    };
 })
 
 app.use(express.static("src/"));
