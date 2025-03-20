@@ -1,22 +1,17 @@
 
-interface FeatureFlags {
-    accept_kontakt_msgs: {
-        /**
-         * Ob der Server eingehende Kontaktformulare annimt
-         */
-        serverAccept: boolean
-        /**
-         * Ob der Server eingehende Kontaktformulare auch abspeichert
-         */
-        serverSave: boolean
+import * as dataHandling from './dataHandling';
+import express from 'express';
+import morgan from 'morgan';
+import { v4 as uuidV4 } from "uuid";
+import session from "express-session";
+
+declare module 'express-session' {
+    interface SessionData {
+        token: string
     }
 }
 
 
-import fs from "node:fs/promises";
-import express from 'express';
-import morgan from 'morgan';
-import { v4 as uuidV4 } from "uuid";
 const app = express();
 
 var port = 3000;
@@ -48,27 +43,6 @@ function isAuthTokenValid(token: string): boolean {
     return valid_auth_tokens.includes(token);
 }
 
-async function getFeatureFlags(): Promise<FeatureFlags> {
-    return JSON.parse(await fs.readFile('./feature__flags.json', { encoding: 'utf-8' }));
-}
-
-async function getData() {
-    return JSON.parse(await fs.readFile('./data/data.json', { encoding: 'utf-8' }));
-}
-
-function setData(data: object) {
-    let currentDate = new Date().toISOString();
-    getData().then((currentData) => {
-
-        currentData[currentDate] = data;
-
-        let newData = JSON.stringify(currentData);
-        fs.writeFile(`./data/data.json`, newData, { encoding: 'utf-8' }).then(() => {
-            console.log("saved");
-        });
-    });
-}
-
 function checkAuthCredentials(username: string, password: string) {
     for (const user of userAccounts) {
         if (user.username === username) {
@@ -78,36 +52,62 @@ function checkAuthCredentials(username: string, password: string) {
     return false;
 }
 
-getFeatureFlags().then((value) => {
+
+dataHandling.getFeatureFlags().then(value => {
 
 })
 
 
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(session({
+    secret: "dies ist sehr geheim",
+    cookie: { maxAge: 60000 },
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(function (req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (
+        req.path.startsWith("/admin/") ||
+        req.path.startsWith("/api/admin/")
+    ) {
+        if (!req.session.token) { res.redirect(307, "/login/"); return; }
+        if (req.session.token && isAuthTokenValid(req.session.token)) {
+            next();
+            return;
+        };
+        res.redirect(307, "/login/");
+        return
+    }
+    next();
+})
+
 
 app.get('/', (_req, res) => {
-    res.redirect(302, "/index/");
+    res.redirect("/index/");
 });
 
 app.post('/api/contact/new', (req, res) => {
     const body = req.body;
     console.log(body, typeof body);
 
-    setData(body);
+    dataHandling.setData(body);
 
     res.status(200).send("Hi");
 })
 
-app.post("/api/admin/login", (req, res) => {
+app.get('/api/admin/contact/get', async (req: express.Request, res: express.Response) => {
+    let data = await dataHandling.getData();
+    res.send(JSON.stringify(data));
+})
+
+app.post("/api/login", (req, res) => {
     const body = req.body;
 
     if (checkAuthCredentials(body.username, body.password)) {
-        let response = res.writeHead(200, {
-            "Set-Cookie": `token=${generateAuthToken()}`,
-            "Access-Control-Allow-Credentials": "true"
-        });
-        response.end("Alles bestens!!!");
+        req.session.token = generateAuthToken();
+        res.redirect(303, "/admin/");
     } else {
         res.status(401).send("Ne, das passt nicht!");
     };

@@ -25,15 +25,18 @@ class LoginFormHandling {
             const formData = JSON.stringify({ username: usernameInp.value,
                 password: passwordInp.value
             });
-            const defaultEndpoint = "/api/admin/login";
+            const defaultEndpoint = "/api/login";
             console.log(`Sending: "${formData}"`);
-            let response = fetch(defaultEndpoint, {
+            let response = yield fetch(defaultEndpoint, {
                 body: formData,
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
         });
     }
 }

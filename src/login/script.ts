@@ -25,17 +25,21 @@ class LoginFormHandling {
             }
         );
 
-        const defaultEndpoint: string = "/api/admin/login";
+        const defaultEndpoint: string = "/api/login";
 
         console.log(`Sending: "${formData}"`);
 
-        let response = fetch(defaultEndpoint, {
+        let response = await fetch(defaultEndpoint, {
             body: formData,
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             }
         });
+
+        if (response.redirected) {
+            window.location.href = response.url;
+        }
     }
 }
 
