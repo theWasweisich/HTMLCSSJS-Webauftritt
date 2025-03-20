@@ -88,7 +88,7 @@ app.use(express.json());
 
 app.get('/', (_req, res) => {
     res.redirect(302, "/index/");
-})
+});
 
 app.post('/api/contact/new', (req, res) => {
     const body = req.body;
@@ -105,9 +105,9 @@ app.post("/api/admin/login", (req, res) => {
     if (checkAuthCredentials(body.username, body.password)) {
         let response = res.writeHead(200, {
             "Set-Cookie": `token=${generateAuthToken()}`,
-            "access-control-allow-credentials": "true"
-        })
-        response.send("Alles bestens!!!");
+            "Access-Control-Allow-Credentials": "true"
+        });
+        response.end("Alles bestens!!!");
     } else {
         res.status(401).send("Ne, das passt nicht!");
     };

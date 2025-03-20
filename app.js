@@ -15,19 +15,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const promises_1 = __importDefault(require("node:fs/promises"));
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
+const uuid_1 = require("uuid");
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
-var userAccounts = [
+const userAccounts = [
     {
         username: "admin",
         password: "password",
         type: "ADMIN"
     }
 ];
+var valid_auth_tokens = [];
+function generateAuthToken() {
+    let token = (0, uuid_1.v4)();
+    valid_auth_tokens.push(token);
+    return token;
+}
+function isAuthTokenValid(token) {
+    return valid_auth_tokens.includes(token);
+}
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         return JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
@@ -72,11 +82,16 @@ app.post('/api/contact/new', (req, res) => {
 app.post("/api/admin/login", (req, res) => {
     const body = req.body;
     if (checkAuthCredentials(body.username, body.password)) {
-        res.send("Alles bestens!!!");
+        let response = res.writeHead(200, {
+            "Set-Cookie": `token=${generateAuthToken()}`,
+            "Access-Control-Allow-Credentials": "true"
+        });
+        response.end("Alles bestens!!!");
     }
     else {
         res.status(401).send("Ne, das passt nicht!");
     }
+    ;
 });
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
