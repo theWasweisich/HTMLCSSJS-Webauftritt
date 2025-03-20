@@ -1,13 +1,15 @@
 
-main {
-    height: 100%;
-}
-
 #loginForm {
-
+    width: fit-content;
+    margin: 3rem;
+    padding: 2.5em;
+    outline: .2em dashed black;
+    
     * {
         display: block;
+        font-size: 1em;
     }
+
 
     label {
         width: fit-content;
@@ -21,7 +23,19 @@ main {
         display: inline;
     }
 
+    input.checkbox-input {
+        display: inline;
+    }
+
+    #password-inp {
+        margin-bottom: 1em;
+    }
+
     button {
         display: block;
     }
+}
+
+.filler {
+    height: 26em;
 }

@@ -21,6 +21,13 @@ var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
+var userAccounts = [
+    {
+        username: "admin",
+        password: "password",
+        type: "ADMIN"
+    }
+];
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         return JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
@@ -41,6 +48,14 @@ function setData(data) {
         });
     });
 }
+function checkAuthCredentials(username, password) {
+    for (const user of userAccounts) {
+        if (user.username === username) {
+            return user.password === password;
+        }
+    }
+    return false;
+}
 getFeatureFlags().then((value) => {
 });
 app.use((0, morgan_1.default)("dev"));
@@ -53,6 +68,15 @@ app.post('/api/contact/new', (req, res) => {
     console.log(body, typeof body);
     setData(body);
     res.status(200).send("Hi");
+});
+app.post("/api/admin/login", (req, res) => {
+    const body = req.body;
+    if (checkAuthCredentials(body.username, body.password)) {
+        res.send("Alles bestens!!!");
+    }
+    else {
+        res.status(401).send("Ne, das passt nicht!");
+    }
 });
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
