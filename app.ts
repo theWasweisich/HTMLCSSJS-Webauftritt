@@ -1,9 +1,8 @@
 
-import fs from "node:fs/promises";
 import express from 'express';
 import morgan from 'morgan';
 import session from "express-session";
-import { FeatureFlags, getData, getFeatureFlags, setData, isAuthTokenValid } from "./dataHandling";
+import { FeatureFlags, getData, getFeatureFlags, setData, DataBaseHandling } from "./dataHandling";
 const app = express();
 
 declare module 'express-session' {
@@ -37,8 +36,9 @@ app.use(function (req: express.Request, res: express.Response, next: express.Nex
         req.path.startsWith("/admin/") ||
         req.path.startsWith("/api/admin/")
     ) {
+        // TODO: Implement Auth
         if (!req.session.token) { res.redirect(307, "/login/"); return; }
-        if (req.session.token && isAuthTokenValid(req.session.token)) {
+        if (req.session.token) {
             next();
             return;
         };
@@ -60,6 +60,20 @@ app.post('/api/contact/new', (req, res) => {
     setData(body);
 
     res.status(200).send("Hi");
+});
+
+app.post('/api/login', async (req, res) => {
+    const body = req.body;
+    const handler = new DataBaseHandling();
+    
+    if (await handler.isUserValid(body["username"], body["password"])) {
+        req.session.token = await handler.generateNewAuthToken();
+        res.redirect("/admin/");
+        return;
+    }
+
+    req.session.token = undefined;
+    res.status(401).send("Invalid");
 })
 
 app.use(express.static("src/"));

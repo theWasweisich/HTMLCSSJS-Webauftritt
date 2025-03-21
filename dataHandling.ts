@@ -1,3 +1,9 @@
+interface dbUsersRow {
+    id: number,
+    username: string,
+    hash: string
+}
+
 export interface FeatureFlags {
     accept_kontakt_msgs: {
         /**
@@ -14,6 +20,7 @@ export interface FeatureFlags {
 import fs from "node:fs/promises";
 import sqlite3 from "sqlite3";
 import bcrypt from 'bcrypt';
+import { v4 as uuidV4 } from "uuid";
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
@@ -52,7 +59,7 @@ const db = new sqlite3.Database(":memory:", err => {
     }
 });
 
-class DataBaseHandling {
+export class DataBaseHandling {
     static filename: string = ":memory:"
     static saltRounds: number = 10;
 
@@ -112,6 +119,40 @@ class DataBaseHandling {
             stmt.get((err, row) => {
                 
             })
+        })
+    };
+
+    public async isUserValid(username: string, password: string): Promise<boolean> {
+        const db = this.openDB();
+        const selectStmt = "SELECT username, hash FROM users WHERE username = ?";
+        return new Promise((resolve, reject) => {
+            db.serialize(() => {
+                db.get(selectStmt, [username], async (err, row: dbUsersRow) => {
+                    if (err) { reject(err) }
+                    if (!row) { resolve(false) };
+
+                    if (await bcrypt.compare(password, row.hash)) {
+                        resolve(true)
+                        return
+                    }
+                    resolve(false)
+                })
+            })
+        })
+    };
+
+    public async isAuthTokenKnown(token: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const db = this.openDB();
+            resolve(true);
+        })
+    };
+
+    public async generateNewAuthToken(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const db = this.openDB();
+            const insertStmt = "INSERT INTO "
+            resolve(uuidV4())
         })
     }
 }

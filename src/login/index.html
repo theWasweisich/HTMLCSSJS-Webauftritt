@@ -10,24 +10,35 @@
     <link rel="stylesheet" href="/assets/global/global.css">
 
     <script src="/assets/global/global.js"></script>
+    <script defer src="script.js"></script>
 </head>
 
 <body>
     <nav data-load="true"></nav>
     <main>
-        <div class="wrapper-padding">
-            <form id="loginForm">
-
-                <label for="username-inp">Benutzername</label>
-                <input type="text" name="username" id="username-inp" autocomplete="username">
-                <label for="password-inp">Passwort</label>
-                <input type="password" name="password" id="password-inp" autocomplete="current-password">
-                <label class="checkbox-label" for="stayloggedin-inp">Angemeldet bleiben?</label>
-                <input type="checkbox" name="stayloggedin" id="stayloggedin-inp">
-                <button type="submit">Anmelden</button>
-
-            </form>
-        </div>
+        <header>
+            <div class="wrapper-padding">
+                <h1>Login</h1>
+            </div>
+        </header>
+        <section>
+            <div class="wrapper-padding">
+                <h2>Anmeldeformular für Admins</h2>
+            </div>
+        </section>
+        <section id="login-section">
+            <div class="wrapper-padding">
+                <form id="loginForm">
+                    <label for="username-inp">Benutzername</label>
+                    <input autofocus type="text" name="username" id="username-inp" autocomplete="username">
+                    <label for="password-inp">Passwort</label>
+                    <input type="password" name="password" id="password-inp" autocomplete="current-password">
+                    <label class="checkbox-label" for="stayloggedin-inp">Angemeldet bleiben?</label>
+                    <input type="checkbox" name="stayloggedin" id="stayloggedin-inp">
+                    <button type="submit">Anmelden</button>
+                </form>
+            </div>
+        </section>
     </main>
     <footer data-load="true"></footer>
 </body>

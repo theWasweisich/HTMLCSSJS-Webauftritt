@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DataBaseHandling = void 0;
 exports.getFeatureFlags = getFeatureFlags;
 exports.getData = getData;
 exports.setData = setData;
@@ -19,6 +20,7 @@ exports.isAuthTokenValid = isAuthTokenValid;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const uuid_1 = require("uuid");
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         return JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
@@ -113,6 +115,51 @@ class DataBaseHandling {
             });
         });
     }
+    ;
+    isUserValid(username, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const db = this.openDB();
+            const selectStmt = "SELECT username, hash FROM users WHERE username = ?";
+            return new Promise((resolve, reject) => {
+                db.serialize(() => {
+                    db.get(selectStmt, [username], (err, row) => __awaiter(this, void 0, void 0, function* () {
+                        if (err) {
+                            reject(err);
+                        }
+                        if (!row) {
+                            resolve(false);
+                        }
+                        ;
+                        if (yield bcrypt_1.default.compare(password, row.hash)) {
+                            resolve(true);
+                            return;
+                        }
+                        resolve(false);
+                    }));
+                });
+            });
+        });
+    }
+    ;
+    isAuthTokenKnown(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                const db = this.openDB();
+                resolve(true);
+            });
+        });
+    }
+    ;
+    generateNewAuthToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                const db = this.openDB();
+                const insertStmt = "INSERT INTO ";
+                resolve((0, uuid_1.v4)());
+            });
+        });
+    }
 }
+exports.DataBaseHandling = DataBaseHandling;
 DataBaseHandling.filename = ":memory:";
 DataBaseHandling.saltRounds = 10;

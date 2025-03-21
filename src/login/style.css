@@ -37,3 +37,7 @@ main {
         margin-block-start: 1.5em;
     }
 }
+
+#login-section {
+    margin-bottom: 2em;
+}
