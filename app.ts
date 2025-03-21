@@ -18,6 +18,7 @@ import express from 'express';
 import morgan from 'morgan';
 const app = express();
 
+
 var port = 3000;
 
 var customPort = process.argv[2];
@@ -55,6 +56,29 @@ getFeatureFlags().then((value) => {
 
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(session({
+    secret: "dies ist sehr geheim",
+    cookie: { maxAge: 172_800 }, // Das sind 2 Tage
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(function (req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (
+        req.path.startsWith("/admin/") ||
+        req.path.startsWith("/api/admin/")
+    ) {
+        if (!req.session.token) { res.redirect(307, "/login/"); return; }
+        if (req.session.token && isAuthTokenValid(req.session.token)) {
+            next();
+            return;
+        };
+        res.redirect(307, "/login/");
+        return
+    }
+    next();
+})
+
 
 app.get('/', (_req, res) => {
     res.redirect(302, "/index/");

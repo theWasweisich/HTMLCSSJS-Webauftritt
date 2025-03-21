@@ -45,6 +45,29 @@ getFeatureFlags().then((value) => {
 });
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
+app.use((0, express_session_1.default)({
+    secret: "dies ist sehr geheim",
+    cookie: { maxAge: 172800 }, // Das sind 2 Tage
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(function (req, res, next) {
+    if (req.path.startsWith("/admin/") ||
+        req.path.startsWith("/api/admin/")) {
+        if (!req.session.token) {
+            res.redirect(307, "/login/");
+            return;
+        }
+        if (req.session.token && isAuthTokenValid(req.session.token)) {
+            next();
+            return;
+        }
+        ;
+        res.redirect(307, "/login/");
+        return;
+    }
+    next();
+});
 app.get('/', (_req, res) => {
     res.redirect(302, "/index/");
 });
