@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,12 +11,13 @@
 
     <script src="/assets/global/global.js"></script>
 </head>
+
 <body>
     <nav data-load="true"></nav>
     <main>
-        <form id="loginForm">
+        <div class="wrapper-padding">
+            <form id="loginForm">
 
-            <div class="wrapper-padding">
                 <label for="username-inp">Benutzername</label>
                 <input type="text" name="username" id="username-inp" autocomplete="username">
                 <label for="password-inp">Passwort</label>
@@ -23,10 +25,11 @@
                 <label class="checkbox-label" for="stayloggedin-inp">Angemeldet bleiben?</label>
                 <input type="checkbox" name="stayloggedin" id="stayloggedin-inp">
                 <button type="submit">Anmelden</button>
-            </div>
 
-        </form>
+            </form>
+        </div>
     </main>
     <footer data-load="true"></footer>
 </body>
+
 </html>

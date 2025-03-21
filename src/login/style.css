@@ -5,6 +5,8 @@ main {
 
 #loginForm {
 
+    width: fit-content;
+
     * {
         display: block;
     }
@@ -14,14 +16,24 @@ main {
     }
 
     input {
+        margin-bottom: 1em;
+    }
+
+    input:not(#stayloggedin-inp) {
         accent-color: violet;
+        width: 100%;
     }
 
     label.checkbox-label {
         display: inline;
     }
 
+    input#stayloggedin-inp {
+        display: inline;
+    }
+
     button {
         display: block;
+        margin-block-start: 1.5em;
     }
 }

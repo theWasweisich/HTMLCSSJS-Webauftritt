@@ -36,6 +36,10 @@ export function setData(data: object) {
             console.log("saved");
         });
     });
+};
+
+export function isAuthTokenValid(token: string) {
+    return true;
 }
 
 const db = new sqlite3.Database(":memory:", err => {
