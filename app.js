@@ -12,48 +12,92 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const promises_1 = __importDefault(require("node:fs/promises"));
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
+const express_session_1 = __importDefault(require("express-session"));
+const dataHandling_1 = require("./dataHandling");
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
-function getFeatureFlags() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
-    });
-}
-function getData() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return JSON.parse(yield promises_1.default.readFile('./data/data.json', { encoding: 'utf-8' }));
-    });
-}
-function setData(data) {
-    let currentDate = new Date().toISOString();
-    getData().then((currentData) => {
-        currentData[currentDate] = data;
-        let newData = JSON.stringify(currentData);
-        promises_1.default.writeFile(`./data/data.json`, newData, { encoding: 'utf-8' }).then(() => {
-            console.log("saved");
-        });
-    });
-}
-getFeatureFlags().then((value) => {
-});
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
+app.use((0, express_session_1.default)({
+    secret: "dies ist sehr geheim",
+    cookie: { maxAge: 172800 },
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(function (req, res, next) {
+    // if (
+    //     req.path.startsWith("/admin/") ||
+    //     req.path.startsWith("/api/admin/")
+    // ) {
+    //     // TODO: Implement Auth
+    //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
+    //     if (req.session.token) {
+    //         next();
+    //         return;
+    //     };
+    //     res.redirect(307, "/login/");
+    //     return
+    // }
+    next();
+});
 app.get('/', (_req, res) => {
-    res.redirect(302, "/index/");
+    res.redirect("/index/");
 });
-app.post('/api/contact/new', (req, res) => {
+app.post('/api/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    console.log(body, typeof body);
-    setData(body);
-    res.status(200).send("Hi");
-});
+    // console.log(body, typeof body);
+    console.log("New Contact Message received!");
+    const handler = new dataHandling_1.DataBaseHandling();
+    let result = yield handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
+    if (result) {
+        res.status(201).end("Done");
+    }
+    else {
+        res.status(500).end("Something went wrong");
+    }
+    ;
+}));
+app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    const handler = new dataHandling_1.DataBaseHandling();
+    if (yield handler.isUserValid(body["username"], body["password"])) {
+        req.session.token = yield handler.generateNewAuthToken();
+        res.redirect("/admin/");
+        return;
+    }
+    req.session.token = undefined;
+    res.status(401).send("Invalid");
+}));
+app.post('/api/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    const handler = new dataHandling_1.DataBaseHandling();
+    let usrname = body["username"];
+    let psswd = body["password"];
+    if (!(usrname && psswd)) {
+        res.status(400).end("Username and Password need to be provided!");
+        return;
+    }
+    ;
+    let result = yield handler.createUser(usrname, psswd);
+    if (result) {
+        res.status(201).end("User created");
+    }
+    else {
+        res.status(500).end("Something went wrong :(");
+    }
+}));
+app.get("/api/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("Requested Messages!");
+    const handler = new dataHandling_1.DataBaseHandling();
+    let result = yield handler.getContactMessages();
+    res.status(200).json(result);
+}));
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
     console.log(`Listening on Port ${port}`);

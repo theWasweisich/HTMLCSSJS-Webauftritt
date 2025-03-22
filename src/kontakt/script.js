@@ -154,7 +154,7 @@ class FormMaster {
         return __awaiter(this, void 0, void 0, function* () {
             var data = {
                 "name": this.elements.nameInp.value,
-                "prenme": this.elements.prenameInp.value,
+                "prename": this.elements.prenameInp.value,
                 "email": this.elements.emailInp.value,
                 "topic": this.elements.topicSel.value,
                 "shortMsg": this.elements.shortInp.value,

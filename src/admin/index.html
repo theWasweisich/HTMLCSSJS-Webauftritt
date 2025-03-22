@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page</title>
+
+    <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="/assets/global/global.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <nav data-load="true"></nav>
+    <main>
+        <header>
+            <div class="wrapper-padding">
+                <h1>Admin-Seite</h1>
+            </div>
+        </header>
+        <div class="wrapper-padding">
+            <section class="messages-container">
+                <h2>Kontaktanfragen</h2>
+                <div id="contactMsg-output">
+                </div>
+            </section>
+        </div>
+        <div class="wrapper-padding">
+            <section class="product-view">
+                <h2>Produkte</h2>
+                <div id="products-output">
+                    
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer data-load="true"></footer>
+</body>
+<template id="message-template">
+    <div class="message">
+        <div class="message-header">
+            <h3 data-field="timestamp"></h3>
+        </div>
+        <div class="message-content">
+            <dt>Name</dt>
+            <dd>
+                <p data-field="name"></p>
+            </dd>
+            <dt>Email</dt>
+            <dd>
+                <a target="_blank" href="" data-field="email"></a>
+            </dd>
+            <dt>Thema</dt>
+            <dd>
+                <p data-field="topic"></p>
+            </dd>
+            <dt>Kurzbeschreibung</dt>
+            <dd>
+                <p data-field="short"></p>
+            </dd>
+            <dt>Nachricht</dt>
+            <dd>
+                <p data-field="message"></p>
+            </dd>
+        </div>
+    </div>
+</template>
+</html>
