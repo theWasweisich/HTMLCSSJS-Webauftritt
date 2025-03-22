@@ -9,23 +9,54 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class MessagesViewer {
-    constructor(messages, displayContainer) {
-        this.messages = messages;
+    constructor(displayContainer, callback) {
         this.displayContainer = displayContainer;
+        this.messages = [];
         this.messagesElems = [];
-        this.setup();
+        this.setup(callback);
     }
-    setup() {
-        console.groupCollapsed("Messages");
-        console.log(this.messages);
-        console.groupEnd();
-        for (const message of this.messages) {
-            console.count("Message");
-            let toappend = this.setTemplateFields(message);
-            let done = this.displayContainer.appendChild(toappend);
-            console.log(done);
-            this.messagesElems.push(done);
+    setup(callback) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Setup");
+            let resp = yield this.getContactMessages();
+            let json = yield resp.json();
+            this.messages = this.parseMessagesResponse(json);
+            this.displayContainer.innerHTML = "";
+            for (const message of this.messages) {
+                let toappend = this.setTemplateFields(message);
+                let done = this.displayContainer.appendChild(toappend);
+                console.log(done);
+                this.messagesElems.push(done);
+            }
+            ;
+            if (callback) {
+                callback();
+            }
+        });
+    }
+    /**
+     * Parses the requested Messages
+     * @param json_ The response taken from getContactMessages().json()
+     * @returns Every received Message
+     */
+    parseMessagesResponse(json_) {
+        let msgs = new Array;
+        let timestamps = Object.keys(json_);
+        console.groupCollapsed("Parsing");
+        for (const timestamp of timestamps) {
+            let msg = json_[timestamp];
+            msg.timestamp = new Date(msg.timestamp);
+            msgs.push(msg);
+            console.debug(msg);
         }
+        console.groupEnd();
+        return msgs;
+    }
+    getContactMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let resp = yield fetch("/api/admin/contact/get");
+            return resp;
+        });
     }
     setTemplateFields(message) {
         const template = document.getElementById("message-template");
@@ -49,37 +80,36 @@ class MessagesViewer {
             else if (elem.dataset.field === "message") {
                 elem.innerText = message.longMsg;
             }
+            else if (elem.dataset.field === "timestamp") {
+                elem.innerText = message.timestamp.toLocaleString();
+            }
         });
         return toappend;
     }
 }
-function getContactMessages() {
-    return __awaiter(this, void 0, void 0, function* () {
-        let resp = yield fetch("/api/admin/contact/get");
-        return resp;
-    });
-}
-/**
- * Parses the requested Messages
- * @param json_ The response taken from getContactMessages().json()
- * @returns Every received Message
- */
-function parseMessagesResponse(json_) {
-    let msgs = new Array;
-    let timestamps = Object.keys(json_);
-    for (const timestamp of timestamps) {
-        let msg = json_[timestamp];
-        msg.timestamp = new Date(timestamp);
-        msgs.push(msg);
+class ViewerManager extends MessagesViewer {
+    constructor(displayContainer) {
+        super(displayContainer, () => { this.createListeners(); });
+        this.visibleMessage = null;
+        this.createListeners();
     }
-    return msgs;
+    createListeners() {
+        if (this.messagesElems.length !== this.messages.length) {
+            throw new Error("Was ist denn hiiiiiiiieeeer los?");
+        }
+        ;
+        console.log("Messages Elems:");
+        console.log(this.messagesElems);
+        this.messagesElems.forEach((elem) => {
+            let headerElem = elem.querySelector(".message-header");
+            headerElem.addEventListener('click', (ev) => { this.clickListener(ev, elem); });
+        });
+    }
+    ;
+    clickListener(ev, elem) {
+        this.visibleMessage = elem.classList.toggle("open") ? elem : null;
+    }
 }
-let contactsSection = document.getElementById("request-contacts");
-let requestButton = contactsSection.querySelector("button");
 const msgsOutputSection = document.getElementById("contactMsg-output");
 var viewer;
-requestButton.addEventListener('click', (ev) => __awaiter(void 0, void 0, void 0, function* () {
-    let msgs = yield (yield getContactMessages()).json();
-    let messages = parseMessagesResponse(msgs);
-    viewer = new MessagesViewer(messages, msgsOutputSection);
-}));
+viewer = new ViewerManager(msgsOutputSection);

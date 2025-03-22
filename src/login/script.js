@@ -16,7 +16,7 @@ class LoginFormHandler {
         this.setup();
     }
     setup() {
-        this.loginFormRoot.addEventListener("submit", this.handleSubmitEvent);
+        this.loginFormRoot.addEventListener("submit", ev => { this.handleSubmitEvent(ev); });
     }
     handleSubmitEvent(ev) {
         ev.preventDefault();
@@ -26,6 +26,7 @@ class LoginFormHandler {
             console.error("Benutzername und Passwort müssen angegeben sein!");
             return;
         }
+        this.sendToServer(username, password);
     }
     ;
     sendToServer(username, password) {
@@ -41,6 +42,15 @@ class LoginFormHandler {
                     "Content-Type": "application/json"
                 }
             });
+            if (!res.ok) {
+                console.error(yield res.text());
+                return;
+            }
+            ;
+            if (res.redirected) {
+                window.location.href = res.url;
+            }
         });
     }
 }
+const loginHandler = new LoginFormHandler();

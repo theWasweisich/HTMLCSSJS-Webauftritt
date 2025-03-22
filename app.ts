@@ -32,19 +32,19 @@ app.use(session({
 }));
 
 app.use(function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    if (
-        req.path.startsWith("/admin/") ||
-        req.path.startsWith("/api/admin/")
-    ) {
-        // TODO: Implement Auth
-        if (!req.session.token) { res.redirect(307, "/login/"); return; }
-        if (req.session.token) {
-            next();
-            return;
-        };
-        res.redirect(307, "/login/");
-        return
-    }
+    // if (
+    //     req.path.startsWith("/admin/") ||
+    //     req.path.startsWith("/api/admin/")
+    // ) {
+    //     // TODO: Implement Auth
+    //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
+    //     if (req.session.token) {
+    //         next();
+    //         return;
+    //     };
+    //     res.redirect(307, "/login/");
+    //     return
+    // }
     next();
 })
 
@@ -53,13 +53,19 @@ app.get('/', (_req, res) => {
     res.redirect("/index/");
 });
 
-app.post('/api/contact/new', (req, res) => {
+app.post('/api/contact/new', async (req, res) => {
     const body = req.body;
-    console.log(body, typeof body);
+    // console.log(body, typeof body);
+    console.log("New Contact Message received!");
 
-    dataHandling.setData(body);
+    const handler = new DataBaseHandling();
+    let result = await handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
 
-    res.status(200).send("Hi");
+    if (result) {
+        res.status(201).end("Done");
+    } else {
+        res.status(500).end("Something went wrong")
+    };
 });
 
 app.post('/api/login', async (req, res) => {
@@ -92,6 +98,15 @@ app.post('/api/users/new', async (req, res) => {
         res.status(500).end("Something went wrong :(");
     }
 });
+
+app.get("/api/admin/contact/get", async (req, res) => {
+    console.log("Requested Messages!")
+    const handler = new DataBaseHandling();
+
+    let result = await handler.getContactMessages();
+
+    res.status(200).json(result);
+})
 
 app.use(express.static("src/"));
 app.listen(port, () => {

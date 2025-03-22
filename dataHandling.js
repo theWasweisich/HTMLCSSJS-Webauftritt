@@ -182,6 +182,64 @@ class DataBaseHandling {
             });
         });
     }
+    getContactMessages() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const db = this.openDB();
+            const stmt = "SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages";
+            let result = [];
+            return new Promise((resolve, reject) => {
+                db.serialize(() => {
+                    db.each(stmt, (err, row) => {
+                        if (err) {
+                            console.error(err);
+                        }
+                        ;
+                        if (row) {
+                            result.push(row);
+                        }
+                        ;
+                    }, (err, count) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        ;
+                        resolve(result);
+                    });
+                });
+            });
+        });
+    }
+    ;
+    /**
+     *
+     * @param name message data
+     * @param prename message data
+     * @param email message data
+     * @param topic message data
+     * @param shortMsg message data
+     * @param longMsg message data
+     * @returns Promise resolves to true when insertion was successfull, or rejects with the given error
+     */
+    newContactMessage(name, prename, email, topic, shortMsg, longMsg) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // console.log(name, prename, email, topic, shortMsg, longMsg);
+            const db = this.openDB();
+            const stmt = "INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            return new Promise((resolve, reject) => {
+                db.serialize(() => {
+                    db.run(stmt, [new Date().toISOString(), name, prename, email, topic, shortMsg, longMsg], (err) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        ;
+                        resolve(true);
+                    });
+                });
+            });
+        });
+    }
 }
 exports.DataBaseHandling = DataBaseHandling;
 DataBaseHandling.filename = "database.db";

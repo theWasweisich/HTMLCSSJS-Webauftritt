@@ -1,11 +1,52 @@
 
+* {
+    interpolate-size: allow-keywords;
+}
+
+#contactMsg-output {
+    max-width: 100%;
+}
 
 .message {
-    margin-block: 2em;
-    padding: 1em;
+    margin-block: .5em;
     background-color: grey;
 }
 
-.message dt {
+.message-header {
+    background-color: darkgray;
+    padding: 1em;
+}
+
+.message-content {
+    padding-inline: 1em;
+}
+
+.message .message-content dt {
     font-weight: bold;
+}
+
+.message-content {
+    max-width: 100%;
+}
+
+.message h3 {
+    margin: 0;
+}
+
+[data-field="message"] {
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+    white-space-collapse: collapse;
+}
+
+.message-content {
+    transition: all 0.5s;
+    height: 100%;
+    max-height: fit-content;
+    width: 100%;
+    overflow-y: hidden;
+}
+
+.message:not(.open) .message-content {
+    max-height: 0;
 }

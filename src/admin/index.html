@@ -15,43 +15,46 @@
     <nav data-load="true"></nav>
     <main>
         <header>
-            <h1>Admin-Seite</h1>
+            <div class="wrapper-padding">
+                <h1>Admin-Seite</h1>
+            </div>
         </header>
-        <section id="request-contacts">
-            <h2>Kontakte anfordern</h2>
-            <button>Anfordern</button>
-        </section>
-        <section id="contactMsg-output">
-            <template id="message-template">
-                <div class="message">
-                    <dt>Name</dt>
-                    <dd>
-                        <p data-field="name"></p>
-                    </dd>
-
-                    <dt>Email</dt>
-                    <dd>
-                        <a target="_blank" href="" data-field="email"></a>
-                    </dd>
-
-                    <dt>Thema</dt>
-                    <dd>
-                        <p data-field="topic"></p>
-                    </dd>
-
-                    <dt>Kurzbeschreibung</dt>
-                    <dd>
-                        <p data-field="short"></p>
-                    </dd>
-
-                    <dt>Nachricht</dt>
-                    <dd>
-                        <p data-field="message"></p>
-                    </dd>
-                </div>
-            </template>
-        </section>
+        <div class="wrapper-padding">
+            <div class="messages-container">
+                <section id="contactMsg-output">
+                </section>
+            </div>
+        </div>
     </main>
     <footer data-load="true"></footer>
 </body>
+<template id="message-template">
+    <div class="message">
+        <div class="message-header">
+            <h3 data-field="timestamp"></h3>
+        </div>
+        <div class="message-content">
+            <dt>Name</dt>
+            <dd>
+                <p data-field="name"></p>
+            </dd>
+            <dt>Email</dt>
+            <dd>
+                <a target="_blank" href="" data-field="email"></a>
+            </dd>
+            <dt>Thema</dt>
+            <dd>
+                <p data-field="topic"></p>
+            </dd>
+            <dt>Kurzbeschreibung</dt>
+            <dd>
+                <p data-field="short"></p>
+            </dd>
+            <dt>Nachricht</dt>
+            <dd>
+                <p data-field="message"></p>
+            </dd>
+        </div>
+    </div>
+</template>
 </html>

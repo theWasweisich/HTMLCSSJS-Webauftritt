@@ -9,7 +9,7 @@ class LoginFormHandler {
     }
 
     private setup() {
-        this.loginFormRoot.addEventListener("submit", this.handleSubmitEvent)
+        this.loginFormRoot.addEventListener("submit", ev => { this.handleSubmitEvent(ev) });
     }
 
     private handleSubmitEvent(ev: SubmitEvent) {
@@ -23,6 +23,7 @@ class LoginFormHandler {
             return;
         }
 
+        this.sendToServer(username, password);
     };
     
     private async sendToServer(username: string, password: string) {
@@ -38,5 +39,16 @@ class LoginFormHandler {
                 "Content-Type": "application/json"
             }
         });
+        if (!res.ok) {
+            console.error(await res.text());
+            return;
+        };
+
+        if (res.redirected) {
+            window.location.href = res.url;
+        }
     }
 }
+
+
+const loginHandler = new LoginFormHandler();
