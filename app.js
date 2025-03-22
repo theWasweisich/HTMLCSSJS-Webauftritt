@@ -26,7 +26,7 @@ app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172800 }, // Das sind 2 Tage
+    cookie: { maxAge: 172800 },
     resave: false,
     saveUninitialized: false
 }));
@@ -67,6 +67,24 @@ app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
     req.session.token = undefined;
     res.status(401).send("Invalid");
+}));
+app.post('/api/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    const handler = new dataHandling_1.DataBaseHandling();
+    let usrname = body["username"];
+    let psswd = body["password"];
+    if (!(usrname && psswd)) {
+        res.status(400).end("Username and Password need to be provided!");
+        return;
+    }
+    ;
+    let result = yield handler.createUser(usrname, psswd);
+    if (result) {
+        res.status(201).end("User created");
+    }
+    else {
+        res.status(500).end("Something went wrong :(");
+    }
 }));
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {

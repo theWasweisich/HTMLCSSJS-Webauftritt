@@ -74,7 +74,24 @@ app.post('/api/login', async (req, res) => {
 
     req.session.token = undefined;
     res.status(401).send("Invalid");
-})
+});
+
+app.post('/api/users/new', async (req, res) => {
+    const body = req.body;
+    const handler = new DataBaseHandling();
+
+    let usrname = body["username"];
+    let psswd = body["password"];
+
+    if (!(usrname && psswd)) { res.status(400).end("Username and Password need to be provided!"); return; };
+
+    let result = await handler.createUser(usrname, psswd);
+    if (result) {
+        res.status(201).end("User created");
+    } else {
+        res.status(500).end("Something went wrong :(");
+    }
+});
 
 app.use(express.static("src/"));
 app.listen(port, () => {
