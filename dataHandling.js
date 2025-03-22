@@ -20,7 +20,9 @@ const uuid_1 = require("uuid");
 sqlite3_1.default.verbose();
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
-        return JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
+        const feature__flags = JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
+        console.log(feature__flags);
+        return feature__flags;
     });
 }
 exports.getFeatureFlags = getFeatureFlags;

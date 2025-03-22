@@ -2,7 +2,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import session from "express-session";
-import { FeatureFlags, getData, getFeatureFlags, setData, DataBaseHandling } from "./dataHandling";
+import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
 const app = express();
 
 declare module 'express-session' {
