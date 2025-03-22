@@ -45,59 +45,33 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const dataHandling = __importStar(require("./dataHandling"));
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
-const uuid_1 = require("uuid");
 const express_session_1 = __importDefault(require("express-session"));
+const dataHandling_1 = require("./dataHandling");
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
-const userAccounts = [
-    {
-        username: "admin",
-        password: "password",
-        type: "ADMIN"
-    }
-];
-var valid_auth_tokens = [];
-function generateAuthToken() {
-    let token = (0, uuid_1.v4)();
-    valid_auth_tokens.push(token);
-    return token;
-}
-function isAuthTokenValid(token) {
-    return valid_auth_tokens.includes(token);
-}
-function checkAuthCredentials(username, password) {
-    for (const user of userAccounts) {
-        if (user.username === username) {
-            return user.password === password;
-        }
-    }
-    return false;
-}
-dataHandling.getFeatureFlags().then(value => {
-});
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 60000 },
+    cookie: { maxAge: 172800 },
     resave: false,
     saveUninitialized: false
 }));
 app.use(function (req, res, next) {
     if (req.path.startsWith("/admin/") ||
         req.path.startsWith("/api/admin/")) {
+        // TODO: Implement Auth
         if (!req.session.token) {
             res.redirect(307, "/login/");
             return;
         }
-        if (req.session.token && isAuthTokenValid(req.session.token)) {
+        if (req.session.token) {
             next();
             return;
         }
@@ -113,24 +87,38 @@ app.get('/', (_req, res) => {
 app.post('/api/contact/new', (req, res) => {
     const body = req.body;
     console.log(body, typeof body);
-    dataHandling.setData(body);
+    (0, dataHandling_1.setData)(body);
     res.status(200).send("Hi");
 });
-app.get('/api/admin/contact/get', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let data = yield dataHandling.getData();
-    res.send(JSON.stringify(data));
-}));
-app.post("/api/login", (req, res) => {
+app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (checkAuthCredentials(body.username, body.password)) {
-        req.session.token = generateAuthToken();
-        res.redirect(303, "/admin/");
+    const handler = new dataHandling_1.DataBaseHandling();
+    if (yield handler.isUserValid(body["username"], body["password"])) {
+        req.session.token = yield handler.generateNewAuthToken();
+        res.redirect("/admin/");
+        return;
     }
-    else {
-        res.status(401).send("Ne, das passt nicht!");
+    req.session.token = undefined;
+    res.status(401).send("Invalid");
+}));
+app.post('/api/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    const handler = new dataHandling_1.DataBaseHandling();
+    let usrname = body["username"];
+    let psswd = body["password"];
+    if (!(usrname && psswd)) {
+        res.status(400).end("Username and Password need to be provided!");
+        return;
     }
     ;
-});
+    let result = yield handler.createUser(usrname, psswd);
+    if (result) {
+        res.status(201).end("User created");
+    }
+    else {
+        res.status(500).end("Something went wrong :(");
+    }
+}));
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
     console.log(`Listening on Port ${port}`);

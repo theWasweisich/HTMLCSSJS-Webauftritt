@@ -1,9 +1,9 @@
 
-import * as dataHandling from './dataHandling';
 import express from 'express';
 import morgan from 'morgan';
-import { v4 as uuidV4 } from "uuid";
 import session from "express-session";
+import { FeatureFlags, getData, getFeatureFlags, setData, DataBaseHandling } from "./dataHandling";
+const app = express();
 
 declare module 'express-session' {
     interface SessionData {
@@ -11,8 +11,6 @@ declare module 'express-session' {
     }
 }
 
-
-const app = express();
 
 var port = 3000;
 
@@ -22,47 +20,13 @@ if (customPort !== undefined) {
     port = Number(customPort);
 }
 
-const userAccounts: Array<{ username: string, password: string, type?: "ADMIN" | "USER" }> = [
-    {
-        username: "admin",
-        password: "password",
-        type: "ADMIN"
-    }
-]
-
-
-var valid_auth_tokens: Array<string> = [];
-
-function generateAuthToken(): string {
-    let token = uuidV4();
-    valid_auth_tokens.push(token);
-    return token;
-}
-
-function isAuthTokenValid(token: string): boolean {
-    return valid_auth_tokens.includes(token);
-}
-
-function checkAuthCredentials(username: string, password: string) {
-    for (const user of userAccounts) {
-        if (user.username === username) {
-            return user.password === password;
-        }
-    }
-    return false;
-}
-
-
-dataHandling.getFeatureFlags().then(value => {
-
-})
 
 
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(session({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 60000 },
+    cookie: { maxAge: 172_800 }, // Das sind 2 Tage
     resave: false,
     saveUninitialized: false
 }));
@@ -72,8 +36,9 @@ app.use(function (req: express.Request, res: express.Response, next: express.Nex
         req.path.startsWith("/admin/") ||
         req.path.startsWith("/api/admin/")
     ) {
+        // TODO: Implement Auth
         if (!req.session.token) { res.redirect(307, "/login/"); return; }
-        if (req.session.token && isAuthTokenValid(req.session.token)) {
+        if (req.session.token) {
             next();
             return;
         };
@@ -95,23 +60,38 @@ app.post('/api/contact/new', (req, res) => {
     dataHandling.setData(body);
 
     res.status(200).send("Hi");
-})
+});
 
-app.get('/api/admin/contact/get', async (req: express.Request, res: express.Response) => {
-    let data = await dataHandling.getData();
-    res.send(JSON.stringify(data));
-})
-
-app.post("/api/login", (req, res) => {
+app.post('/api/login', async (req, res) => {
     const body = req.body;
+    const handler = new DataBaseHandling();
+    
+    if (await handler.isUserValid(body["username"], body["password"])) {
+        req.session.token = await handler.generateNewAuthToken();
+        res.redirect("/admin/");
+        return;
+    }
 
-    if (checkAuthCredentials(body.username, body.password)) {
-        req.session.token = generateAuthToken();
-        res.redirect(303, "/admin/");
+    req.session.token = undefined;
+    res.status(401).send("Invalid");
+});
+
+app.post('/api/users/new', async (req, res) => {
+    const body = req.body;
+    const handler = new DataBaseHandling();
+
+    let usrname = body["username"];
+    let psswd = body["password"];
+
+    if (!(usrname && psswd)) { res.status(400).end("Username and Password need to be provided!"); return; };
+
+    let result = await handler.createUser(usrname, psswd);
+    if (result) {
+        res.status(201).end("User created");
     } else {
-        res.status(401).send("Ne, das passt nicht!");
-    };
-})
+        res.status(500).end("Something went wrong :(");
+    }
+});
 
 app.use(express.static("src/"));
 app.listen(port, () => {

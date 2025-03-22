@@ -8,37 +8,39 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class LoginFormHandling {
-    constructor(formRoot, endpoint) {
-        this.formRoot = formRoot;
+class LoginFormHandler {
+    constructor() {
+        this.loginFormRoot = document.getElementById("loginForm");
+        this.usernameInp = document.getElementById("username-inp");
+        this.passwordInp = document.getElementById("password-inp");
         this.setup();
     }
     setup() {
-        this.formRoot.addEventListener('submit', this.submitHandler);
+        this.loginFormRoot.addEventListener("submit", this.handleSubmitEvent);
+    }
+    handleSubmitEvent(ev) {
+        ev.preventDefault();
+        let username = this.usernameInp.value;
+        let password = this.passwordInp.value;
+        if (username.length === 0 || password.length === 0) {
+            console.error("Benutzername und Passwort müssen angegeben sein!");
+            return;
+        }
     }
     ;
-    submitHandler(ev) {
+    sendToServer(username, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            ev.preventDefault();
-            const usernameInp = document.getElementById("username-inp");
-            const passwordInp = document.getElementById("password-inp");
-            const formData = JSON.stringify({ username: usernameInp.value,
-                password: passwordInp.value
+            let reqbody = JSON.stringify({
+                username: username,
+                password: password
             });
-            const defaultEndpoint = "/api/login";
-            console.log(`Sending: "${formData}"`);
-            let response = yield fetch(defaultEndpoint, {
-                body: formData,
+            let res = yield fetch("/api/login", {
+                body: reqbody,
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
-            if (response.redirected) {
-                window.location.href = response.url;
-            }
         });
     }
 }
-const loginForm = document.getElementById('loginForm');
-const handlr = new LoginFormHandling(loginForm, "/api/admin/login");

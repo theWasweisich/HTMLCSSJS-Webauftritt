@@ -53,7 +53,7 @@ class MessagesViewer {
             } else if (elem.dataset.field === "short") {
                 elem.innerText = message.shortMsg;
             } else if (elem.dataset.field === "message") {
-                (elem as HTMLTextAreaElement).value = message.longMsg;
+                elem.innerText = message.longMsg;
             }
         });
 

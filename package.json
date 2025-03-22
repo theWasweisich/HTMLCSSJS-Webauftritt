@@ -1,19 +1,23 @@
 {
   "dependencies": {
     "@types/express-session": "^1.18.1",
+    "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "morgan": "^1.10.0",
+    "sqlite3": "^5.1.7",
     "uuid": "^11.1.0"
   },
   "scripts": {
     "start": "node app.js"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.10",
+    "@types/sqlite3": "^5.1.0",
     "ts-node": "^10.9.2"
   }
 }

@@ -1,0 +1,11 @@
+
+
+.message {
+    margin-block: 2em;
+    padding: 1em;
+    background-color: grey;
+}
+
+.message dt {
+    font-weight: bold;
+}

@@ -1,10 +1,8 @@
 
 #loginForm {
+
     width: fit-content;
-    margin: 3rem;
-    padding: 2.5em;
-    outline: .2em dashed black;
-    
+
     * {
         display: block;
         font-size: 1em;
@@ -16,26 +14,28 @@
     }
 
     input {
+        margin-bottom: 1em;
+    }
+
+    input:not(#stayloggedin-inp) {
         accent-color: violet;
+        width: 100%;
     }
 
     label.checkbox-label {
         display: inline;
     }
 
-    input.checkbox-input {
+    input#stayloggedin-inp {
         display: inline;
-    }
-
-    #password-inp {
-        margin-bottom: 1em;
     }
 
     button {
         display: block;
+        margin-block-start: 1.5em;
     }
 }
 
-.filler {
-    height: 26em;
+#login-section {
+    margin-bottom: 2em;
 }

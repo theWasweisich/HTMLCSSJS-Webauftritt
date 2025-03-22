@@ -47,7 +47,7 @@ class MessagesViewer {
                 elem.innerText = message.shortMsg;
             }
             else if (elem.dataset.field === "message") {
-                elem.value = message.longMsg;
+                elem.innerText = message.longMsg;
             }
         });
         return toappend;

@@ -1,48 +1,42 @@
 
 
-class LoginFormHandling {
-    public formRoot: HTMLFormElement;
-
-    constructor(formRoot: HTMLFormElement, endpoint: string) {
-        this.formRoot = formRoot;
-
+class LoginFormHandler {
+    private loginFormRoot = document.getElementById("loginForm") as HTMLFormElement;
+    private usernameInp = document.getElementById("username-inp") as HTMLInputElement;
+    private passwordInp = document.getElementById("password-inp") as HTMLInputElement;
+    constructor() {
         this.setup();
     }
 
+    private setup() {
+        this.loginFormRoot.addEventListener("submit", this.handleSubmitEvent)
+    }
 
-    setup() {
-        this.formRoot.addEventListener('submit', this.submitHandler);
-    };
-
-    private async submitHandler(ev: SubmitEvent) {
+    private handleSubmitEvent(ev: SubmitEvent) {
         ev.preventDefault();
-        const usernameInp = document.getElementById("username-inp") as HTMLInputElement;
-        const passwordInp = document.getElementById("password-inp") as HTMLInputElement;
 
-        const formData = JSON.stringify(
-            {username: usernameInp.value,
-                password: passwordInp.value
-            }
-        );
+        let username = this.usernameInp.value;
+        let password = this.passwordInp.value;
 
-        const defaultEndpoint: string = "/api/login";
+        if (username.length === 0 || password.length === 0) {
+            console.error("Benutzername und Passwort müssen angegeben sein!");
+            return;
+        }
 
-        console.log(`Sending: "${formData}"`);
+    };
+    
+    private async sendToServer(username: string, password: string) {
+        let reqbody: string = JSON.stringify({
+            username: username,
+            password: password
+        });
 
-        let response = await fetch(defaultEndpoint, {
-            body: formData,
+        let res = await fetch("/api/login", {
+            body: reqbody,
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             }
         });
-
-        if (response.redirected) {
-            window.location.href = response.url;
-        }
     }
 }
-
-const loginForm = document.getElementById('loginForm') as HTMLFormElement;
-
-const handlr = new LoginFormHandling(loginForm, "/api/admin/login");
