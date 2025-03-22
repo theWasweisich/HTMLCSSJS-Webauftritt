@@ -160,7 +160,7 @@ class FormMaster {
     private async sendData() {
         var data = {
             "name": this.elements.nameInp.value,
-            "prenme": this.elements.prenameInp.value,
+            "prename": this.elements.prenameInp.value,
             "email": this.elements.emailInp.value,
             "topic": this.elements.topicSel.value,
             "shortMsg": this.elements.shortInp.value,
