@@ -52,8 +52,19 @@ export function setData(data: object) {
 export function isAuthTokenValid(token: string) {
     return true;
 }
+type ContactMessageData = {
+    timestamp: Date,
+    name: string,
+    prename: string,
+    email: string,
+    topic: string,
+    shortMsg: string,
+    longMsg: string
+}
 
 export class DataBaseHandling {
+
+
     static filename: string = "database.db"
     static saltRounds: number = 10;
 
@@ -118,22 +129,19 @@ export class DataBaseHandling {
         return newToken;
     }
 
-    public async getContactMessages(): Promise<contactMessage[]> {
+    public async getContactMessages(): Promise<ContactMessageData[]> {
         const db = this.openDB();
-        const stmt = "SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages";
+        const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
         let result: Array<contactMessage> = [];
 
-        return new Promise((resolve, reject) => {
-            db.serialize(() => {
-                db.each(stmt, (err, row: contactMessage | undefined) => {
-                    if (err) { console.error(err) };
-                    if (row) { result.push(row) };
-                }, (err, count) => {
-                    if (err) { reject(err); return };
-                    resolve(result);
-                });
-            });
-        })
+        let data = stmt.all() as ({id: string} & ContactMessageData)[];
+
+        data.forEach((row) => {
+            let {id: _, ...rest} = row;
+            result.push(rest);
+        });
+
+        return result;
     };
 
     /**
@@ -155,16 +163,12 @@ export class DataBaseHandling {
         longMsg: string) {
         // console.log(name, prename, email, topic, shortMsg, longMsg);
         const db = this.openDB();
-        const stmt = "INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        const stmt = db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        const timestamp = new Date().toISOString();
 
-        return new Promise((resolve, reject) => {
-            db.serialize(() => {
-                db.run(stmt, [new Date().toISOString(), name, prename, email, topic, shortMsg, longMsg], (err) => {
-                    if (err) { reject(err); return; };
-                    resolve(true);
-                })
-            })
-        })
+        const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
+        if (dbResult.changes === 1) { return true; }
+        return false;
     }
 
     public async newProduct(
@@ -178,9 +182,29 @@ export class DataBaseHandling {
             value: string | number
         }[]
     ) {
+        const db = this.openDB();
+        const imgId = this.newImage(image_url, image_alt);
+        const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
+        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+
+        let productres = productInsertStmt.run(name, description, imgId);
+        if (productres.changes < 1) { throw new Error("Error during product insertion") };
+        let productId = productres.lastInsertRowid;
+
+        if (!stats) { return productId }
+
+        stats.forEach((stat) => {
+            statInsertStmt.run(stat.name, stat.type, stat.value, productId);
+        });
+        return productId;
     }
 
     private newImage(filename: string, alt: string) {
         const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+
+        let dbres = insertStmt.run(filename, alt);
+        if (dbres.changes === 1) { return dbres.lastInsertRowid }
+        throw Error("Error during Image insertion");
     }
 }
