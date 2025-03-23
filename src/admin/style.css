@@ -19,10 +19,34 @@
 .message-header {
     background-color: darkgray;
     padding: 1em;
+
+    .grid-wrapper {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 1em;
+    }
 }
 
 .message-content {
     padding-inline: 1em;
+
+    .delete-btn {
+        margin-bottom: 1em;
+    }
+}
+
+.message-content .delete-btn {
+    min-width: 2em;
+}
+
+
+#contact-bulk-section {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2em;
+    justify-content: right;
+    align-items: center;
+    margin: 1em;
 }
 
 .message .message-content dt {

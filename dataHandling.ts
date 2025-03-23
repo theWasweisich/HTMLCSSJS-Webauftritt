@@ -53,6 +53,7 @@ export function isAuthTokenValid(token: string) {
     return true;
 }
 type ContactMessageData = {
+    id?: number,
     timestamp: Date,
     name: string,
     prename: string,
@@ -103,9 +104,15 @@ export class DataBaseHandling {
     public async isUserValid(username: string, password: string): Promise<boolean> {
         const db = this.openDB();
         const selectStmt = db.prepare("SELECT username, hash FROM users WHERE username = ?");
-        const user = selectStmt.get(username) as {username: string, hash: string};
-        if (await bcrypt.compare(password, user.hash)) {
-            return true;
+        const user = selectStmt.get(username) as {username: string, hash: string} | undefined;
+        if (!user) return false;
+        try {
+            if (await bcrypt.compare(password, user.hash)) {
+                return true;
+            }
+        } catch (e) {
+            console.error(e);
+            return false
         }
         return false;
     };
@@ -132,16 +139,10 @@ export class DataBaseHandling {
     public async getContactMessages(): Promise<ContactMessageData[]> {
         const db = this.openDB();
         const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
-        let result: Array<contactMessage> = [];
 
-        let data = stmt.all() as ({id: string} & ContactMessageData)[];
+        let data = stmt.all() as ContactMessageData[];
 
-        data.forEach((row) => {
-            let {id: _, ...rest} = row;
-            result.push(rest);
-        });
-
-        return result;
+        return data;
     };
 
     /**
@@ -171,7 +172,19 @@ export class DataBaseHandling {
         return false;
     }
 
-    public async newProduct(
+    public deleteContactMessage(id: number) {
+        const db = this.openDB();
+        const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
+
+        let dbres = deleteStmt.run(id);
+        if (dbres.changes === 1) {
+            return true
+        } else {
+            return false
+        }
+    }
+
+    public newProduct(
         name: string,
         description: string,
         image_url: string,

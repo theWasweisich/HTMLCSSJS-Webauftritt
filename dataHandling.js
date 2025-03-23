@@ -15,13 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataBaseHandling = exports.isAuthTokenValid = exports.setData = exports.getData = exports.getFeatureFlags = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
+const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const uuid_1 = require("uuid");
 sqlite3_1.default.verbose();
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         const feature__flags = JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
-        console.log(feature__flags);
         return feature__flags;
     });
 }
@@ -54,18 +54,9 @@ class DataBaseHandling {
     }
     ;
     openDB() {
-        let db = new sqlite3_1.default.Database(DataBaseHandling.filename, err => {
-            if (err) {
-                console.error("Database connection failed!");
-                console.warn(err.name);
-                console.warn(err.message);
-            }
-            else {
-                console.log("Database connected successfully!");
-            }
-            ;
-        });
-        return db;
+        let better_db = new better_sqlite3_1.default(DataBaseHandling.filename, { verbose: console.debug });
+        better_db.pragma('journal_mode = WAL');
+        return better_db;
     }
     ;
     /**
@@ -79,23 +70,13 @@ class DataBaseHandling {
             const db = this.openDB();
             const insertSTMT = "INSERT INTO users (username, hash) VALUES (?, ?)";
             const hashedPassword = yield bcrypt_1.default.hash(password, DataBaseHandling.saltRounds);
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    const stmt = db.prepare(insertSTMT);
-                    stmt.run(username, hashedPassword);
-                    db.run(insertSTMT, [username, password]);
-                    stmt.finalize((err) => {
-                        db.close();
-                        if (err) {
-                            reject(err);
-                        }
-                        else {
-                            resolve(true);
-                        }
-                    });
-                });
-                db.close();
-            });
+            const stmt = db.prepare(insertSTMT);
+            let info = stmt.run(username, hashedPassword);
+            if (info.changes !== 1) {
+                return false;
+            }
+            ;
+            return true;
         });
     }
     /**
@@ -107,109 +88,46 @@ class DataBaseHandling {
     isUserValid(username, password) {
         return __awaiter(this, void 0, void 0, function* () {
             const db = this.openDB();
-            const selectStmt = "SELECT username, hash FROM users WHERE username = ?";
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    db.get(selectStmt, [username], (err, row) => __awaiter(this, void 0, void 0, function* () {
-                        if (err) {
-                            reject(err);
-                            db.close();
-                            return;
-                        }
-                        if (!row) {
-                            resolve(false);
-                            db.close();
-                            return;
-                        }
-                        ;
-                        if (yield bcrypt_1.default.compare(password, row.hash)) {
-                            resolve(true);
-                            db.close();
-                            return;
-                        }
-                        else {
-                            resolve(false);
-                            db.close();
-                            return;
-                        }
-                    }));
-                });
-            });
+            const selectStmt = db.prepare("SELECT username, hash FROM users WHERE username = ?");
+            const user = selectStmt.get(username);
+            if (!user)
+                return false;
+            try {
+                if (yield bcrypt_1.default.compare(password, user.hash)) {
+                    return true;
+                }
+            }
+            catch (e) {
+                console.error(e);
+                return false;
+            }
+            return false;
         });
     }
     ;
     isAuthTokenKnown(token) {
         return __awaiter(this, void 0, void 0, function* () {
             const db = this.openDB();
-            const selectStmt = "SELECT id FROM authTokens WHERE token=?";
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    db.get(selectStmt, [token], (err, row) => {
-                        if (err) {
-                            reject(err);
-                            db.close();
-                            return;
-                        }
-                        if (!row) {
-                            resolve(false);
-                            db.close();
-                            return;
-                        }
-                        resolve(true);
-                        db.close();
-                    });
-                });
-            });
+            const selectStmt = db.prepare("SELECT id FROM authTokens WHERE token=?");
+            const answ = selectStmt.get(token);
+            return answ !== undefined;
         });
     }
     ;
     generateNewAuthToken() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const newToken = encodeURIComponent((0, uuid_1.v4)());
-            console.log("Generating new Token...");
-            return new Promise((resolve, reject) => {
-                const db = this.openDB();
-                const insertStmt = "INSERT INTO authTokens (token, insertDate) VALUES (?, ?)";
-                db.serialize(() => {
-                    db.run(insertStmt, [newToken, Date.now()], function (err) {
-                        console.log("Token has been inserted into the database");
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
-                        ;
-                        resolve(newToken);
-                    });
-                });
-            });
-        });
+        const newToken = encodeURIComponent((0, uuid_1.v4)());
+        console.log("Generating new Token...");
+        const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
+        insertStmt.run(newToken, new Date().toISOString());
+        return newToken;
     }
     getContactMessages() {
         return __awaiter(this, void 0, void 0, function* () {
             const db = this.openDB();
-            const stmt = "SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages";
-            let result = [];
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    db.each(stmt, (err, row) => {
-                        if (err) {
-                            console.error(err);
-                        }
-                        ;
-                        if (row) {
-                            result.push(row);
-                        }
-                        ;
-                    }, (err, count) => {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
-                        ;
-                        resolve(result);
-                    });
-                });
-            });
+            const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
+            let data = stmt.all();
+            return data;
         });
     }
     ;
@@ -227,20 +145,53 @@ class DataBaseHandling {
         return __awaiter(this, void 0, void 0, function* () {
             // console.log(name, prename, email, topic, shortMsg, longMsg);
             const db = this.openDB();
-            const stmt = "INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    db.run(stmt, [new Date().toISOString(), name, prename, email, topic, shortMsg, longMsg], (err) => {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
-                        ;
-                        resolve(true);
-                    });
-                });
-            });
+            const stmt = db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            const timestamp = new Date().toISOString();
+            const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
+            if (dbResult.changes === 1) {
+                return true;
+            }
+            return false;
         });
+    }
+    deleteContactMessage(id) {
+        const db = this.openDB();
+        const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
+        let dbres = deleteStmt.run(id);
+        if (dbres.changes === 1) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    newProduct(name, description, image_url, image_alt, stats) {
+        const db = this.openDB();
+        const imgId = this.newImage(image_url, image_alt);
+        const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
+        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        let productres = productInsertStmt.run(name, description, imgId);
+        if (productres.changes < 1) {
+            throw new Error("Error during product insertion");
+        }
+        ;
+        let productId = productres.lastInsertRowid;
+        if (!stats) {
+            return productId;
+        }
+        stats.forEach((stat) => {
+            statInsertStmt.run(stat.name, stat.type, stat.value, productId);
+        });
+        return productId;
+    }
+    newImage(filename, alt) {
+        const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+        let dbres = insertStmt.run(filename, alt);
+        if (dbres.changes === 1) {
+            return dbres.lastInsertRowid;
+        }
+        throw Error("Error during Image insertion");
     }
 }
 exports.DataBaseHandling = DataBaseHandling;

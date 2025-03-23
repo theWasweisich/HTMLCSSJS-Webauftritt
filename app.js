@@ -31,11 +31,12 @@ app.use((0, express_session_1.default)({
     saveUninitialized: false
 }));
 app.use(function (req, res, next) {
+    // TODO: Implement Auth
     // if (
     //     req.path.startsWith("/admin/") ||
     //     req.path.startsWith("/api/admin/")
     // ) {
-    //     // TODO: Implement Auth
+    //     
     //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
     //     if (req.session.token) {
     //         next();
@@ -66,10 +67,15 @@ app.post('/api/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
 app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     const handler = new dataHandling_1.DataBaseHandling();
-    if (yield handler.isUserValid(body["username"], body["password"])) {
-        req.session.token = yield handler.generateNewAuthToken();
-        res.redirect("/admin/");
-        return;
+    try {
+        if (yield handler.isUserValid(body["username"], body["password"])) {
+            req.session.token = handler.generateNewAuthToken();
+            res.redirect("/admin/");
+            return;
+        }
+    }
+    catch (error) {
+        res.status(401).send("Invalid :(");
     }
     req.session.token = undefined;
     res.status(401).send("Invalid");
@@ -98,6 +104,36 @@ app.get("/api/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0
     let result = yield handler.getContactMessages();
     res.status(200).json(result);
 }));
+app.post("/api/admin/products/new", (req, res) => {
+    const handler = new dataHandling_1.DataBaseHandling();
+    const body = req.body;
+    const newProduct = {
+        name: body.name,
+        description: body.description,
+        filename: body.filename,
+        alt: body.alt
+    };
+    let productId = handler.newProduct(newProduct.name, newProduct.description, newProduct.filename, newProduct.alt);
+    if (Number.isNaN(productId)) {
+        res.status(500).end("Something went wrong :(");
+    }
+    else {
+        res.status(201).end("Success");
+    }
+    ;
+});
+app.delete("/api/admin/contact/delete", (req, res) => {
+    const handler = new dataHandling_1.DataBaseHandling();
+    const body = req.body;
+    console.log(body);
+    let success = handler.deleteContactMessage(body["id"]);
+    if (success) {
+        res.status(200).end("Success");
+    }
+    else {
+        res.status(500).end(":(");
+    }
+});
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
     console.log(`Listening on Port ${port}`);
