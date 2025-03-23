@@ -138,7 +138,14 @@ app.delete("/api/admin/contact/delete", (req: express.Request, res: express.Resp
     const body = req.body;
 
     console.log(body);
-    let success = handler.deleteContactMessage(body["id"]);
+    let id: number[];
+    if (body["multiple"]) {
+        id = body["ids"];
+    } else {
+        id = [body["id"]];
+    }
+
+    let success = handler.deleteContactMessage(id);
 
     if (success) {
         res.status(200).end("Success");

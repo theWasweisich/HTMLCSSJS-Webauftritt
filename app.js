@@ -126,7 +126,14 @@ app.delete("/api/admin/contact/delete", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     console.log(body);
-    let success = handler.deleteContactMessage(body["id"]);
+    let id;
+    if (body["multiple"]) {
+        id = body["ids"];
+    }
+    else {
+        id = [body["id"]];
+    }
+    let success = handler.deleteContactMessage(id);
     if (success) {
         res.status(200).end("Success");
     }

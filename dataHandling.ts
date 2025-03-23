@@ -172,16 +172,14 @@ export class DataBaseHandling {
         return false;
     }
 
-    public deleteContactMessage(id: number) {
+    public deleteContactMessage(ids: number[]) {
         const db = this.openDB();
         const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
 
-        let dbres = deleteStmt.run(id);
-        if (dbres.changes === 1) {
-            return true
-        } else {
-            return false
+        for (const id of ids as number[]) {
+            deleteStmt.run(id);
         }
+        return true;
     }
 
     public newProduct(

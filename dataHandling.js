@@ -154,16 +154,13 @@ class DataBaseHandling {
             return false;
         });
     }
-    deleteContactMessage(id) {
+    deleteContactMessage(ids) {
         const db = this.openDB();
         const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
-        let dbres = deleteStmt.run(id);
-        if (dbres.changes === 1) {
-            return true;
+        for (const id of ids) {
+            deleteStmt.run(id);
         }
-        else {
-            return false;
-        }
+        return true;
     }
     newProduct(name, description, image_url, image_alt, stats) {
         const db = this.openDB();
