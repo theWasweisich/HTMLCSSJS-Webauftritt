@@ -1,9 +1,3 @@
-interface dbUsersRow {
-    id: number,
-    username: string,
-    hash: string
-}
-
 export interface FeatureFlags {
     accept_kontakt_msgs: {
         /**
@@ -30,24 +24,6 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
     const feature__flags = JSON.parse(await fs.readFile('./feature__flags.json', { encoding: 'utf-8' }))
     return feature__flags;
 }
-
-export async function getData() {
-    let data = JSON.parse(await fs.readFile('data/data.json', { encoding: 'utf-8' }))
-    return data;
-}
-
-export function setData(data: object) {
-    let currentDate = new Date().toISOString();
-    getData().then((currentData) => {
-
-        currentData[currentDate] = data;
-
-        let newData = JSON.stringify(currentData);
-        fs.writeFile(`./data/data.json`, newData, { encoding: 'utf-8' }).then(() => {
-            console.log("saved");
-        });
-    });
-};
 
 export function isAuthTokenValid(token: string) {
     return true;

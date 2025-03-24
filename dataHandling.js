@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = exports.isAuthTokenValid = exports.setData = exports.getData = exports.getFeatureFlags = void 0;
+exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
@@ -26,25 +26,6 @@ function getFeatureFlags() {
     });
 }
 exports.getFeatureFlags = getFeatureFlags;
-function getData() {
-    return __awaiter(this, void 0, void 0, function* () {
-        let data = JSON.parse(yield promises_1.default.readFile('data/data.json', { encoding: 'utf-8' }));
-        return data;
-    });
-}
-exports.getData = getData;
-function setData(data) {
-    let currentDate = new Date().toISOString();
-    getData().then((currentData) => {
-        currentData[currentDate] = data;
-        let newData = JSON.stringify(currentData);
-        promises_1.default.writeFile(`./data/data.json`, newData, { encoding: 'utf-8' }).then(() => {
-            console.log("saved");
-        });
-    });
-}
-exports.setData = setData;
-;
 function isAuthTokenValid(token) {
     return true;
 }

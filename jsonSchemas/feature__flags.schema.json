@@ -16,7 +16,12 @@
                 }
             },
             "required": ["serverAccept", "serverSave"]
+        },
+        "deactivateAuth": {
+            "type": "boolean",
+            "default": false,
+            "description": "Deactivates Authentication"
         }
     },
-    "required": ["accept_kontakt_msgs"]
+    "required": ["accept_kontakt_msgs", "deactivateAuth"]
 }

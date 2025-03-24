@@ -2,5 +2,6 @@
     "accept_kontakt_msgs": {
         "serverAccept": true,
         "serverSave": false
-    }
+    },
+    "deactivateAuth": false
 }
