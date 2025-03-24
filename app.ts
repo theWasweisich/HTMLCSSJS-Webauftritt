@@ -20,7 +20,7 @@ if (customPort !== undefined) {
     port = Number(customPort);
 }
 
-const feature__flags = getFeatureFlags();
+const feature__flags = await getFeatureFlags();
 
 app.use(morgan("dev"));
 app.use(express.json());
@@ -55,6 +55,9 @@ async function checkAuthMiddleware(req: express.Request, res: express.Response, 
 };
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (feature__flags.deactivateAuth) [
+        
+    ]
     checkAuthMiddleware(req, res, next);
 })
 

@@ -17,10 +17,10 @@
             },
             "required": ["serverAccept", "serverSave"]
         },
-        "deactivateAuth": {
+        "checkAuth": {
             "type": "boolean",
             "default": false,
-            "description": "Deactivates Authentication"
+            "description": "Checks Authentication"
         },
         "cookieBanner": {
             "type": "boolean",
@@ -28,5 +28,5 @@
             "description": "Activates the cookie banner"
         }
     },
-    "required": ["accept_kontakt_msgs", "deactivateAuth", "cookieBanner"]
+    "required": ["accept_kontakt_msgs", "checkAuth", "cookieBanner"]
 }

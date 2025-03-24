@@ -22,7 +22,7 @@ var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
-const feature__flags = (0, dataHandling_1.getFeatureFlags)();
+const feature__flags = await (0, dataHandling_1.getFeatureFlags)();
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
@@ -62,6 +62,8 @@ function checkAuthMiddleware(req, res, next) {
 }
 ;
 app.use((req, res, next) => {
+    if (feature__flags.deactivateAuth)
+        [];
     checkAuthMiddleware(req, res, next);
 });
 app.get('/', (_req, res) => {
