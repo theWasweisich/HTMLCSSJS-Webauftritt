@@ -21,7 +21,12 @@
             "type": "boolean",
             "default": false,
             "description": "Deactivates Authentication"
+        },
+        "cookieBanner": {
+            "type": "boolean",
+            "default": true,
+            "description": "Activates the cookie banner"
         }
     },
-    "required": ["accept_kontakt_msgs", "deactivateAuth"]
+    "required": ["accept_kontakt_msgs", "deactivateAuth", "cookieBanner"]
 }

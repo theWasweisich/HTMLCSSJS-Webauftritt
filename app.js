@@ -22,6 +22,7 @@ var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
+const feature__flags = (0, dataHandling_1.getFeatureFlags)();
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
@@ -30,22 +31,38 @@ app.use((0, express_session_1.default)({
     resave: false,
     saveUninitialized: false
 }));
-app.use(function (req, res, next) {
-    // TODO: Implement Auth
-    // if (
-    //     req.path.startsWith("/admin/") ||
-    //     req.path.startsWith("/api/admin/")
-    // ) {
-    //     
-    //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
-    //     if (req.session.token) {
-    //         next();
-    //         return;
-    //     };
-    //     res.redirect(307, "/login/");
-    //     return
-    // }
-    next();
+function checkAuthMiddleware(req, res, next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
+        if (isAuthNeeded) {
+            console.log("Auth is needed");
+            if (!req.session.token) {
+                res.redirect(307, "/login/");
+                return;
+            }
+            if (req.session.token) {
+                try {
+                    const db = new dataHandling_1.DataBaseHandling();
+                    let res = yield db.isAuthTokenKnown(req.session.token);
+                    console.log("DB res: " + res);
+                    if (res) {
+                        next();
+                        return;
+                    }
+                }
+                catch (e) {
+                }
+            }
+            ;
+            res.redirect(307, "/login/");
+            return;
+        }
+        next();
+    });
+}
+;
+app.use((req, res, next) => {
+    checkAuthMiddleware(req, res, next);
 });
 app.get('/', (_req, res) => {
     res.redirect("/index/");

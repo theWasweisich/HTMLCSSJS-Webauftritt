@@ -8,7 +8,9 @@ export interface FeatureFlags {
          * Ob der Server eingehende Kontaktformulare auch abspeichert
          */
         serverSave: boolean
-    }
+    },
+    deactivateAuth: boolean,
+    cookieBanner: boolean
 }
 
 import fs from "node:fs/promises";

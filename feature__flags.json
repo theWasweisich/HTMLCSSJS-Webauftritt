@@ -3,5 +3,6 @@
         "serverAccept": true,
         "serverSave": false
     },
-    "deactivateAuth": false
+    "deactivateAuth": false,
+    "cookieBanner": true
 }
