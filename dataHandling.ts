@@ -233,20 +233,15 @@ export class DataBaseHandling {
     }
 
     private async newImage(filename: string, alt: string) {
-        const db = this.openDB();
-        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-
-        let dbres = insertStmt.run(filename, alt);
-        if (dbres.changes === 1) { return dbres.lastInsertRowid }
-        throw Error("Error during Image insertion");
+        // throw Error("Not implemented yet");
     }
 
-    public async uploadImage(image: Buffer, filename: string, alt: string) {
-        await fs.writeFile(`./uploads/${filename}`, image);
-        return true;
+    public async uploadImage(image: Express.Multer.File, filename: string, alt: string) {
+        // throw Error("Not implemented yet");
     }
 
     public async updateProduct(id: number, title: string, description: string, price: number, image: number): Promise<boolean> {
-        return true;
+        return true
+        // throw Error("Not implemented yet");
     }
 }

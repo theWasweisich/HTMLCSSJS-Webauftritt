@@ -37,6 +37,11 @@ class ProductDisplay {
         this.description = description;
         this.price = price;
         this.image = image;
+        this.originalId = this.id;
+        this.originalTitle = this.title;
+        this.originalDescription = this.description;
+        this.originalPrice = this.price;
+        this.originalImage = this.image;
         this.inputElems = {};
         this.setup();
     }
@@ -92,23 +97,51 @@ class ProductDisplay {
         img.src = this.selectedProductImage.path;
         img.alt = this.selectedProductImage.alt;
     }
-    prepareProduct() {
+    ;
+    sendNewImageToServer(image) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let formData = new FormData();
+            formData.append("image", image);
+            const endpoint = "/api/admin/images/new";
+            let resp = yield fetch(endpoint, {
+                method: "POST",
+                body: formData
+            });
+            if (resp.ok) {
+                console.log("Success");
+                let json = yield resp.json();
+                let filepath = json["path"];
+                if (filepath) {
+                    return filepath;
+                }
+            }
+            else {
+                console.error("Error");
+            }
+            ;
+            return new Error("Error during file upload");
+        });
+    }
+    prepareProductFormData() {
         let titleElem = this.inputElems.title;
         let descriptionElem = this.inputElems.description;
         let priceElem = this.inputElems.price;
-        let img = this.selectedImage;
         let formData = new FormData();
         formData.append("id", this.id.toString());
         formData.append("title", titleElem.value);
         formData.append("description", descriptionElem.value);
         formData.append("price", priceElem.value);
-        formData.append("image", img);
         return formData;
     }
     updateProduct() {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = "/api/admin/products/update";
-            let formData = this.prepareProduct();
+            console.log("Selected Image:");
+            console.log(this.selectedImage);
+            if (this.selectedImage !== undefined) {
+                yield this.sendNewImageToServer(this.selectedImage);
+            }
+            let formData = this.prepareProductFormData();
             console.log("Formdata:");
             console.log(formData);
             let resp = yield fetch(endpoint, {

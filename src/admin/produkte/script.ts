@@ -45,6 +45,12 @@ class ProductDisplay {
         this._selectedProductImage = image;
     }
 
+    public originalId: number;
+    public originalTitle: string;
+    public originalDescription: string;
+    public originalPrice: number;
+    public originalImage: ProductImage;
+
     constructor(
         public id: number,
         public title: string,
@@ -52,6 +58,11 @@ class ProductDisplay {
         public price: number,
         public image: ProductImage,
     ) {
+        this.originalId = this.id;
+        this.originalTitle = this.title;
+        this.originalDescription = this.description;
+        this.originalPrice = this.price;
+        this.originalImage = this.image;
 
         this.inputElems = {};
         this.setup();
@@ -103,25 +114,46 @@ class ProductDisplay {
         this.selectedImage = image;
     }
 
-    public updateImage() {
+    private updateImage() {
         if (this.selectedProductImage === undefined) { return; }
         let img = this.inputElems.image as HTMLImageElement;
         img.src = this.selectedProductImage.path;
         img.alt = this.selectedProductImage.alt;
+    };
+
+    private async sendNewImageToServer(image: Blob) {
+        let formData = new FormData();
+        formData.append("image", image);
+
+        const endpoint = "/api/admin/images/new";
+        let resp = await fetch(endpoint, {
+            method: "POST",
+            body: formData
+        })
+
+        if (resp.ok) {
+            console.log("Success");
+            let json = await resp.json();
+            let filepath = json["path"];
+            if (filepath) {
+                return filepath;
+            }
+        } else {
+            console.error("Error");
+        };
+        return new Error("Error during file upload");
     }
 
-    public prepareProduct() {
+    protected prepareProductFormData() {
         let titleElem = this.inputElems.title as HTMLInputElement;
         let descriptionElem = this.inputElems.description as HTMLTextAreaElement;
         let priceElem = this.inputElems.price as HTMLInputElement
-        let img = this.selectedImage;
-    
+
         let formData = new FormData();
         formData.append("id", this.id.toString());
         formData.append("title", titleElem.value);
         formData.append("description", descriptionElem.value);
         formData.append("price", priceElem.value);
-        formData.append("image", img as Blob);
 
         return formData;
     }
@@ -129,7 +161,13 @@ class ProductDisplay {
     public async updateProduct() {
         const endpoint = "/api/admin/products/update";
 
-        let formData = this.prepareProduct();
+        console.log("Selected Image:");
+        console.log(this.selectedImage);
+        if (this.selectedImage !== undefined) {
+            await this.sendNewImageToServer(this.selectedImage);
+        }
+
+        let formData = this.prepareProductFormData();
 
         console.log("Formdata:");
         console.log(formData);

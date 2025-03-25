@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
 const multer_1 = __importDefault(require("multer"));
+const formidable_1 = __importDefault(require("formidable"));
 const router = express_1.default.Router();
 exports.default = router;
 let feature__flags;
@@ -162,24 +163,21 @@ router.post("/admin/products/update", function (req, res) {
     });
 });
 router.post("/admin/images/new", upload.single("image"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const handler = new dataHandling_1.DataBaseHandling();
-    const body = req.body;
-    const file = req.file;
-    if (!file) {
-        res.status(400).end("No file provided");
-        return;
-    }
-    const image = file.buffer;
-    let filename = file.originalname;
-    let alt = body.alt;
+    const form = (0, formidable_1.default)({});
     console.log("New Image received!");
-    console.log("Filename: " + filename);
-    console.log("Alt: " + alt);
-    let success = yield handler.uploadImage(image, filename, alt);
-    if (success) {
-        res.status(201).end("Success");
-    }
-    else {
-        res.status(500).end("Something went wrong :(");
-    }
+    form.parse(req, (err, fields, files) => __awaiter(void 0, void 0, void 0, function* () { console.log("Jetzadle"); parseImageForm(err, fields, files); }));
+    res.status(500).end("Not implemented yet");
 }));
+function parseImageForm(err, fields, files) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log("Parsing Image Form");
+        if (err) {
+            throw new Error("Error during image upload");
+        }
+        console.log(files);
+        console.log(fields);
+        return new Promise((resolve, reject) => {
+            resolve(true);
+        });
+    });
+}

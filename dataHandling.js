@@ -187,24 +187,18 @@ class DataBaseHandling {
     }
     newImage(filename, alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
-            const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-            let dbres = insertStmt.run(filename, alt);
-            if (dbres.changes === 1) {
-                return dbres.lastInsertRowid;
-            }
-            throw Error("Error during Image insertion");
+            // throw Error("Not implemented yet");
         });
     }
     uploadImage(image, filename, alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield promises_1.default.writeFile(`./uploads/${filename}`, image);
-            return true;
+            // throw Error("Not implemented yet");
         });
     }
     updateProduct(id, title, description, price, image) {
         return __awaiter(this, void 0, void 0, function* () {
             return true;
+            // throw Error("Not implemented yet");
         });
     }
 }

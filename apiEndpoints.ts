@@ -1,6 +1,7 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
 import multer from "multer";
+import formidable from "formidable";
 const router = express.Router();
 
 export default router;
@@ -165,29 +166,23 @@ router.post("/admin/products/update", async function (req: express.Request, res:
 })
 
 router.post("/admin/images/new", upload.single("image"), async (req: express.Request, res: express.Response) => {
-    const handler = new DataBaseHandling();
-    const body = req.body;
-    const file = req.file;
 
-    if (!file) {
-        res.status(400).end("No file provided");
-        return;
-    }
-
-    const image = file.buffer;
-
-    let filename = file.originalname;
-    let alt = body.alt;
-
+    const form = formidable({ });
     console.log("New Image received!");
-    console.log("Filename: " + filename);
-    console.log("Alt: " + alt);
 
-    let success = await handler.uploadImage(image, filename, alt);
+    form.parse(req, async (err, fields, files) => { console.log("Jetzadle"); parseImageForm(err, fields, files); });
 
-    if (success) {
-        res.status(201).end("Success");
-    } else {
-        res.status(500).end("Something went wrong :(");
-    }
+    res.status(500).end("Not implemented yet");
 });
+
+async function parseImageForm(err: Error, fields: formidable.Fields, files: formidable.Files) {
+    console.log("Parsing Image Form");
+    if (err) {
+        throw new Error("Error during image upload");
+    }
+    console.log(files);
+    console.log(fields);
+    return new Promise((resolve, reject) => {
+        resolve(true);
+    });
+}
