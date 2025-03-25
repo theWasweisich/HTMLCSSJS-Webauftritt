@@ -1,6 +1,18 @@
 
+
+
 * {
     interpolate-size: allow-keywords;
+}
+
+.options-list {
+    max-width: fit-content;
+    padding: 2em;
+    backdrop-filter: blur(20em);
+
+    a {
+        color: var(--clr-text-1);
+    }
 }
 
 #contactMsg-output {
@@ -10,12 +22,10 @@
     padding: 1em;
     border: .3em solid black;
 }
-
 .message {
     margin-block: .5em;
     background-color: grey;
 }
-
 .message-header {
     background-color: darkgray;
     padding: 1em;
@@ -26,7 +36,6 @@
         column-gap: 1em;
     }
 }
-
 .message-content {
     padding-inline: 1em;
 
@@ -34,12 +43,9 @@
         margin-bottom: 1em;
     }
 }
-
 .message-content .delete-btn {
     min-width: 2em;
 }
-
-
 #contact-bulk-section {
     display: grid;
     grid-template-columns: auto auto;
@@ -48,25 +54,20 @@
     align-items: center;
     margin: 1em;
 }
-
 .message .message-content dt {
     font-weight: bold;
 }
-
 .message-content {
     max-width: 100%;
 }
-
 .message h3 {
     margin: 0;
 }
-
 [data-field="message"] {
     overflow-x: hidden;
     overflow-wrap: anywhere;
     white-space-collapse: collapse;
 }
-
 .message-content {
     transition: all 0.5s;
     height: 100%;
@@ -74,7 +75,17 @@
     width: 100%;
     overflow-y: hidden;
 }
-
 .message:not(.open) .message-content {
     max-height: 0;
+}
+
+
+.product {
+    margin-block: 2em;
+    padding: .5em;
+    background-color: darkblue;
+    img {
+        display: block;
+        max-width: 50%;
+    }
 }

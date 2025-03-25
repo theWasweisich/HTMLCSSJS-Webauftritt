@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Produkte</title>
+
+    <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="../style.css">
+
+    <script src="/assets/global/global.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <nav data-load="true"></nav>
+    <main>
+        <header>
+            <div class="wrapper-padding">
+                <h1>Admin-Seite - Produkte</h1>
+            </div>
+        </header>
+        <div class="wrapper-padding">
+            <section class="product-view">
+                <h2>Produkte</h2>
+                <div id="products-output">
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer data-load="true"></footer>
+</body>
+<template id="product-template">
+    <div class="product">
+        <div class="product-properties">
+            <h3>Produktname</h3>
+            <input inputmode="latin" data-field="title"></input>
+            <h3>Beschreibung</h3>
+            <textarea data-field="description"></textarea>
+            <h3>Preis</h3>
+            <input data-field="price" type="number" inputmode="numeric" min="1" step="any">
+            <h3>Bild</h3>
+            <label>
+                <input type="file" data-field="image-input">
+            </label>
+            <img data-field="image">
+        </div>
+    </div>
+</template>
+</html>

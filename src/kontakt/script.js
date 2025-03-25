@@ -9,6 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class FormMaster {
+    static get lastSubmitted() {
+        return Number(localStorage.getItem('lastSubmit'));
+    }
+    static set lastSubmitted(value) {
+        localStorage.setItem('lastSubmit', value.toString());
+    }
     constructor(formRoot) {
         this.formRoot = formRoot;
         const prenameInp = this.formRoot.querySelector("#prename-inp");
@@ -50,12 +56,6 @@ class FormMaster {
             this.validator(e.target);
             this.formRoot.reportValidity();
         });
-    }
-    static get lastSubmitted() {
-        return Number(localStorage.getItem('lastSubmit'));
-    }
-    static set lastSubmitted(value) {
-        localStorage.setItem('lastSubmit', value.toString());
     }
     static triggerResponse(success) {
         if (success) {

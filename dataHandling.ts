@@ -9,7 +9,7 @@ export interface FeatureFlags {
          */
         serverSave: boolean
     },
-    deactivateAuth: boolean,
+    checkAuth: boolean,
     cookieBanner: boolean
 }
 
@@ -39,6 +39,23 @@ type ContactMessageData = {
     topic: string,
     shortMsg: string,
     longMsg: string
+}
+
+type productRow = {
+    id: number,
+    name: string,
+    description: string,
+    price: number,
+    image: number
+}
+
+type productResponse = {
+    id: number,
+    title: string,
+    description: string,
+    price: number,
+    image_filename: string,
+    image_alt: string
 }
 
 export class DataBaseHandling {
@@ -174,26 +191,62 @@ export class DataBaseHandling {
         const db = this.openDB();
         const imgId = this.newImage(image_url, image_alt);
         const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
-        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
-
+        
         let productres = productInsertStmt.run(name, description, imgId);
+
         if (productres.changes < 1) { throw new Error("Error during product insertion") };
         let productId = productres.lastInsertRowid;
 
         if (!stats) { return productId }
 
         stats.forEach((stat) => {
-            statInsertStmt.run(stat.name, stat.type, stat.value, productId);
+            this.newStat(db, stat.name, stat.type, stat.value);
         });
         return productId;
     }
 
-    private newImage(filename: string, alt: string) {
+    public getAllProducts(): productResponse[] {
+        const db = this.openDB();
+        const productStmt = db.prepare("SELECT id, name, description, price, image FROM products;");
+        const imageStmt = db.prepare("SELECT filename, alt FROM images WHERE id=?;");
+        let products: productResponse[] = [];
+
+        let dbRes = productStmt.all();
+        dbRes.forEach(function (value, index, array) {
+            let row = value as productRow;
+            let imgRes = imageStmt.get(row.image) as { filename: string, alt: string };
+            products.push({
+                id: row.id,
+                title: row.name,
+                description: row.description,
+                price: row.price,
+                image_filename: imgRes.filename,
+                image_alt: imgRes.alt
+            });
+        });
+        return products;
+    }
+    
+    private newStat(db: Database.Database, name: string, type: string, value: string | number) {
+        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        statInsertStmt.run(name, type, value);
+    }
+
+    private async newImage(filename: string, alt: string) {
         const db = this.openDB();
         const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
 
         let dbres = insertStmt.run(filename, alt);
         if (dbres.changes === 1) { return dbres.lastInsertRowid }
         throw Error("Error during Image insertion");
+    }
+
+    public async uploadImage(image: Buffer, filename: string, alt: string) {
+        await fs.writeFile(`./uploads/${filename}`, image);
+        return true;
+    }
+
+    public async updateProduct(id: number, title: string, description: string, price: number, image: number): Promise<boolean> {
+        return true;
     }
 }

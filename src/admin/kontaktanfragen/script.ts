@@ -11,6 +11,15 @@ interface contactMessage {
     elem?: HTMLElement,
 }
 
+interface productResponse {
+    id: number,
+    title: string,
+    description: string,
+    price: number,
+    image_filename: string,
+    image_alt: string
+}
+
 class singleContactMessage {
     public elem: HTMLElement | undefined;
     private selectElems: {label: HTMLLabelElement, input: HTMLInputElement};
@@ -42,9 +51,6 @@ class singleContactMessage {
         this.selectElems.input.name = selectId;
         this.selectElems.label.htmlFor = selectId;
 
-        console.log("This:");
-        console.log(this);
-        console.log(typeof this);
 
         this.selectElems.input.addEventListener('change', ev => { selectChangeHandler(viewManager, this, this.selectElems) })
     };
@@ -74,7 +80,6 @@ class MessagesViewer {
     }
     
     public async setup() {
-        console.log("Setup")
         let resp = await this.getContactMessages();
         let json = await resp.json();
         let messages = this.parseMessagesResponse(json);
@@ -84,7 +89,6 @@ class MessagesViewer {
         for (const message of messages) {
             let toappend = this.setTemplateFields(message);
             let done = this.displayContainer.appendChild(toappend);
-            console.log(done);
             message.elem = done;
             this.messages.push(new singleContactMessage(
                 message.id,
@@ -111,7 +115,6 @@ class MessagesViewer {
 
         let timestamps = Object.keys(json_);
 
-        console.groupCollapsed("Parsing");
         for (const timestamp of timestamps) {
             let msg = json_[timestamp] as contactMessage;
             msg.timestamp = new Date(msg.timestamp);
@@ -125,9 +128,7 @@ class MessagesViewer {
                 shortMsg: msg.shortMsg,
                 longMsg: msg.longMsg
         });
-            console.debug(msg);
         }
-        console.groupEnd();
 
         return msgs
     }
@@ -229,7 +230,6 @@ class ViewerManager extends MessagesViewer {
         
 
         for (const msg of this.messages) {
-            console.log("Foreach run!")
             if (!msg.elem) {
                 throw new Error("aaaaaaaaaaaaaaaahhhhhhhhhhhhhhhhhhhhh");
             }
@@ -237,11 +237,11 @@ class ViewerManager extends MessagesViewer {
             let titleElem = msg.elem.querySelector(".message-header h3") as HTMLElement;
     
             titleElem.addEventListener('click', (ev) => {this.clickListener(ev, msg);});
-            console.log("Listener has been set")
 
             msg.setup(this, this.selectChangeHandler);            
         }
         
+        this.bulkCheckbox.addEventListener('change', () => { this.bulkSelectChangeHandler(); })
         this.bulkDeleteElem.addEventListener('click', () => { this.bulkDeleteHandler(); })
     };
 
@@ -306,19 +306,28 @@ class ViewerManager extends MessagesViewer {
     };
 
     protected bulkSelectChangeHandler() {
-        throw new Error("Not implemented");
+        let bulkSelectAll = this.bulkCheckbox.checked;
+        if (bulkSelectAll) {
+            this.selectedMessages = this.messages;
+            for (const msg of this.messages) {
+                msg.setSelectState(true);
+            }
+        } else {
+            this.selectedMessages = [];
+            for (const msg of this.messages) {
+                msg.setSelectState(false);
+            }
+        };
+        this.setBulkDeleteElems();
     }
 }
 
-class ProductManager {
-    public productSection: HTMLElement;
-
-    constructor(productSection: HTMLElement) {
-        this.productSection = productSection;
-    }
+type ProductImage = {
+    path: string,
+    filename: string,
+    alt: string
 }
 
-const msgsOutputSection = document.getElementById("contactMsg-output") as HTMLElement;
 var viewer: ViewerManager;
 
-viewer = new ViewerManager(msgsOutputSection);
+viewer = new ViewerManager(document.getElementById("contactMsg-output") as HTMLElement);

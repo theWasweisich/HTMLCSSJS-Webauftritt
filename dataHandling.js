@@ -12,7 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
+exports.DataBaseHandling = void 0;
+exports.getFeatureFlags = getFeatureFlags;
+exports.isAuthTokenValid = isAuthTokenValid;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
@@ -25,11 +27,9 @@ function getFeatureFlags() {
         return feature__flags;
     });
 }
-exports.getFeatureFlags = getFeatureFlags;
 function isAuthTokenValid(token) {
     return true;
 }
-exports.isAuthTokenValid = isAuthTokenValid;
 class DataBaseHandling {
     constructor() {
     }
@@ -147,7 +147,6 @@ class DataBaseHandling {
         const db = this.openDB();
         const imgId = this.newImage(image_url, image_alt);
         const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
-        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         let productres = productInsertStmt.run(name, description, imgId);
         if (productres.changes < 1) {
             throw new Error("Error during product insertion");
@@ -158,18 +157,55 @@ class DataBaseHandling {
             return productId;
         }
         stats.forEach((stat) => {
-            statInsertStmt.run(stat.name, stat.type, stat.value, productId);
+            this.newStat(db, stat.name, stat.type, stat.value);
         });
         return productId;
     }
-    newImage(filename, alt) {
+    getAllProducts() {
         const db = this.openDB();
-        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-        let dbres = insertStmt.run(filename, alt);
-        if (dbres.changes === 1) {
-            return dbres.lastInsertRowid;
-        }
-        throw Error("Error during Image insertion");
+        const productStmt = db.prepare("SELECT id, name, description, price, image FROM products;");
+        const imageStmt = db.prepare("SELECT filename, alt FROM images WHERE id=?;");
+        let products = [];
+        let dbRes = productStmt.all();
+        dbRes.forEach(function (value, index, array) {
+            let row = value;
+            let imgRes = imageStmt.get(row.image);
+            products.push({
+                id: row.id,
+                title: row.name,
+                description: row.description,
+                price: row.price,
+                image_filename: imgRes.filename,
+                image_alt: imgRes.alt
+            });
+        });
+        return products;
+    }
+    newStat(db, name, type, value) {
+        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        statInsertStmt.run(name, type, value);
+    }
+    newImage(filename, alt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const db = this.openDB();
+            const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+            let dbres = insertStmt.run(filename, alt);
+            if (dbres.changes === 1) {
+                return dbres.lastInsertRowid;
+            }
+            throw Error("Error during Image insertion");
+        });
+    }
+    uploadImage(image, filename, alt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield promises_1.default.writeFile(`./uploads/${filename}`, image);
+            return true;
+        });
+    }
+    updateProduct(id, title, description, price, image) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return true;
+        });
     }
 }
 exports.DataBaseHandling = DataBaseHandling;

@@ -4,5 +4,5 @@
         "serverSave": false
     },
     "checkAuth": false,
-    "cookieBanner": true
+    "cookieBanner": false
 }
