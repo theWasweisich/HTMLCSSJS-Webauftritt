@@ -100,6 +100,7 @@ class ProductDisplay {
     ;
     sendNewImageToServer(image) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("Sending new image to server");
             let formData = new FormData();
             formData.append("image", image);
             const endpoint = "/api/admin/images/new";

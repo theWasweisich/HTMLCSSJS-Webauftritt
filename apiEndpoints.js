@@ -14,15 +14,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
-const multer_1 = __importDefault(require("multer"));
-const formidable_1 = __importDefault(require("formidable"));
+const express_fileupload_1 = __importDefault(require("express-fileupload"));
 const router = express_1.default.Router();
 exports.default = router;
+router.use((0, express_fileupload_1.default)({
+    useTempFiles: true,
+}));
 let feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
     feature__flags = flags;
 });
-const upload = (0, multer_1.default)({ dest: 'uploads/' });
 router.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     // console.log(body, typeof body);
@@ -162,22 +163,21 @@ router.post("/admin/products/update", function (req, res) {
         }
     });
 });
-router.post("/admin/images/new", upload.single("image"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const form = (0, formidable_1.default)({});
-    console.log("New Image received!");
-    form.parse(req, (err, fields, files) => __awaiter(void 0, void 0, void 0, function* () { console.log("Jetzadle"); parseImageForm(err, fields, files); }));
-    res.status(500).end("Not implemented yet");
-}));
-function parseImageForm(err, fields, files) {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log("Parsing Image Form");
+// Reference: https://github.com/richardgirges/express-fileupload/tree/master/example
+router.post("/admin/images/new", function (req, res) {
+    console.log("New Image detected!");
+    let image;
+    let uploadPath;
+    if (!req.files || Object.keys(req.files).length === 0) {
+        res.status(400).send('No files were uploaded.');
+        return;
+    }
+    image = req.files.image;
+    uploadPath = __dirname + '/uploads/' + image.name;
+    image.mv(uploadPath, function (err) {
         if (err) {
-            throw new Error("Error during image upload");
+            return res.status(500).send(err);
         }
-        console.log(files);
-        console.log(fields);
-        return new Promise((resolve, reject) => {
-            resolve(true);
-        });
+        res.send('File uploaded!');
     });
-}
+});

@@ -1,10 +1,13 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
-import multer from "multer";
-import formidable from "formidable";
+import fileUpload from "express-fileupload";
 const router = express.Router();
 
 export default router;
+
+router.use(fileUpload({
+    useTempFiles: true,
+}));
 
 let feature__flags: FeatureFlags | undefined; 
 
@@ -12,7 +15,6 @@ getFeatureFlags().then((flags) => {
     feature__flags = flags;
 });
 
-const upload = multer({ dest: 'uploads/' });
 
 router.post('/contact/new', async (req, res) => {
     const body = req.body;
@@ -165,24 +167,26 @@ router.post("/admin/products/update", async function (req: express.Request, res:
     }
 })
 
-router.post("/admin/images/new", upload.single("image"), async (req: express.Request, res: express.Response) => {
+// Reference: https://github.com/richardgirges/express-fileupload/tree/master/example
 
-    const form = formidable({ });
-    console.log("New Image received!");
+router.post("/admin/images/new", function (req: express.Request, res: express.Response) {
+    console.log("New Image detected!");
+    let image;
+    let uploadPath;
 
-    form.parse(req, async (err, fields, files) => { console.log("Jetzadle"); parseImageForm(err, fields, files); });
-
-    res.status(500).end("Not implemented yet");
-});
-
-async function parseImageForm(err: Error, fields: formidable.Fields, files: formidable.Files) {
-    console.log("Parsing Image Form");
-    if (err) {
-        throw new Error("Error during image upload");
+    if (!req.files || Object.keys(req.files).length === 0) {
+        res.status(400).send('No files were uploaded.');
+        return;
     }
-    console.log(files);
-    console.log(fields);
-    return new Promise((resolve, reject) => {
-        resolve(true);
+
+    image = req.files.image as fileUpload.UploadedFile;
+    uploadPath = __dirname + '/uploads/' + image.name;
+
+    image.mv(uploadPath, function (err) {
+        if (err) {
+            return res.status(500).send(err);
+        }
+
+        res.send('File uploaded!');
     });
-}
+});

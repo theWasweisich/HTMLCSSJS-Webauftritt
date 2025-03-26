@@ -122,6 +122,7 @@ class ProductDisplay {
     };
 
     private async sendNewImageToServer(image: Blob) {
+        console.log("Sending new image to server");
         let formData = new FormData();
         formData.append("image", image);
 
