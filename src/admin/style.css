@@ -80,33 +80,20 @@
 }
 
 
-.product {
-    --_img-max-width: 50%;
-    margin-block: 2em;
-    padding: .5em;
-    background-color: darkblue;
-
-    img {
-        display: block;
+.breadcrumbs {
+    a {
+        color: var(--clr-text-1);
     }
 
-    [data-field="price"] {
-        text-align: right;
+    span:has(a)::before {
+        content: '> ';
     }
-    
-    [data-field="image-input"] {
-        position: fixed;
-        width: 0;
-        height: 0;
-        visibility: hidden;
+
+    a:hover {
+        color: color-mix(in srgb, var(--clr-text-1) 55%, black 45%);
     }
-    
-    .file-picker-label {
-        .wrapper {
-            max-width: var(--_img-max-width);
-            display: flex;
-            flex-direction: column;
-            gap: .5em;
-        }
-    }
+}
+
+header {
+    margin-top: 2em;
 }

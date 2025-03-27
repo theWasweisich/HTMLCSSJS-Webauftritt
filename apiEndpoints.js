@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
 const express_fileupload_1 = __importDefault(require("express-fileupload"));
+const node_path_1 = __importDefault(require("node:path"));
 const router = express_1.default.Router();
 exports.default = router;
 router.use((0, express_fileupload_1.default)({
@@ -79,6 +80,19 @@ router.get("/products/get", function (req, res) {
         };
     });
     res.json(toReturn);
+});
+router.get("/product/image/get/:id", function (req, res) {
+    const productId = req.params.id;
+    const handler = new dataHandling_1.DataBaseHandling();
+    var imagePath = handler.getProductImagePath(Number(productId));
+    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+    if (imagePath) {
+        imagePath = node_path_1.default.join(__dirname, imagePath);
+        res.sendFile(imagePath);
+        return;
+    }
+    ;
+    res.status(404).end("The requested image could not be found");
 });
 router.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;

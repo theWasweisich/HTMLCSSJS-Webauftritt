@@ -63,10 +63,8 @@ class Bicycle {
         let sectionheading = sectiontext.querySelector('h2') as HTMLHeadingElement;
         let description = sectiontext.querySelector('.product-descr') as HTMLParagraphElement;
 
-        setImgProperties: {
-            imageElem.src = this.image.url;
-            imageElem.alt = this.image.alt;
-        }
+        imageElem.src = this.image.url;
+        imageElem.alt = this.image.alt;
 
 
         sectionheading.textContent = this.name;
@@ -105,10 +103,16 @@ function craftImagePath(imageName: string) {
 }
 
 function parseJson(data: any) {
+    let id = data["id"];
     let name = data["name"];
     let description = data["description"];
     let image_filename = data["image"]["file"];
-    let image: BicycleImage = { url: craftImagePath(image_filename), alt: data["image"]["alt"] };
+
+
+    let image: BicycleImage = {
+        url: craftImagePath(id),
+        alt: data["image"]["alt"]
+    };
     let stats: BicycleStat[] = [];
 
     for (const statData of data["stats"]) {

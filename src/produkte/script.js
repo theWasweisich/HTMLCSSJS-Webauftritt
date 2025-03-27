@@ -55,10 +55,8 @@ class Bicycle {
         let imageElem = clone.querySelector('.card img');
         let sectionheading = sectiontext.querySelector('h2');
         let description = sectiontext.querySelector('.product-descr');
-        setImgProperties: {
-            imageElem.src = this.image.url;
-            imageElem.alt = this.image.alt;
-        }
+        imageElem.src = this.image.url;
+        imageElem.alt = this.image.alt;
         sectionheading.textContent = this.name;
         description.textContent = this.description;
         let statsWrapper = clone.querySelector('div.stats');
@@ -88,10 +86,14 @@ function craftImagePath(imageName) {
     return imagesRoot.concat(imageName);
 }
 function parseJson(data) {
+    let id = data["id"];
     let name = data["name"];
     let description = data["description"];
     let image_filename = data["image"]["file"];
-    let image = { url: craftImagePath(image_filename), alt: data["image"]["alt"] };
+    let image = {
+        url: craftImagePath(id),
+        alt: data["image"]["alt"]
+    };
     let stats = [];
     for (const statData of data["stats"]) {
         let stat = {

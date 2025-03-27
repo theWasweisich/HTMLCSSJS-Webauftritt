@@ -66,7 +66,7 @@ export class DataBaseHandling {
     static saltRounds: number = 10;
 
     constructor() {
-        this.cleanImageLeftovers();
+        // this.cleanImageLeftovers();
     };
 
     private openDB(): Database.Database {
@@ -227,6 +227,20 @@ export class DataBaseHandling {
             });
         });
         return products;
+    };
+
+    public getProductImagePath(id: number) {
+        console.log("Trying to get image for id " + String(id));
+        const db = this.openDB();
+        const getImgIdStmt = db.prepare("SELECT image FROM products WHERE id=?");
+        const getImgPathStmt = db.prepare("SELECT filename FROM images WHERE id=?");
+        let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;
+        
+        console.log(`The image id is ${imgId}`);
+        let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
+        let imgFileName = imgFileNameRow.filename;
+
+        return imgFileName;
     }
     
     private newStat(db: Database.Database, name: string, type: string, value: string | number) {

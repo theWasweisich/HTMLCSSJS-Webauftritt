@@ -1,0 +1,30 @@
+.product {
+    --_img-max-width: 50%;
+    margin-block: 2em;
+    padding: .5em;
+    background-color: darkblue;
+
+    img {
+        display: block;
+    }
+
+    [data-field="price"] {
+        text-align: right;
+    }
+    
+    [data-field="image-input"] {
+        position: fixed;
+        width: 0;
+        height: 0;
+        visibility: hidden;
+    }
+    
+    .file-picker-label {
+        .wrapper {
+            max-width: var(--_img-max-width);
+            display: flex;
+            flex-direction: column;
+            gap: .5em;
+        }
+    }
+}

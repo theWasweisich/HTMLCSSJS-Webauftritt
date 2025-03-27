@@ -32,7 +32,7 @@ function isAuthTokenValid(token) {
 }
 class DataBaseHandling {
     constructor() {
-        this.cleanImageLeftovers();
+        // this.cleanImageLeftovers();
     }
     ;
     openDB() {
@@ -181,6 +181,18 @@ class DataBaseHandling {
             });
         });
         return products;
+    }
+    ;
+    getProductImagePath(id) {
+        console.log("Trying to get image for id " + String(id));
+        const db = this.openDB();
+        const getImgIdStmt = db.prepare("SELECT image FROM products WHERE id=?");
+        const getImgPathStmt = db.prepare("SELECT filename FROM images WHERE id=?");
+        let imgId = getImgIdStmt.get(id.toFixed(0)).image;
+        console.log(`The image id is ${imgId}`);
+        let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
+        let imgFileName = imgFileNameRow.filename;
+        return imgFileName;
     }
     newStat(db, name, type, value) {
         const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");

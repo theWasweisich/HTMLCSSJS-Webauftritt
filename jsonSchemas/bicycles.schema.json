@@ -3,6 +3,7 @@
     "items": {
         "type": "object",
         "properties": {
+            "id": { "type": "number" },
             "name": { "type": "string" },
             "description": { "type": "string" },
             "image": {
@@ -44,6 +45,7 @@
                     "required": ["name", "value", "type"]
                 }
             }
-        }
+        },
+        "required": ["id", "name", "description", "image"]
     }
 }

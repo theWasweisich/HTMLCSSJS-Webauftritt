@@ -2,6 +2,7 @@ import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { v4 as uuidV4 } from "uuid";
+import path from "node:path";
 const router = express.Router();
 
 export default router;
@@ -76,6 +77,21 @@ router.get("/products/get", function (req, res) {
     });
     res.json(toReturn);
 });
+
+router.get("/product/image/get/:id", function (req, res) {
+    const productId = req.params.id;
+    const handler = new DataBaseHandling();
+    var imagePath = handler.getProductImagePath(Number(productId));
+
+    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+
+    if (imagePath) {
+        imagePath = path.join(__dirname, imagePath);
+        res.sendFile(imagePath);
+        return;
+    };
+    res.status(404).end("The requested image could not be found");
+})
 
 router.post('/users/new', async (req, res) => {
     const body = req.body;
