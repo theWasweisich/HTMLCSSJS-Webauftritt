@@ -7,7 +7,7 @@ type BicycleImage = {
 type BicycleStat = {
     name: string,
     value: string | number | boolean,
-    type: "speed" | "plain" | "mass"
+    type: string
 };
 
 class Bicycle {
@@ -102,6 +102,49 @@ function craftImagePath(imageName: string) {
     return imagesRoot.concat(imageName);
 }
 
+type returnedData = {
+    id: number,
+    title: string,
+    description: string,
+    price: number,
+    imgAlt: string
+}
+
+async function getNewData() {
+    type returnedData = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        imgAlt: string,
+        stats: {name: string, unit: string, value: string}[]
+    };
+
+    const fetchRes = await fetch("/api/products/get");
+    const dataList = (await fetchRes.json()) as returnedData[];
+
+    dataList.forEach((data) => {
+        let stats: BicycleStat[] = []
+;
+        data.stats.forEach((stat) => {
+            stats.push({
+                name: stat.name,
+                type: stat.unit,
+                value: stat.value
+            })
+        });
+        cycles.push(new Bicycle(
+            data.title,
+            data.description,
+            {
+                url: `/api/product/image/get/${data.id}`,
+                alt: data.imgAlt
+            },
+            stats
+        ))
+    })
+}
+
 function parseJson(data: any) {
     let id = data["id"];
     let name = data["name"];
@@ -131,21 +174,12 @@ function parseJson(data: any) {
     cycles.push(cycle);
 }
 
-async function loadBicycles(endpoint: string = "bicyles.json") {
-    const abortSignal = new AbortController();
-    let resp = await fetch(endpoint, {
-        signal: abortSignal.signal
-    });
-    if (!resp.ok) { throw resp.status }
-    let data = (await resp.json()) as any[];
-
-    for (const bicycle of data) {
-        parseJson(bicycle);
-    }
+async function loadBicycles() {
+    await getNewData();
 
     cycles.forEach(cycle => {
         cycle.createElement();
-    })
+    });
 }
 
 var cycles: Array<Bicycle> = [];

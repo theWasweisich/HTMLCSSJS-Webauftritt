@@ -85,6 +85,26 @@ function craftImagePath(imageName) {
     const imagesRoot = "/assets/images/products/";
     return imagesRoot.concat(imageName);
 }
+function getNewData() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const fetchRes = yield fetch("/api/products/get");
+        const dataList = (yield fetchRes.json());
+        dataList.forEach((data) => {
+            let stats = [];
+            data.stats.forEach((stat) => {
+                stats.push({
+                    name: stat.name,
+                    type: stat.unit,
+                    value: stat.value
+                });
+            });
+            cycles.push(new Bicycle(data.title, data.description, {
+                url: `/api/product/image/get/${data.id}`,
+                alt: data.imgAlt
+            }, stats));
+        });
+    });
+}
 function parseJson(data) {
     let id = data["id"];
     let name = data["name"];
@@ -111,18 +131,8 @@ function parseJson(data) {
     cycles.push(cycle);
 }
 function loadBicycles() {
-    return __awaiter(this, arguments, void 0, function* (endpoint = "bicyles.json") {
-        const abortSignal = new AbortController();
-        let resp = yield fetch(endpoint, {
-            signal: abortSignal.signal
-        });
-        if (!resp.ok) {
-            throw resp.status;
-        }
-        let data = (yield resp.json());
-        for (const bicycle of data) {
-            parseJson(bicycle);
-        }
+    return __awaiter(this, void 0, void 0, function* () {
+        yield getNewData();
         cycles.forEach(cycle => {
             cycle.createElement();
         });
