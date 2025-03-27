@@ -19,6 +19,7 @@ const router = express_1.default.Router();
 exports.default = router;
 router.use((0, express_fileupload_1.default)({
     useTempFiles: true,
+    debug: true,
 }));
 let feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
@@ -149,35 +150,29 @@ router.post("/admin/products/update", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;
-        let id = body.id;
-        let title = body.title;
-        let description = body.description;
-        let price = body.price;
-        let image = body.image;
-        let success = yield handler.updateProduct(id, title, description, price, image);
+        let id;
+        let title;
+        let description;
+        let price;
+        let image;
+        let image_alt;
+        id = body["id"];
+        title = body["title"];
+        description = body["description"];
+        price = body["price"];
+        if (!req.files) {
+            res.status(500).end("Could not read files!");
+            return;
+        }
+        image = req.files.image;
+        image_alt = body["image-alt"];
+        console.log(image);
+        let success = yield handler.updateProduct(id, title, description, price, image, image_alt);
         if (success) {
             res.status(200).end("Success");
         }
         else {
             res.status(500).end("Something went wrong :(");
         }
-    });
-});
-// Reference: https://github.com/richardgirges/express-fileupload/tree/master/example
-router.post("/admin/images/new", function (req, res) {
-    console.log("New Image detected!");
-    let image;
-    let uploadPath;
-    if (!req.files || Object.keys(req.files).length === 0) {
-        res.status(400).send('No files were uploaded.');
-        return;
-    }
-    image = req.files.image;
-    uploadPath = __dirname + '/uploads/' + image.name;
-    image.mv(uploadPath, function (err) {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.send('File uploaded!');
     });
 });

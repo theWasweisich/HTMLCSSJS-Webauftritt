@@ -18,6 +18,7 @@ import sqlite3 from "sqlite3";
 import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
+import fileUpload from "express-fileupload";
 
 sqlite3.verbose();
 
@@ -65,6 +66,7 @@ export class DataBaseHandling {
     static saltRounds: number = 10;
 
     constructor() {
+        this.cleanImageLeftovers();
     };
 
     private openDB(): Database.Database {
@@ -189,7 +191,7 @@ export class DataBaseHandling {
         }[]
     ) {
         const db = this.openDB();
-        const imgId = this.newImage(image_url, image_alt);
+        const imgId = this.insertNewImage(image_url, image_alt);
         const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
         
         let productres = productInsertStmt.run(name, description, imgId);
@@ -232,16 +234,130 @@ export class DataBaseHandling {
         statInsertStmt.run(name, type, value);
     }
 
-    private async newImage(filename: string, alt: string) {
-        // throw Error("Not implemented yet");
+    private async insertNewImage(filename: string, alt: string): Promise<number | bigint> {
+        const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+        let runres = insertStmt.run(filename, alt);
+        let id = runres.lastInsertRowid;
+
+        return id;
     }
 
-    public async uploadImage(image: Express.Multer.File, filename: string, alt: string) {
-        // throw Error("Not implemented yet");
+    public async updateProduct(
+        id: number | undefined,
+        title: string | undefined,
+        description: string | undefined,
+        price: number | undefined,
+        image: fileUpload.UploadedFile | undefined,
+        image_alt: string | undefined,
+    ): Promise<boolean> {
+
+        console.log(id, title, description, price, image, image_alt);
+
+        type productsRow = { name: string, description: string, price: number, image: number };
+
+        const db = this.openDB();
+
+        let imgId;
+
+        if (image && image_alt) {
+            const constructedPath = `./uploads/${image.name}`;
+            image.mv(constructedPath, (err) => {
+                if (err) { console.error("Something went wrong with moving the image"); return }
+                console.log("Image moved successfully to " + constructedPath);
+            })
+            imgId = await this.insertNewImage(constructedPath, image_alt) as number;
+        } else {
+            imgId = undefined;
+        }
+
+
+        let dataToInsert: string[] = [];
+        let propertiesToInsert: any[] = [];
+        let filepath;
+        const updateStmt = db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+        const selectStmt = db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
+
+
+
+        let originalData = selectStmt.get(id) as productsRow;
+        let newRow: productsRow = {
+            name: title ? title : originalData.name,
+            description: description ? description : originalData.description,
+            price: price ? price : originalData.price,
+            image: imgId ? imgId : originalData.image
+        }
+
+        let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
+        let success = res.changes > 0;
+
+        return success
     }
 
-    public async updateProduct(id: number, title: string, description: string, price: number, image: number): Promise<boolean> {
-        return true
-        // throw Error("Not implemented yet");
+    protected async handleImageUpdate(newImg: fileUpload.UploadedFile): Promise<boolean | string> {
+        let generatedFileName;
+        let tmp;
+        let fileExtension;
+        let generatedFileNameWithExtension;
+        let uploadPath;
+        let generatedPath;
+
+        generatedFileName = uuidV4();
+        tmp = newImg.name.split('.').pop();
+        if (!tmp) { return false; }
+        fileExtension = tmp;
+        generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
+        uploadPath = __dirname + '/uploads/' + newImg.name;
+
+        generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
+
+        let toReturn: string | boolean = false;
+
+        newImg.mv(generatedPath, function(err: any) {
+            if (err) {
+                console.warn(err);
+            }
+            toReturn = generatedPath;
+        });
+
+        return toReturn;
+    }
+
+    protected cleanImageLeftovers(): boolean {
+        const db = this.openDB();
+        const selectImgsStmt = db.prepare("SELECT id FROM images;");
+        const selectProductImageIdsStmt = db.prepare("SELECT image FROM products;");
+        const imageDeleteStmt = db.prepare("DELETE FROM images WHERE id=?");
+
+        const imgsids = selectImgsStmt.all() as {id: number}[];
+        const productImgsIds = selectProductImageIdsStmt.all() as {id: number}[];
+        var cleanUpSuccessfull: boolean = true;
+
+        let usedIds: number[] = [];
+        let IdsToDelete: number[] = [];
+
+        productImgsIds.forEach((row => {
+            usedIds.push(row.id);
+        }));
+
+        imgsids.forEach(row => {
+            if (!usedIds.includes(row.id)) {
+                IdsToDelete.push(row.id);
+            };
+        });
+
+        IdsToDelete.forEach(toDeleteId => {
+            
+            try {
+                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
+                    cleanUpSuccessfull = false;
+                }
+            } catch (error) {
+                cleanUpSuccessfull = false
+                console.error(error);
+            }
+        });
+
+        return cleanUpSuccessfull;
     }
 }

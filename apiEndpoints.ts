@@ -1,12 +1,14 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
-import fileUpload from "express-fileupload";
+import fileUpload, { UploadedFile } from "express-fileupload";
+import { v4 as uuidV4 } from "uuid";
 const router = express.Router();
 
 export default router;
 
 router.use(fileUpload({
     useTempFiles: true,
+    debug: true,
 }));
 
 let feature__flags: FeatureFlags | undefined; 
@@ -148,17 +150,28 @@ router.get("/admin/products/get", (req: express.Request, res: express.Response) 
     res.json(response);
 });
 
-router.post("/admin/products/update", async function (req: express.Request, res: express.Response) {
+router.post("/admin/products/update", async function(req: express.Request, res: express.Response) {
     const handler = new DataBaseHandling();
     const body = req.body;
 
-    let id = body.id;
-    let title = body.title;
-    let description = body.description;
-    let price = body.price;
-    let image = body.image;
+    let id: number | undefined;
+    let title: string | undefined;
+    let description: string | undefined;
+    let price: number | undefined;
+    let image: fileUpload.UploadedFile;
+    let image_alt: string | undefined;
 
-    let success = await handler.updateProduct(id, title, description, price, image);
+    
+    id = body["id"];
+    title = body["title"];
+    description = body["description"];
+    price = body["price"];
+    if (!req.files) { res.status(500).end("Could not read files!"); return; }
+    image = req.files.image as UploadedFile;
+    image_alt = body["image-alt"]
+    
+    console.log(image);
+    let success = await handler.updateProduct(id, title, description, price, image, image_alt);
 
     if (success) {
         res.status(200).end("Success");
@@ -166,27 +179,3 @@ router.post("/admin/products/update", async function (req: express.Request, res:
         res.status(500).end("Something went wrong :(");
     }
 })
-
-// Reference: https://github.com/richardgirges/express-fileupload/tree/master/example
-
-router.post("/admin/images/new", function (req: express.Request, res: express.Response) {
-    console.log("New Image detected!");
-    let image;
-    let uploadPath;
-
-    if (!req.files || Object.keys(req.files).length === 0) {
-        res.status(400).send('No files were uploaded.');
-        return;
-    }
-
-    image = req.files.image as fileUpload.UploadedFile;
-    uploadPath = __dirname + '/uploads/' + image.name;
-
-    image.mv(uploadPath, function (err) {
-        if (err) {
-            return res.status(500).send(err);
-        }
-
-        res.send('File uploaded!');
-    });
-});

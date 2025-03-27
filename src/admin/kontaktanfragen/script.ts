@@ -322,12 +322,6 @@ class ViewerManager extends MessagesViewer {
     }
 }
 
-type ProductImage = {
-    path: string,
-    filename: string,
-    alt: string
-}
-
 var viewer: ViewerManager;
 
 viewer = new ViewerManager(document.getElementById("contactMsg-output") as HTMLElement);

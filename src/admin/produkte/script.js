@@ -9,22 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class ProductDisplay {
-    get selectedImage() {
-        return this._selectedImage;
-    }
-    set selectedImage(image) {
-        if (!image) {
-            return;
-        }
-        let newImage = {
-            filename: image.name,
-            alt: image.name,
-            path: URL.createObjectURL(image)
-        };
-        this._selectedImage = image;
-        this.selectedProductImage = newImage;
-        this.updateImage();
-    }
     get selectedProductImage() {
         return this._selectedProductImage;
     }
@@ -43,6 +27,7 @@ class ProductDisplay {
         this.originalPrice = this.price;
         this.originalImage = this.image;
         this.inputElems = {};
+        this.selectedProductImage = this.originalImage;
         this.setup();
     }
     setup() {
@@ -62,11 +47,23 @@ class ProductDisplay {
         this.inputElems.image.alt = this.image.alt;
         this.inputElems.image.id = `image-${this.id}`;
         this.inputElems.imageInput = this.setDataField(clone, "image-input");
-        this.inputElems.imageInput.addEventListener("change", (ev) => {
-            this.imageInputHandler(ev);
-        });
-        let imgLabelElem = this.inputElems.imageInput.parentElement;
+        let imageChangeButton = clone.querySelector(".file-picker-label .change-image-btn");
+        imageChangeButton === null || imageChangeButton === void 0 ? void 0 : imageChangeButton.addEventListener('click', (ev) => { var _a; (_a = this.inputElems.imageInput) === null || _a === void 0 ? void 0 : _a.click(); });
+        this.inputElems.imageInput.addEventListener("change", (ev) => { this.imageInputHandler(ev); });
+        let imgLabelElem = clone.querySelector(".file-picker-label");
         imgLabelElem.htmlFor = this.inputElems.imageInput.id;
+        this.setInputDefaults();
+    }
+    setInputDefaults() {
+        if (this.inputElems.title) {
+            this.inputElems.title.placeholder = this.originalTitle;
+        }
+        if (this.inputElems.description) {
+            this.inputElems.description.placeholder = this.originalDescription;
+        }
+        if (this.inputElems.price) {
+            this.inputElems.price.placeholder = this.originalPrice.toString();
+        }
     }
     setDataField(root, field, data) {
         let fieldelem = root.querySelector(`[data-field="${field}"]`);
@@ -81,13 +78,22 @@ class ProductDisplay {
     imageInputHandler(ev) {
         let imgInp = this.inputElems.imageInput;
         let files = imgInp.files;
-        console.debug("Files:");
-        console.debug(files);
         if (!files) {
             return;
         }
         let image = files[0];
-        this.selectedImage = image;
+        if (!this.selectedProductImage) {
+            console.error("Seleected Product Image not set!");
+        }
+        if (!this.selectedProductImage) {
+            throw new Error("AAAAAAAAAAAAAAAAAAA");
+        }
+        ;
+        this.selectedProductImage.image = image;
+        this.selectedProductImage.filename = image.name;
+        this.selectedProductImage.alt = image.name;
+        this.selectedProductImage.path = URL.createObjectURL(image);
+        this.updateImage();
     }
     updateImage() {
         if (this.selectedProductImage === undefined) {
@@ -124,6 +130,7 @@ class ProductDisplay {
         });
     }
     prepareProductFormData() {
+        var _a;
         let titleElem = this.inputElems.title;
         let descriptionElem = this.inputElems.description;
         let priceElem = this.inputElems.price;
@@ -132,15 +139,21 @@ class ProductDisplay {
         formData.append("title", titleElem.value);
         formData.append("description", descriptionElem.value);
         formData.append("price", priceElem.value);
+        if ((_a = this.selectedProductImage) === null || _a === void 0 ? void 0 : _a.image) {
+            console.log("Image is set! adding it to form data");
+            formData.append("image", this.selectedProductImage.image);
+            formData.append("image-alt", this.selectedProductImage.alt);
+        }
         return formData;
     }
     updateProduct() {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = "/api/admin/products/update";
             console.log("Selected Image:");
-            console.log(this.selectedImage);
-            if (this.selectedImage !== undefined) {
-                yield this.sendNewImageToServer(this.selectedImage);
+            console.log(this.selectedProductImage);
+            if (this.selectedProductImage !== undefined) {
+                console.warn("Skippinng seperate Image send");
+                // await this.sendNewImageToServer(this.selectedImage);
             }
             let formData = this.prepareProductFormData();
             console.log("Formdata:");
@@ -153,7 +166,9 @@ class ProductDisplay {
                 console.log("Success");
             }
             else {
-                console.error("Error");
+                let txt = yield resp.text();
+                console.error("Error!");
+                console.error(txt);
             }
         });
     }
@@ -182,7 +197,8 @@ class ProductManager {
                 let product = new ProductDisplay(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,
                     path: img_path,
-                    alt: resp.image_alt
+                    alt: resp.image_alt,
+                    image: undefined
                 });
                 this.displays.push(product);
             }

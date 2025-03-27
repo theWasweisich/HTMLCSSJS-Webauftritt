@@ -32,6 +32,7 @@ function isAuthTokenValid(token) {
 }
 class DataBaseHandling {
     constructor() {
+        this.cleanImageLeftovers();
     }
     ;
     openDB() {
@@ -145,7 +146,7 @@ class DataBaseHandling {
     }
     newProduct(name, description, image_url, image_alt, stats) {
         const db = this.openDB();
-        const imgId = this.newImage(image_url, image_alt);
+        const imgId = this.insertNewImage(image_url, image_alt);
         const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
         let productres = productInsertStmt.run(name, description, imgId);
         if (productres.changes < 1) {
@@ -185,21 +186,109 @@ class DataBaseHandling {
         const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         statInsertStmt.run(name, type, value);
     }
-    newImage(filename, alt) {
+    insertNewImage(filename, alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            // throw Error("Not implemented yet");
+            const db = this.openDB();
+            const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+            let runres = insertStmt.run(filename, alt);
+            let id = runres.lastInsertRowid;
+            return id;
         });
     }
-    uploadImage(image, filename, alt) {
+    updateProduct(id, title, description, price, image, image_alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            // throw Error("Not implemented yet");
+            console.log(id, title, description, price, image, image_alt);
+            const db = this.openDB();
+            let imgId;
+            if (image && image_alt) {
+                const constructedPath = `./uploads/${image.name}`;
+                image.mv(constructedPath, (err) => {
+                    if (err) {
+                        console.error("Something went wrong with moving the image");
+                        return;
+                    }
+                    console.log("Image moved successfully to " + constructedPath);
+                });
+                imgId = (yield this.insertNewImage(constructedPath, image_alt));
+            }
+            else {
+                imgId = undefined;
+            }
+            let dataToInsert = [];
+            let propertiesToInsert = [];
+            let filepath;
+            const updateStmt = db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+            const selectStmt = db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
+            let originalData = selectStmt.get(id);
+            let newRow = {
+                name: title ? title : originalData.name,
+                description: description ? description : originalData.description,
+                price: price ? price : originalData.price,
+                image: imgId ? imgId : originalData.image
+            };
+            let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
+            let success = res.changes > 0;
+            return success;
         });
     }
-    updateProduct(id, title, description, price, image) {
+    handleImageUpdate(newImg) {
         return __awaiter(this, void 0, void 0, function* () {
-            return true;
-            // throw Error("Not implemented yet");
+            let generatedFileName;
+            let tmp;
+            let fileExtension;
+            let generatedFileNameWithExtension;
+            let uploadPath;
+            let generatedPath;
+            generatedFileName = (0, uuid_1.v4)();
+            tmp = newImg.name.split('.').pop();
+            if (!tmp) {
+                return false;
+            }
+            fileExtension = tmp;
+            generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
+            uploadPath = __dirname + '/uploads/' + newImg.name;
+            generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
+            let toReturn = false;
+            newImg.mv(generatedPath, function (err) {
+                if (err) {
+                    console.warn(err);
+                }
+                toReturn = generatedPath;
+            });
+            return toReturn;
         });
+    }
+    cleanImageLeftovers() {
+        const db = this.openDB();
+        const selectImgsStmt = db.prepare("SELECT id FROM images;");
+        const selectProductImageIdsStmt = db.prepare("SELECT image FROM products;");
+        const imageDeleteStmt = db.prepare("DELETE FROM images WHERE id=?");
+        const imgsids = selectImgsStmt.all();
+        const productImgsIds = selectProductImageIdsStmt.all();
+        var cleanUpSuccessfull = true;
+        let usedIds = [];
+        let IdsToDelete = [];
+        productImgsIds.forEach((row => {
+            usedIds.push(row.id);
+        }));
+        imgsids.forEach(row => {
+            if (!usedIds.includes(row.id)) {
+                IdsToDelete.push(row.id);
+            }
+            ;
+        });
+        IdsToDelete.forEach(toDeleteId => {
+            try {
+                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
+                    cleanUpSuccessfull = false;
+                }
+            }
+            catch (error) {
+                cleanUpSuccessfull = false;
+                console.error(error);
+            }
+        });
+        return cleanUpSuccessfull;
     }
 }
 exports.DataBaseHandling = DataBaseHandling;

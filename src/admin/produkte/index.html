@@ -17,6 +17,10 @@
         <header>
             <div class="wrapper-padding">
                 <h1>Admin-Seite - Produkte</h1>
+                <div class="breadcrumbs">
+                    <a href="../">/admin</a>
+                    <a href=".">/produkte</a>
+                </div>
             </div>
         </header>
         <div class="wrapper-padding">
@@ -37,12 +41,18 @@
             <h3>Beschreibung</h3>
             <textarea data-field="description"></textarea>
             <h3>Preis</h3>
-            <input data-field="price" type="number" inputmode="numeric" min="1" step="any">
+            <div class="price-wrapper">
+                <input data-field="price" type="text" inputmode="numeric">
+                <span>€</span>
+            </div>
             <h3>Bild</h3>
-            <label>
-                <input type="file" data-field="image-input">
+            <input type="file" data-field="image-input">
+            <label class="file-picker-label">
+                <div class="wrapper">
+                    <img data-field="image">
+                    <button class="change-image-btn">Bild ändern</button>
+                </div>
             </label>
-            <img data-field="image">
         </div>
     </div>
 </template>

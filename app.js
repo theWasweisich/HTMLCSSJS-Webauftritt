@@ -79,6 +79,9 @@ app.use((req, res, next) => {
 app.get('/', (_req, res) => {
     res.redirect("/index/");
 });
+app.get("/favicon.ico", (req, res) => {
+    return res.redirect(308, "/assets/icons/favicon-dark.svg");
+});
 app.use("/api/", apiEndpoints_1.default);
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {

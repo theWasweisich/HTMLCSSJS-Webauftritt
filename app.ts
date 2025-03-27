@@ -76,6 +76,10 @@ app.get('/', (_req, res) => {
     res.redirect("/index/");
 });
 
+app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
+    return res.redirect(308, "/assets/icons/favicon-dark.svg");
+})
+
 app.use("/api/", router);
 
 app.use(express.static("src/"));
