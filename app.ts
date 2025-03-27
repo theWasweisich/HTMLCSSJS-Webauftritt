@@ -2,7 +2,9 @@
 import express from 'express';
 import morgan from 'morgan';
 import session from "express-session";
-import { FeatureFlags, getData, getFeatureFlags, setData, DataBaseHandling } from "./dataHandling";
+import router from './apiEndpoints';
+import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
+
 const app = express();
 
 declare module 'express-session' {
@@ -18,9 +20,13 @@ var customPort = process.argv[2];
 
 if (customPort !== undefined) {
     port = Number(customPort);
-}
+};
 
+var feature__flags: FeatureFlags | undefined;
 
+getFeatureFlags().then((flags) => {
+    feature__flags = flags;
+});
 
 app.use(morgan("dev"));
 app.use(express.json());
@@ -31,20 +37,37 @@ app.use(session({
     saveUninitialized: false
 }));
 
-app.use(function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    // if (
-    //     req.path.startsWith("/admin/") ||
-    //     req.path.startsWith("/api/admin/")
-    // ) {
-    //     // TODO: Implement Auth
-    //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
-    //     if (req.session.token) {
-    //         next();
-    //         return;
-    //     };
-    //     res.redirect(307, "/login/");
-    //     return
-    // }
+async function checkAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
+    
+    if (isAuthNeeded) {
+        console.log("Auth is needed");
+        if (!req.session.token) { res.redirect(307, "/login/"); return; }
+        if (req.session.token) {
+            try {
+                const db = new DataBaseHandling();
+                let res = await db.isAuthTokenKnown(req.session.token);
+                console.log("DB res: " + res);
+                if (res) {
+                    next();
+                    return;
+                }
+            } catch (e) {
+            }
+        };
+        res.redirect(307, "/login/"); return;
+    }
+    next();
+};
+
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!feature__flags) {
+        res.status(500).end("Initialization not finished!");
+        return;
+    }
+    if (feature__flags?.checkAuth) {
+        checkAuthMiddleware(req, res, next);
+    }
     next();
 })
 
@@ -53,60 +76,11 @@ app.get('/', (_req, res) => {
     res.redirect("/index/");
 });
 
-app.post('/api/contact/new', async (req, res) => {
-    const body = req.body;
-    // console.log(body, typeof body);
-    console.log("New Contact Message received!");
-
-    const handler = new DataBaseHandling();
-    let result = await handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
-
-    if (result) {
-        res.status(201).end("Done");
-    } else {
-        res.status(500).end("Something went wrong")
-    };
-});
-
-app.post('/api/login', async (req, res) => {
-    const body = req.body;
-    const handler = new DataBaseHandling();
-    
-    if (await handler.isUserValid(body["username"], body["password"])) {
-        req.session.token = await handler.generateNewAuthToken();
-        res.redirect("/admin/");
-        return;
-    }
-
-    req.session.token = undefined;
-    res.status(401).send("Invalid");
-});
-
-app.post('/api/users/new', async (req, res) => {
-    const body = req.body;
-    const handler = new DataBaseHandling();
-
-    let usrname = body["username"];
-    let psswd = body["password"];
-
-    if (!(usrname && psswd)) { res.status(400).end("Username and Password need to be provided!"); return; };
-
-    let result = await handler.createUser(usrname, psswd);
-    if (result) {
-        res.status(201).end("User created");
-    } else {
-        res.status(500).end("Something went wrong :(");
-    }
-});
-
-app.get("/api/admin/contact/get", async (req, res) => {
-    console.log("Requested Messages!")
-    const handler = new DataBaseHandling();
-
-    let result = await handler.getContactMessages();
-
-    res.status(200).json(result);
+app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
+    return res.redirect(308, "/assets/icons/favicon-dark.svg");
 })
+
+app.use("/api/", router);
 
 app.use(express.static("src/"));
 app.listen(port, () => {

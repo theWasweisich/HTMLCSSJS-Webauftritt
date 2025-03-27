@@ -2,5 +2,7 @@
     "accept_kontakt_msgs": {
         "serverAccept": true,
         "serverSave": false
-    }
+    },
+    "checkAuth": false,
+    "cookieBanner": false
 }

@@ -1,9 +1,3 @@
-interface dbUsersRow {
-    id: number,
-    username: string,
-    hash: string
-}
-
 export interface FeatureFlags {
     accept_kontakt_msgs: {
         /**
@@ -14,61 +8,71 @@ export interface FeatureFlags {
          * Ob der Server eingehende Kontaktformulare auch abspeichert
          */
         serverSave: boolean
-    }
+    },
+    checkAuth: boolean,
+    cookieBanner: boolean
 }
 
 import fs from "node:fs/promises";
 import sqlite3 from "sqlite3";
+import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
+import fileUpload from "express-fileupload";
 
 sqlite3.verbose();
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
-    return JSON.parse(await fs.readFile('./feature__flags.json', { encoding: 'utf-8' }));
+    const feature__flags = JSON.parse(await fs.readFile('./feature__flags.json', { encoding: 'utf-8' }))
+    return feature__flags;
 }
-
-export async function getData() {
-    let data = JSON.parse(await fs.readFile('data/data.json', { encoding: 'utf-8' })) 
-    return data;
-}
-
-export function setData(data: object) {
-    let currentDate = new Date().toISOString();
-    getData().then((currentData) => {
-
-        currentData[currentDate] = data;
-
-        let newData = JSON.stringify(currentData);
-        fs.writeFile(`./data/data.json`, newData, { encoding: 'utf-8' }).then(() => {
-            console.log("saved");
-        });
-    });
-};
 
 export function isAuthTokenValid(token: string) {
     return true;
 }
+type ContactMessageData = {
+    id?: number,
+    timestamp: Date,
+    name: string,
+    prename: string,
+    email: string,
+    topic: string,
+    shortMsg: string,
+    longMsg: string
+}
+
+type productRow = {
+    id: number,
+    name: string,
+    description: string,
+    price: number,
+    image: number
+}
+
+type productResponse = {
+    id: number,
+    title: string,
+    description: string,
+    price: number,
+    image_filename: string,
+    image_alt: string
+}
 
 export class DataBaseHandling {
+
+
     static filename: string = "database.db"
     static saltRounds: number = 10;
 
     constructor() {
+        this.cleanImageLeftovers();
     };
-    
-    private openDB(): sqlite3.Database {
-        let db = new sqlite3.Database(DataBaseHandling.filename, err => {
-            if (err) {
-                console.error("Database connection failed!");
-                console.warn(err.name);
-                console.warn(err.message);
-            } else {
-                console.log("Database connected successfully!");
-            };
-        });
-        return db;
+
+    private openDB(): Database.Database {
+        let better_db = new Database(DataBaseHandling.filename, { verbose: console.debug });
+        better_db.pragma('journal_mode = WAL');
+        return better_db;
     };
 
     /**
@@ -81,24 +85,11 @@ export class DataBaseHandling {
         const db = this.openDB();
         const insertSTMT = "INSERT INTO users (username, hash) VALUES (?, ?)";
         const hashedPassword = await bcrypt.hash(password, DataBaseHandling.saltRounds);
+        const stmt = db.prepare(insertSTMT);
 
-        return new Promise<boolean>((resolve, reject) => {
-            db.serialize(() => {
-                const stmt = db.prepare(insertSTMT);
-                stmt.run(username, hashedPassword);
-                db.run(insertSTMT, [username, password])
-
-                stmt.finalize((err) => {
-                    db.close();
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(true);
-                    }
-                });
-            });
-            db.close();
-        })
+        let info = stmt.run(username, hashedPassword);
+        if (info.changes !== 1) { return false };
+        return true;
     }
 
     /**
@@ -109,75 +100,46 @@ export class DataBaseHandling {
      */
     public async isUserValid(username: string, password: string): Promise<boolean> {
         const db = this.openDB();
-        const selectStmt = "SELECT username, hash FROM users WHERE username = ?";
-        return new Promise((resolve, reject) => {
-            db.serialize(() => {
-                db.get(selectStmt, [username], async (err, row: dbUsersRow) => {
-                    if (err) { reject(err); db.close(); return; }
-                    if (!row) { resolve(false); db.close(); return; };
-
-                    if (await bcrypt.compare(password, row.hash)) {
-                        resolve(true);
-                        db.close();
-                        return;
-                    } else {
-                        resolve(false);
-                        db.close();
-                        return;
-                    }
-                })
-            })
-        })
+        const selectStmt = db.prepare("SELECT username, hash FROM users WHERE username = ?");
+        const user = selectStmt.get(username) as {username: string, hash: string} | undefined;
+        if (!user) return false;
+        try {
+            if (await bcrypt.compare(password, user.hash)) {
+                return true;
+            }
+        } catch (e) {
+            console.error(e);
+            return false
+        }
+        return false;
     };
 
     public async isAuthTokenKnown(token: string): Promise<boolean> {
         const db = this.openDB();
-        const selectStmt = "SELECT id FROM authTokens WHERE token=?";
-        return new Promise((resolve, reject) => {
-            db.serialize(() => {
-                db.get(selectStmt, [token], (err, row) => {
-                    if (err) { reject(err); db.close(); return }
-                    if (!row) { resolve(false); db.close(); return }
-                    resolve(true);
-                    db.close();
-                })
-            })
-        })
+        const selectStmt = db.prepare("SELECT id FROM authTokens WHERE token=?");
+
+        const answ = selectStmt.get(token) as {id: number};
+
+        return answ !== undefined;
     };
 
-    public async generateNewAuthToken(): Promise<string> {
+    public generateNewAuthToken(): string {
         const newToken = encodeURIComponent(uuidV4());
         console.log("Generating new Token...")
+        const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
+        insertStmt.run(newToken, new Date().toISOString());
 
-        return new Promise((resolve, reject) => {
-            const db = this.openDB();
-            const insertStmt = "INSERT INTO authTokens (token, insertDate) VALUES (?, ?)";
-            db.serialize(() => {
-                db.run(insertStmt, [newToken, Date.now()], function (err) {
-                    console.log("Token has been inserted into the database");
-                    if (err) { reject(err); return };
-                    resolve(newToken);
-                })
-            });
-        })
+        return newToken;
     }
 
-    public async getContactMessages(): Promise<contactMessage[]> {
+    public async getContactMessages(): Promise<ContactMessageData[]> {
         const db = this.openDB();
-        const stmt = "SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages";
-        let result: Array<contactMessage> = [];
+        const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
 
-        return new Promise((resolve, reject) => {
-            db.serialize(() => {
-                db.each(stmt, (err, row: contactMessage | undefined) => {
-                    if (err) { console.error(err) };
-                    if (row) { result.push(row) };
-                }, (err, count) => {
-                    if (err) { reject(err); return };
-                    resolve(result);
-                });
-            });
-        })
+        let data = stmt.all() as ContactMessageData[];
+
+        return data;
     };
 
     /**
@@ -197,17 +159,205 @@ export class DataBaseHandling {
         topic: string,
         shortMsg: string,
         longMsg: string) {
-            // console.log(name, prename, email, topic, shortMsg, longMsg);
-            const db = this.openDB();
-            const stmt = "INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        // console.log(name, prename, email, topic, shortMsg, longMsg);
+        const db = this.openDB();
+        const stmt = db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        const timestamp = new Date().toISOString();
 
-            return new Promise((resolve, reject) => {
-                db.serialize(() => {
-                    db.run(stmt, [new Date().toISOString(), name, prename, email, topic, shortMsg, longMsg], (err) => {
-                        if (err) { reject(err); return; };
-                        resolve(true);
-                    })
-                })
+        const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
+        if (dbResult.changes === 1) { return true; }
+        return false;
+    }
+
+    public deleteContactMessage(ids: number[]) {
+        const db = this.openDB();
+        const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
+
+        for (const id of ids as number[]) {
+            deleteStmt.run(id);
+        }
+        return true;
+    }
+
+    public newProduct(
+        name: string,
+        description: string,
+        image_url: string,
+        image_alt: string,
+        stats?: {
+            name: string,
+            type: string,
+            value: string | number
+        }[]
+    ) {
+        const db = this.openDB();
+        const imgId = this.insertNewImage(image_url, image_alt);
+        const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
+        
+        let productres = productInsertStmt.run(name, description, imgId);
+
+        if (productres.changes < 1) { throw new Error("Error during product insertion") };
+        let productId = productres.lastInsertRowid;
+
+        if (!stats) { return productId }
+
+        stats.forEach((stat) => {
+            this.newStat(db, stat.name, stat.type, stat.value);
+        });
+        return productId;
+    }
+
+    public getAllProducts(): productResponse[] {
+        const db = this.openDB();
+        const productStmt = db.prepare("SELECT id, name, description, price, image FROM products;");
+        const imageStmt = db.prepare("SELECT filename, alt FROM images WHERE id=?;");
+        let products: productResponse[] = [];
+
+        let dbRes = productStmt.all();
+        dbRes.forEach(function (value, index, array) {
+            let row = value as productRow;
+            let imgRes = imageStmt.get(row.image) as { filename: string, alt: string };
+            products.push({
+                id: row.id,
+                title: row.name,
+                description: row.description,
+                price: row.price,
+                image_filename: imgRes.filename,
+                image_alt: imgRes.alt
+            });
+        });
+        return products;
+    }
+    
+    private newStat(db: Database.Database, name: string, type: string, value: string | number) {
+        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        statInsertStmt.run(name, type, value);
+    }
+
+    private async insertNewImage(filename: string, alt: string): Promise<number | bigint> {
+        const db = this.openDB();
+        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+        let runres = insertStmt.run(filename, alt);
+        let id = runres.lastInsertRowid;
+
+        return id;
+    }
+
+    public async updateProduct(
+        id: number | undefined,
+        title: string | undefined,
+        description: string | undefined,
+        price: number | undefined,
+        image: fileUpload.UploadedFile | undefined,
+        image_alt: string | undefined,
+    ): Promise<boolean> {
+
+        console.log(id, title, description, price, image, image_alt);
+
+        type productsRow = { name: string, description: string, price: number, image: number };
+
+        const db = this.openDB();
+
+        let imgId;
+
+        if (image && image_alt) {
+            const constructedPath = `./uploads/${image.name}`;
+            image.mv(constructedPath, (err) => {
+                if (err) { console.error("Something went wrong with moving the image"); return }
+                console.log("Image moved successfully to " + constructedPath);
             })
+            imgId = await this.insertNewImage(constructedPath, image_alt) as number;
+        } else {
+            imgId = undefined;
+        }
+
+
+        let dataToInsert: string[] = [];
+        let propertiesToInsert: any[] = [];
+        let filepath;
+        const updateStmt = db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+        const selectStmt = db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
+
+
+
+        let originalData = selectStmt.get(id) as productsRow;
+        let newRow: productsRow = {
+            name: title ? title : originalData.name,
+            description: description ? description : originalData.description,
+            price: price ? price : originalData.price,
+            image: imgId ? imgId : originalData.image
+        }
+
+        let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
+        let success = res.changes > 0;
+
+        return success
+    }
+
+    protected async handleImageUpdate(newImg: fileUpload.UploadedFile): Promise<boolean | string> {
+        let generatedFileName;
+        let tmp;
+        let fileExtension;
+        let generatedFileNameWithExtension;
+        let uploadPath;
+        let generatedPath;
+
+        generatedFileName = uuidV4();
+        tmp = newImg.name.split('.').pop();
+        if (!tmp) { return false; }
+        fileExtension = tmp;
+        generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
+        uploadPath = __dirname + '/uploads/' + newImg.name;
+
+        generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
+
+        let toReturn: string | boolean = false;
+
+        newImg.mv(generatedPath, function(err: any) {
+            if (err) {
+                console.warn(err);
+            }
+            toReturn = generatedPath;
+        });
+
+        return toReturn;
+    }
+
+    protected cleanImageLeftovers(): boolean {
+        const db = this.openDB();
+        const selectImgsStmt = db.prepare("SELECT id FROM images;");
+        const selectProductImageIdsStmt = db.prepare("SELECT image FROM products;");
+        const imageDeleteStmt = db.prepare("DELETE FROM images WHERE id=?");
+
+        const imgsids = selectImgsStmt.all() as {id: number}[];
+        const productImgsIds = selectProductImageIdsStmt.all() as {id: number}[];
+        var cleanUpSuccessfull: boolean = true;
+
+        let usedIds: number[] = [];
+        let IdsToDelete: number[] = [];
+
+        productImgsIds.forEach((row => {
+            usedIds.push(row.id);
+        }));
+
+        imgsids.forEach(row => {
+            if (!usedIds.includes(row.id)) {
+                IdsToDelete.push(row.id);
+            };
+        });
+
+        IdsToDelete.forEach(toDeleteId => {
+            
+            try {
+                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
+                    cleanUpSuccessfull = false;
+                }
+            } catch (error) {
+                cleanUpSuccessfull = false
+                console.error(error);
+            }
+        });
+
+        return cleanUpSuccessfull;
     }
 }

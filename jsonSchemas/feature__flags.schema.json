@@ -16,7 +16,17 @@
                 }
             },
             "required": ["serverAccept", "serverSave"]
+        },
+        "checkAuth": {
+            "type": "boolean",
+            "default": false,
+            "description": "Checks Authentication"
+        },
+        "cookieBanner": {
+            "type": "boolean",
+            "default": true,
+            "description": "Activates the cookie banner"
         }
     },
-    "required": ["accept_kontakt_msgs"]
+    "required": ["accept_kontakt_msgs", "checkAuth", "cookieBanner"]
 }

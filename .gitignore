@@ -1,2 +1,5 @@
 node_modules
 .vscode
+database.db-*
+uploads/*
+tmp/*

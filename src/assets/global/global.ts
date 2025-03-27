@@ -90,6 +90,11 @@ class PartialsLoader {
         await this.loadPartial(this.partialUrls["footer"], "footer[data-load='true']");
         await this.loadPartial(this.partialUrls["nav"], "nav[data-load='true']");
 
+        let bannerRes = await fetch("/api/cookies");
+        if (bannerRes.headers.has("x-cookies-disabled")) {
+            consentMgr.cookieBannerblocked = true;
+        }
+
         PartialsLoader.setStaticNav();
     }
 
@@ -104,6 +109,7 @@ class PartialsLoader {
 }
 
 class consentMgr {
+    static cookieBannerblocked: boolean = false;
     static storageName = {
         expiry: "lastConsentMS"
     };
@@ -153,6 +159,11 @@ class consentMgr {
 
 
     static async promptConsent() {
+
+        if (this.cookieBannerblocked) {
+            return;
+        }
+
         let replacer = document.querySelector('#cookieBanner') as HTMLElement | null;
         // console.assert(replacer instanceof HTMLElement, `Consent-Prompt noch nicht geladen`);
         if (!replacer) {

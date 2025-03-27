@@ -108,8 +108,8 @@ function parseJson(data) {
     console.groupEnd();
     cycles.push(cycle);
 }
-function loadBicycles(endpoint = "bicyles.json") {
-    return __awaiter(this, void 0, void 0, function* () {
+function loadBicycles() {
+    return __awaiter(this, arguments, void 0, function* (endpoint = "bicyles.json") {
         const abortSignal = new AbortController();
         let resp = yield fetch(endpoint, {
             signal: abortSignal.signal

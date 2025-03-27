@@ -1,5 +1,5 @@
-import { getData } from './dataHandling';
+import { getFeatureFlags } from './dataHandling';
 
 (async () => {
-    console.log(await getData());
+    console.log(await getFeatureFlags());
 })();

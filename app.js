@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_session_1 = __importDefault(require("express-session"));
+const apiEndpoints_1 = __importDefault(require("./apiEndpoints"));
 const dataHandling_1 = require("./dataHandling");
 const app = (0, express_1.default)();
 var port = 3000;
@@ -22,82 +23,66 @@ var customPort = process.argv[2];
 if (customPort !== undefined) {
     port = Number(customPort);
 }
+;
+var feature__flags;
+(0, dataHandling_1.getFeatureFlags)().then((flags) => {
+    feature__flags = flags;
+});
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172800 },
+    cookie: { maxAge: 172800 }, // Das sind 2 Tage
     resave: false,
     saveUninitialized: false
 }));
-app.use(function (req, res, next) {
-    // if (
-    //     req.path.startsWith("/admin/") ||
-    //     req.path.startsWith("/api/admin/")
-    // ) {
-    //     // TODO: Implement Auth
-    //     if (!req.session.token) { res.redirect(307, "/login/"); return; }
-    //     if (req.session.token) {
-    //         next();
-    //         return;
-    //     };
-    //     res.redirect(307, "/login/");
-    //     return
-    // }
+function checkAuthMiddleware(req, res, next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
+        if (isAuthNeeded) {
+            console.log("Auth is needed");
+            if (!req.session.token) {
+                res.redirect(307, "/login/");
+                return;
+            }
+            if (req.session.token) {
+                try {
+                    const db = new dataHandling_1.DataBaseHandling();
+                    let res = yield db.isAuthTokenKnown(req.session.token);
+                    console.log("DB res: " + res);
+                    if (res) {
+                        next();
+                        return;
+                    }
+                }
+                catch (e) {
+                }
+            }
+            ;
+            res.redirect(307, "/login/");
+            return;
+        }
+        next();
+    });
+}
+;
+app.use((req, res, next) => {
+    if (!feature__flags) {
+        res.status(500).end("Initialization not finished!");
+        return;
+    }
+    if (feature__flags === null || feature__flags === void 0 ? void 0 : feature__flags.checkAuth) {
+        checkAuthMiddleware(req, res, next);
+    }
     next();
 });
 app.get('/', (_req, res) => {
     res.redirect("/index/");
 });
-app.post('/api/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    // console.log(body, typeof body);
-    console.log("New Contact Message received!");
-    const handler = new dataHandling_1.DataBaseHandling();
-    let result = yield handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
-    if (result) {
-        res.status(201).end("Done");
-    }
-    else {
-        res.status(500).end("Something went wrong");
-    }
-    ;
-}));
-app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    const handler = new dataHandling_1.DataBaseHandling();
-    if (yield handler.isUserValid(body["username"], body["password"])) {
-        req.session.token = yield handler.generateNewAuthToken();
-        res.redirect("/admin/");
-        return;
-    }
-    req.session.token = undefined;
-    res.status(401).send("Invalid");
-}));
-app.post('/api/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    const handler = new dataHandling_1.DataBaseHandling();
-    let usrname = body["username"];
-    let psswd = body["password"];
-    if (!(usrname && psswd)) {
-        res.status(400).end("Username and Password need to be provided!");
-        return;
-    }
-    ;
-    let result = yield handler.createUser(usrname, psswd);
-    if (result) {
-        res.status(201).end("User created");
-    }
-    else {
-        res.status(500).end("Something went wrong :(");
-    }
-}));
-app.get("/api/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Requested Messages!");
-    const handler = new dataHandling_1.DataBaseHandling();
-    let result = yield handler.getContactMessages();
-    res.status(200).json(result);
-}));
+app.get("/favicon.ico", (req, res) => {
+    return res.redirect(308, "/assets/icons/favicon-dark.svg");
+});
+app.use("/api/", apiEndpoints_1.default);
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
     console.log(`Listening on Port ${port}`);

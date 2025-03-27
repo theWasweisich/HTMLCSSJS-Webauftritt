@@ -11,5 +11,5 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const dataHandling_1 = require("./dataHandling");
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(yield (0, dataHandling_1.getData)());
+    console.log(yield (0, dataHandling_1.getFeatureFlags)());
 }))();
