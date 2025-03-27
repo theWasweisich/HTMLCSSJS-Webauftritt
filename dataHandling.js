@@ -30,9 +30,12 @@ function getFeatureFlags() {
 function isAuthTokenValid(token) {
     return true;
 }
+/**
+ * The Class for all Data handling activities
+ */
 class DataBaseHandling {
     constructor() {
-        // this.cleanImageLeftovers();
+        this.db = this.openDB();
     }
     ;
     openDB() {
@@ -49,10 +52,9 @@ class DataBaseHandling {
      */
     createUser(username, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
             const insertSTMT = "INSERT INTO users (username, hash) VALUES (?, ?)";
             const hashedPassword = yield bcrypt_1.default.hash(password, DataBaseHandling.saltRounds);
-            const stmt = db.prepare(insertSTMT);
+            const stmt = this.db.prepare(insertSTMT);
             let info = stmt.run(username, hashedPassword);
             if (info.changes !== 1) {
                 return false;
@@ -69,8 +71,7 @@ class DataBaseHandling {
      */
     isUserValid(username, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
-            const selectStmt = db.prepare("SELECT username, hash FROM users WHERE username = ?");
+            const selectStmt = this.db.prepare("SELECT username, hash FROM users WHERE username = ?");
             const user = selectStmt.get(username);
             if (!user)
                 return false;
@@ -89,8 +90,7 @@ class DataBaseHandling {
     ;
     isAuthTokenKnown(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
-            const selectStmt = db.prepare("SELECT id FROM authTokens WHERE token=?");
+            const selectStmt = this.db.prepare("SELECT id FROM authTokens WHERE token=?");
             const answ = selectStmt.get(token);
             return answ !== undefined;
         });
@@ -99,15 +99,13 @@ class DataBaseHandling {
     generateNewAuthToken() {
         const newToken = encodeURIComponent((0, uuid_1.v4)());
         console.log("Generating new Token...");
-        const db = this.openDB();
-        const insertStmt = db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
+        const insertStmt = this.db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
         insertStmt.run(newToken, new Date().toISOString());
         return newToken;
     }
     getContactMessages() {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
-            const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
+            const stmt = this.db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
             let data = stmt.all();
             return data;
         });
@@ -126,8 +124,7 @@ class DataBaseHandling {
     newContactMessage(name, prename, email, topic, shortMsg, longMsg) {
         return __awaiter(this, void 0, void 0, function* () {
             // console.log(name, prename, email, topic, shortMsg, longMsg);
-            const db = this.openDB();
-            const stmt = db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            const stmt = this.db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
             const timestamp = new Date().toISOString();
             const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
             if (dbResult.changes === 1) {
@@ -137,17 +134,15 @@ class DataBaseHandling {
         });
     }
     deleteContactMessage(ids) {
-        const db = this.openDB();
-        const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
+        const deleteStmt = this.db.prepare("DELETE FROM contactMessages WHERE id=?");
         for (const id of ids) {
             deleteStmt.run(id);
         }
         return true;
     }
     newProduct(name, description, image_url, image_alt, stats) {
-        const db = this.openDB();
         const imgId = this.insertNewImage(image_url, image_alt);
-        const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
+        const productInsertStmt = this.db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
         let productres = productInsertStmt.run(name, description, imgId);
         if (productres.changes < 1) {
             throw new Error("Error during product insertion");
@@ -158,26 +153,26 @@ class DataBaseHandling {
             return productId;
         }
         stats.forEach((stat) => {
-            this.newStat(db, stat.name, stat.type, stat.value);
+            this.newStat(stat.name, stat.type, stat.value);
         });
         return productId;
     }
     getAllProducts() {
-        const db = this.openDB();
-        const productStmt = db.prepare("SELECT id, name, description, price, image FROM products;");
-        const imageStmt = db.prepare("SELECT filename, alt FROM images WHERE id=?;");
+        const productStmt = this.db.prepare("SELECT id, name, description, price, image FROM products;");
+        const imgAltStmt = this.db.prepare("SELECT alt FROM images WHERE id=?");
         let products = [];
         let dbRes = productStmt.all();
-        dbRes.forEach(function (value, index, array) {
+        dbRes.forEach((value, index, array) => {
             let row = value;
-            let imgRes = imageStmt.get(row.image);
+            let imgRes = imgAltStmt.get(row.image);
+            let stats = this.getStatsOfProduct(row.id);
             products.push({
                 id: row.id,
                 title: row.name,
                 description: row.description,
                 price: row.price,
-                image_filename: imgRes.filename,
-                image_alt: imgRes.alt
+                img_alt: imgRes.alt,
+                stats: stats
             });
         });
         return products;
@@ -185,23 +180,35 @@ class DataBaseHandling {
     ;
     getProductImagePath(id) {
         console.log("Trying to get image for id " + String(id));
-        const db = this.openDB();
-        const getImgIdStmt = db.prepare("SELECT image FROM products WHERE id=?");
-        const getImgPathStmt = db.prepare("SELECT filename FROM images WHERE id=?");
+        const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
+        const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
         let imgId = getImgIdStmt.get(id.toFixed(0)).image;
         console.log(`The image id is ${imgId}`);
         let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
         let imgFileName = imgFileNameRow.filename;
         return imgFileName;
     }
-    newStat(db, name, type, value) {
-        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+    newStat(name, type, value) {
+        const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         statInsertStmt.run(name, type, value);
     }
+    getStatsOfProduct(productId) {
+        const getStatsStmt = this.db.prepare("SELECT name, unit, value FROM stats WHERE product=?");
+        var statsOfProduct = [];
+        const resultRows = getStatsStmt.all(productId);
+        resultRows.forEach((value, index, array) => {
+            statsOfProduct.push({
+                name: value.name,
+                unit: value.unit,
+                value: value.value
+            });
+        });
+        return statsOfProduct;
+    }
+    ;
     insertNewImage(filename, alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            const db = this.openDB();
-            const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+            const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
             let runres = insertStmt.run(filename, alt);
             let id = runres.lastInsertRowid;
             return id;
@@ -210,7 +217,6 @@ class DataBaseHandling {
     updateProduct(id, title, description, price, image, image_alt) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(id, title, description, price, image, image_alt);
-            const db = this.openDB();
             let imgId;
             if (image && image_alt) {
                 const constructedPath = `./uploads/${image.name}`;
@@ -229,8 +235,8 @@ class DataBaseHandling {
             let dataToInsert = [];
             let propertiesToInsert = [];
             let filepath;
-            const updateStmt = db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
-            const selectStmt = db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
+            const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+            const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
             let originalData = selectStmt.get(id);
             let newRow = {
                 name: title ? title : originalData.name,
@@ -271,10 +277,9 @@ class DataBaseHandling {
         });
     }
     cleanImageLeftovers() {
-        const db = this.openDB();
-        const selectImgsStmt = db.prepare("SELECT id FROM images;");
-        const selectProductImageIdsStmt = db.prepare("SELECT image FROM products;");
-        const imageDeleteStmt = db.prepare("DELETE FROM images WHERE id=?");
+        const selectImgsStmt = this.db.prepare("SELECT id FROM images;");
+        const selectProductImageIdsStmt = this.db.prepare("SELECT image FROM products;");
+        const imageDeleteStmt = this.db.prepare("DELETE FROM images WHERE id=?");
         const imgsids = selectImgsStmt.all();
         const productImgsIds = selectProductImageIdsStmt.all();
         var cleanUpSuccessfull = true;

@@ -64,18 +64,30 @@ router.get("/cookies", (req, res) => {
 });
 
 router.get("/products/get", function (req, res) {
+    console.log("Getting all Products!!!");
     const handler = new DataBaseHandling();
     const allProducts = handler.getAllProducts();
-    let toReturn: object[] = allProducts.map(value => {
+
+    type returnedData = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        imgAlt: string,
+        stats: {name: string, unit: string, value: string}[]
+    }
+
+    let toReturn: returnedData[] = allProducts.map(value => {
         return {
+            id: value.id,
             title: value.title,
             description: value.description,
             price: value.price,
-            img__filename: value.image_filename,
-            img__alt: value.image_alt,
-        };
+            imgAlt: value.img_alt,
+            stats: value.stats,
+        } as returnedData;
     });
-    res.json(toReturn);
+    res.json(toReturn as returnedData[]);
 });
 
 router.get("/product/image/get/:id", function (req, res) {

@@ -55,18 +55,25 @@ type productResponse = {
     title: string,
     description: string,
     price: number,
-    image_filename: string,
-    image_alt: string
+    img_alt: string,
+    stats: {name: string, unit: string, value: string}[],
 }
 
+type statsRow = { name: string, unit: string, value: string };
+
+
+/**
+ * The Class for all Data handling activities
+ */
 export class DataBaseHandling {
 
 
     static filename: string = "database.db"
     static saltRounds: number = 10;
+    protected db: Database.Database;
 
     constructor() {
-        // this.cleanImageLeftovers();
+        this.db = this.openDB();
     };
 
     private openDB(): Database.Database {
@@ -82,10 +89,9 @@ export class DataBaseHandling {
      * @returns A promise, resolving to true if the insertion was successfull
      */
     public async createUser(username: string, password: string) {
-        const db = this.openDB();
         const insertSTMT = "INSERT INTO users (username, hash) VALUES (?, ?)";
         const hashedPassword = await bcrypt.hash(password, DataBaseHandling.saltRounds);
-        const stmt = db.prepare(insertSTMT);
+        const stmt = this.db.prepare(insertSTMT);
 
         let info = stmt.run(username, hashedPassword);
         if (info.changes !== 1) { return false };
@@ -99,8 +105,7 @@ export class DataBaseHandling {
      * @returns A Promise resolving true, if the User is valid or false if not. Rejects with an error, if something went wrong
      */
     public async isUserValid(username: string, password: string): Promise<boolean> {
-        const db = this.openDB();
-        const selectStmt = db.prepare("SELECT username, hash FROM users WHERE username = ?");
+        const selectStmt = this.db.prepare("SELECT username, hash FROM users WHERE username = ?");
         const user = selectStmt.get(username) as {username: string, hash: string} | undefined;
         if (!user) return false;
         try {
@@ -115,8 +120,7 @@ export class DataBaseHandling {
     };
 
     public async isAuthTokenKnown(token: string): Promise<boolean> {
-        const db = this.openDB();
-        const selectStmt = db.prepare("SELECT id FROM authTokens WHERE token=?");
+        const selectStmt = this.db.prepare("SELECT id FROM authTokens WHERE token=?");
 
         const answ = selectStmt.get(token) as {id: number};
 
@@ -126,16 +130,14 @@ export class DataBaseHandling {
     public generateNewAuthToken(): string {
         const newToken = encodeURIComponent(uuidV4());
         console.log("Generating new Token...")
-        const db = this.openDB();
-        const insertStmt = db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
+        const insertStmt = this.db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
         insertStmt.run(newToken, new Date().toISOString());
 
         return newToken;
     }
 
     public async getContactMessages(): Promise<ContactMessageData[]> {
-        const db = this.openDB();
-        const stmt = db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
+        const stmt = this.db.prepare("SELECT id, timestamp, name, prename, email, topic, shortMsg, longMsg FROM contactMessages");
 
         let data = stmt.all() as ContactMessageData[];
 
@@ -160,8 +162,7 @@ export class DataBaseHandling {
         shortMsg: string,
         longMsg: string) {
         // console.log(name, prename, email, topic, shortMsg, longMsg);
-        const db = this.openDB();
-        const stmt = db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        const stmt = this.db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
         const timestamp = new Date().toISOString();
 
         const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
@@ -170,8 +171,7 @@ export class DataBaseHandling {
     }
 
     public deleteContactMessage(ids: number[]) {
-        const db = this.openDB();
-        const deleteStmt = db.prepare("DELETE FROM contactMessages WHERE id=?");
+        const deleteStmt = this.db.prepare("DELETE FROM contactMessages WHERE id=?");
 
         for (const id of ids as number[]) {
             deleteStmt.run(id);
@@ -190,9 +190,8 @@ export class DataBaseHandling {
             value: string | number
         }[]
     ) {
-        const db = this.openDB();
         const imgId = this.insertNewImage(image_url, image_alt);
-        const productInsertStmt = db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
+        const productInsertStmt = this.db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
         
         let productres = productInsertStmt.run(name, description, imgId);
 
@@ -202,28 +201,28 @@ export class DataBaseHandling {
         if (!stats) { return productId }
 
         stats.forEach((stat) => {
-            this.newStat(db, stat.name, stat.type, stat.value);
+            this.newStat(stat.name, stat.type, stat.value);
         });
         return productId;
     }
 
     public getAllProducts(): productResponse[] {
-        const db = this.openDB();
-        const productStmt = db.prepare("SELECT id, name, description, price, image FROM products;");
-        const imageStmt = db.prepare("SELECT filename, alt FROM images WHERE id=?;");
+        const productStmt = this.db.prepare("SELECT id, name, description, price, image FROM products;");
+        const imgAltStmt = this.db.prepare("SELECT alt FROM images WHERE id=?");
         let products: productResponse[] = [];
 
         let dbRes = productStmt.all();
-        dbRes.forEach(function (value, index, array) {
+        dbRes.forEach((value, index, array) => {
             let row = value as productRow;
-            let imgRes = imageStmt.get(row.image) as { filename: string, alt: string };
+            let imgRes = imgAltStmt.get(row.image) as { alt: string };
+            let stats = this.getStatsOfProduct(row.id);
             products.push({
                 id: row.id,
                 title: row.name,
                 description: row.description,
                 price: row.price,
-                image_filename: imgRes.filename,
-                image_alt: imgRes.alt
+                img_alt: imgRes.alt,
+                stats: stats
             });
         });
         return products;
@@ -231,9 +230,8 @@ export class DataBaseHandling {
 
     public getProductImagePath(id: number) {
         console.log("Trying to get image for id " + String(id));
-        const db = this.openDB();
-        const getImgIdStmt = db.prepare("SELECT image FROM products WHERE id=?");
-        const getImgPathStmt = db.prepare("SELECT filename FROM images WHERE id=?");
+        const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
+        const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
         let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;
         
         console.log(`The image id is ${imgId}`);
@@ -243,14 +241,29 @@ export class DataBaseHandling {
         return imgFileName;
     }
     
-    private newStat(db: Database.Database, name: string, type: string, value: string | number) {
-        const statInsertStmt = db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+    private newStat(name: string, type: string, value: string | number) {
+        const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         statInsertStmt.run(name, type, value);
     }
 
+    private getStatsOfProduct(productId: number): statsRow[] {
+        const getStatsStmt = this.db.prepare("SELECT name, unit, value FROM stats WHERE product=?");
+
+        var statsOfProduct: statsRow[] = [];
+
+        const resultRows = getStatsStmt.all(productId) as statsRow[];
+        resultRows.forEach((value, index, array) => {
+            statsOfProduct.push({
+                name: value.name,
+                unit: value.unit,
+                value: value.value
+            })
+        });
+        return statsOfProduct;
+    };
+
     private async insertNewImage(filename: string, alt: string): Promise<number | bigint> {
-        const db = this.openDB();
-        const insertStmt = db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
+        const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
         let runres = insertStmt.run(filename, alt);
         let id = runres.lastInsertRowid;
 
@@ -270,7 +283,6 @@ export class DataBaseHandling {
 
         type productsRow = { name: string, description: string, price: number, image: number };
 
-        const db = this.openDB();
 
         let imgId;
 
@@ -289,8 +301,8 @@ export class DataBaseHandling {
         let dataToInsert: string[] = [];
         let propertiesToInsert: any[] = [];
         let filepath;
-        const updateStmt = db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
-        const selectStmt = db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
+        const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+        const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
 
 
 
@@ -338,10 +350,9 @@ export class DataBaseHandling {
     }
 
     protected cleanImageLeftovers(): boolean {
-        const db = this.openDB();
-        const selectImgsStmt = db.prepare("SELECT id FROM images;");
-        const selectProductImageIdsStmt = db.prepare("SELECT image FROM products;");
-        const imageDeleteStmt = db.prepare("DELETE FROM images WHERE id=?");
+        const selectImgsStmt = this.db.prepare("SELECT id FROM images;");
+        const selectProductImageIdsStmt = this.db.prepare("SELECT image FROM products;");
+        const imageDeleteStmt = this.db.prepare("DELETE FROM images WHERE id=?");
 
         const imgsids = selectImgsStmt.all() as {id: number}[];
         const productImgsIds = selectProductImageIdsStmt.all() as {id: number}[];
