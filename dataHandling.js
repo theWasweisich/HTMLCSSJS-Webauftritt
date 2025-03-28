@@ -186,6 +186,15 @@ class DataBaseHandling {
         let imgFileName = imgFileNameRow.filename;
         return imgFileName;
     }
+    getProductStats(id) {
+        console.log("Trying to get stats for product id: " + String(id));
+        const getStatsStmt = this.db.prepare("SELECT id, name, unit, value FROM stats WHERE product=?");
+        let stats = [];
+        getStatsStmt.all(id).forEach((row) => {
+            stats.push(row);
+        });
+        return stats;
+    }
     newStat(name, type, value) {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         statInsertStmt.run(name, type, value);

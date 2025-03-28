@@ -103,7 +103,33 @@ apiRouter.get("/product/image/get/:id", function (req, res) {
         return;
     };
     res.status(404).end("The requested image could not be found");
+});
+
+apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.Response) {
+
+    const id = Number(req.params.id);
+    const handler = new DataBaseHandling();
+
+    if (Number.isNaN(id)) {
+        res.status(400).end("Provide a valid product ID");
+        return;
+    }
+
+    let stats = handler.getProductStats(id);
+
+    res.json(stats);
 })
+
+apiRouter.route("/admin/product/stats/:id")
+    .get(function(req: express.Request, res: express.Response) {
+        res.sendStatus(501);
+    })
+    .delete(function(req: express.Request, res: express.Response) {
+        res.sendStatus(501);
+    })
+    .put(function(req: express.Request, res: express.Response) {
+        res.sendStatus(501);
+    });
 
 apiRouter.post('/users/new', async (req, res) => {
     const body = req.body;
@@ -178,10 +204,9 @@ apiRouter.get("/admin/products/get", (req: express.Request, res: express.Respons
     res.json(response);
 });
 
-apiRouter.post("/admin/products/update", async function(req: express.Request, res: express.Response) {
+apiRouter.post("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
 
     type uploadBody = {
-        id: number,
         title: string,
         description: string,
         price: number,
@@ -202,7 +227,7 @@ apiRouter.post("/admin/products/update", async function(req: express.Request, re
     let image_alt: string;
 
     
-    id = body.id;
+    id = Number(req.params.id);
     title = body.title;
     description = body.description;
     price = body.price;

@@ -8,6 +8,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+class StatWithElem {
+}
+class UnitSelectionElement {
+    constructor() {
+        this.element = document.createElement("select");
+    }
+    addOption(value, text) {
+        let optionElem = document.createElement("option");
+        optionElem.textContent = text;
+        optionElem.value = value;
+        let elem = this.element.appendChild(optionElem);
+        return elem;
+    }
+}
 class ProductDisplay {
     get selectedProductImage() {
         return this._selectedProductImage;
@@ -16,13 +30,9 @@ class ProductDisplay {
         this._selectedProductImage = image;
     }
     set originalImage(image) {
-        console.log("Setting original Image from:");
-        console.log(this._originalImage);
-        console.log("to:");
-        console.log(image);
         this._originalImage = image;
     }
-    get originalImaage() {
+    get originalImage() {
         return this._originalImage;
     }
     constructor(id, title, description, price, image) {
@@ -31,26 +41,46 @@ class ProductDisplay {
         this.description = description;
         this.price = price;
         this.image = image;
+        this.setupDone = false;
         this.needToSave = false;
         this.originalId = this.id;
         this.originalTitle = this.title;
         this.originalDescription = this.description;
         this.originalPrice = this.price;
-        console.log("Setting image to:");
-        console.log(this.image);
         this.originalImage = this.image;
         this.inputElems = {};
         this.selectedProductImage = this.originalImage;
         this.setup();
     }
     setup() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.loadOriginalImage();
+            yield this.loadProductStats();
+            this.setupDone = true;
+        });
     }
     ;
     createElement(toAppendTo) {
-        const clone = ProductManager.productTemplate.content.cloneNode(true);
+        if (!this.setupDone) {
+            setTimeout(() => { this.createElement(toAppendTo); });
+            return;
+        }
+        ;
+        const clone = ProductManager.productTemplate.content.firstElementChild.cloneNode(true);
         this.populateTemplate(clone);
-        toAppendTo.appendChild(clone);
+        this.rootElement = toAppendTo.appendChild(clone);
+        let newStatBtn = this.rootElement.querySelector(".stat .addButton");
+        if (newStatBtn === null) {
+            throw new Error("New Stat Button not found!");
+        }
+        ;
+        newStatBtn.addEventListener("click", () => {
+            console.log("Adding new Stat");
+            this.statAddBtnListener();
+        });
+        this.generateStatElems();
     }
+    ;
     populateTemplate(clone) {
         this.inputElems.title = this.setDataField(clone, "title", this.title);
         this.inputElems.description = this.setDataField(clone, "description", this.description);
@@ -68,6 +98,150 @@ class ProductDisplay {
         this.inputElems.saveBtn = clone.querySelector("button.save-btn");
         this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); });
         this.setInputDefaults();
+    }
+    generateStatElems() {
+        if (!this.productStats) {
+            console.error("Stats need to be loaded first!");
+            return;
+        }
+        ;
+        if (!this.rootElement) {
+            console.error("Please set the root element");
+            return;
+        }
+        ;
+        this.inputElems.statsList = this.rootElement.querySelector(".stats-list");
+        if (!(this.inputElems.statsList instanceof HTMLElement)) {
+            console.error("Please set the stats root element");
+            return;
+        }
+        ;
+        this.productStats.forEach(stat => {
+            let statRoot = this.generateSingleStatElem(stat);
+            this.inputElems.statsList.appendChild(statRoot);
+        });
+    }
+    generateSingleStatElem(stat) {
+        let statRoot = document.createElement('div');
+        statRoot.classList.add("stat");
+        let nameInput = document.createElement("input");
+        let valueInput = document.createElement("input");
+        let unitSelectionElem = new UnitSelectionElement();
+        unitSelectionElem.element.id = `stat-unit-${stat.id}`;
+        unitSelectionElem.element.classList.add("unitInput");
+        let voidOption = unitSelectionElem.addOption("", "");
+        let kmhOption = unitSelectionElem.addOption("kmh", "km/h");
+        let kgOption = unitSelectionElem.addOption("kg", "kg");
+        if (stat.unit === "kmh") {
+            kmhOption.selected = true;
+        }
+        else if (stat.unit === "kg") {
+            kgOption.selected = true;
+        }
+        else {
+            voidOption.selected = true;
+        }
+        nameInput.value = stat.name.toString();
+        nameInput.classList.add("nameInput");
+        nameInput.id = `stat-name-${stat.id}`;
+        valueInput.value = stat.value.toString();
+        valueInput.classList.add("valueInput");
+        valueInput.id = `stat-value-${stat.id}`;
+        let removeBtn = document.createElement("button");
+        removeBtn.classList.add("removeBtn");
+        removeBtn.textContent = "-";
+        removeBtn.addEventListener('click', () => {
+            if (!this.productStats) {
+                return;
+            }
+            ;
+            if (!this.inputElems.statsList) {
+                return;
+            }
+            ;
+            for (let i = 0; i < this.productStats.length; i++) {
+                const currentStat = this.productStats[i];
+                if (currentStat.id === stat.id) {
+                    this.productStats.splice(i, 1);
+                }
+            }
+            let currentStatElement = this.inputElems.statsList.querySelector(`[data-id="${stat.id}"]`);
+            console.log(currentStatElement);
+            currentStatElement === null || currentStatElement === void 0 ? void 0 : currentStatElement.remove();
+        });
+        statRoot.appendChild(nameInput);
+        statRoot.appendChild(valueInput);
+        statRoot.appendChild(unitSelectionElem.element);
+        statRoot.appendChild(removeBtn);
+        statRoot.dataset.id = stat.id.toString();
+        nameInput.disabled = true;
+        valueInput.disabled = true;
+        unitSelectionElem.element.disabled = true;
+        return statRoot;
+    }
+    statAddBtnListener() {
+        let root = this.inputElems.statsList;
+        if (!root) {
+            console.error("Root not given!");
+            return;
+        }
+        if (!this.productStats) {
+            console.error("ProductStats not given!");
+            return;
+        }
+        let nameInp = document.getElementById("stat-template-name");
+        let valueInp = document.getElementById("stat-template-value");
+        let unitInp = document.getElementById("stat-template-unit");
+        if (!nameInp) {
+            throw new Error("nameInp fehlt!");
+        }
+        ;
+        if (!valueInp) {
+            throw new Error("ValueInp fehlt!");
+        }
+        ;
+        if (!unitInp) {
+            throw new Error("UnitInp fehlt!");
+        }
+        ;
+        let name = nameInp.value;
+        let value = valueInp.value;
+        let unit = unitInp.selectedOptions[unitInp.selectedIndex].value;
+        let statElem = this.generateSingleStatElem({ id: -1, name: name, value: value, unit: unit });
+        this.productStats.push({
+            id: -1,
+            name: name,
+            unit: unit,
+            value: value
+        });
+        root.appendChild(statElem);
+    }
+    loadOriginalImage() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let endpoint = this.image.path;
+            if (!this.originalImage) {
+                return;
+            }
+            ;
+            let res = yield fetch(endpoint);
+            if (res.ok) {
+                this.originalImage.image = (yield res.blob());
+            }
+        });
+    }
+    ;
+    loadProductStats() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const endpoint = `/api/product/stats/${this.id}`;
+            const fetchRes = yield fetch(endpoint);
+            if (!fetchRes.ok) {
+                throw new Error("Something went wrong!");
+            }
+            ;
+            let jsonResp = yield fetchRes.json();
+            this.productStats = jsonResp;
+            this.originalStats = this.productStats;
+        });
     }
     setInputDefaults() {
         if (this.inputElems.title) {
@@ -101,7 +275,7 @@ class ProductDisplay {
             console.error("Seleected Product Image not set!");
         }
         if (!this.selectedProductImage) {
-            this.selectedProductImage = { filename: "", alt: "", image: undefined, path: "" };
+            this.selectedProductImage = { filename: image.name, alt: image.name, image: image, path: "" };
         }
         ;
         this.selectedProductImage.image = image;
@@ -126,9 +300,8 @@ class ProductDisplay {
     }
     ;
     addImageToFormData(image, image_alt, formData) {
-        var _a;
         if (image === undefined && image_alt === undefined) {
-            if (((_a = this.originalImage) === null || _a === void 0 ? void 0 : _a.image) !== undefined && this.originalImage !== undefined) {
+            if (this.originalImage !== undefined && this.originalImage.image !== undefined) {
                 image = this.originalImage.image;
                 image_alt = this.originalImage.alt;
             }
@@ -153,17 +326,11 @@ class ProductDisplay {
         let title = titleElem.value;
         let description = descriptionElem.value;
         let price = priceElem.value;
-        console.info(`Title: ${title}`);
-        console.info(`Description: ${description}`);
-        console.info(`Price: ${price}`);
-        console.groupCollapsed(`SelectedProductImage:`);
-        console.log(this.selectedProductImage);
-        console.groupEnd();
         let formData = new FormData();
-        formData.append("id", this.id.toString());
         formData.append("title", title);
         formData.append("description", description);
         formData.append("price", price);
+        formData.append("stats", "");
         console.groupCollapsed(`Prepared FormData1:`);
         for (const singleData of formData.entries()) {
             console.log(singleData);
@@ -188,7 +355,7 @@ class ProductDisplay {
     }
     updateProduct() {
         return __awaiter(this, void 0, void 0, function* () {
-            const endpoint = "/api/admin/products/update";
+            const endpoint = `/api/admin/product/${this.id}/update`;
             console.log("Selected Image:");
             console.log(this.selectedProductImage);
             let formData = this.prepareProductFormData();
@@ -197,7 +364,7 @@ class ProductDisplay {
                 console.log(data[0], data[1]);
             }
             let resp = yield fetch(endpoint, {
-                method: "POST",
+                method: "PUT",
                 body: formData
             });
             if (resp.ok) {
@@ -233,11 +400,12 @@ class ProductManager {
             let jsonResp = yield resp.json();
             for (const resp of jsonResp) {
                 let img_path = `/api/product/image/get/${resp.id}`;
+                let image = yield ((yield fetch(img_path)).blob());
                 let product = new ProductDisplay(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,
                     path: img_path,
                     alt: resp.image_alt,
-                    image: undefined
+                    image: image
                 });
                 this.displays.push(product);
             }

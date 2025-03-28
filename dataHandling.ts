@@ -53,10 +53,10 @@ type productResponse = {
     description: string,
     price: number,
     img_alt: string,
-    stats: {name: string, unit: string, value: string}[],
+    stats: statsRow[],
 }
 
-type statsRow = { name: string, unit: string, value: string };
+type statsRow = { name: string, unit: string | null, value: string | number };
 
 
 /**
@@ -236,6 +236,18 @@ export class DataBaseHandling {
         let imgFileName = imgFileNameRow.filename;
 
         return imgFileName;
+    }
+
+    public getProductStats(id: number) {
+        console.log("Trying to get stats for product id: " + String(id));
+        const getStatsStmt = this.db.prepare("SELECT id, name, unit, value FROM stats WHERE product=?");
+        let stats: statsRow[] = [];
+
+        (getStatsStmt.all(id) as statsRow[]).forEach((row) => {
+            stats.push(row);
+        });
+
+        return stats;
     }
     
     private newStat(name: string, type: string, value: string | number) {

@@ -96,6 +96,26 @@ apiRouter.get("/product/image/get/:id", function (req, res) {
     ;
     res.status(404).end("The requested image could not be found");
 });
+apiRouter.get("/product/stats/:id", function (req, res) {
+    const id = Number(req.params.id);
+    const handler = new dataHandling_1.DataBaseHandling();
+    if (Number.isNaN(id)) {
+        res.status(400).end("Provide a valid product ID");
+        return;
+    }
+    let stats = handler.getProductStats(id);
+    res.json(stats);
+});
+apiRouter.route("/admin/product/stats/:id")
+    .get(function (req, res) {
+    res.sendStatus(501);
+})
+    .delete(function (req, res) {
+    res.sendStatus(501);
+})
+    .put(function (req, res) {
+    res.sendStatus(501);
+});
 apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     const handler = new dataHandling_1.DataBaseHandling();
@@ -162,7 +182,7 @@ apiRouter.get("/admin/products/get", (req, res) => {
     let response = handler.getAllProducts();
     res.json(response);
 });
-apiRouter.post("/admin/products/update", function (req, res) {
+apiRouter.post("/admin/product/:id/update", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;
@@ -173,7 +193,7 @@ apiRouter.post("/admin/products/update", function (req, res) {
         let price;
         let image;
         let image_alt;
-        id = body.id;
+        id = Number(req.params.id);
         title = body.title;
         description = body.description;
         price = body.price;

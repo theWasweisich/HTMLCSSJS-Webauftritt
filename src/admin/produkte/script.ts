@@ -12,7 +12,34 @@ type ProductImage = {
     path: string,
     filename: string,
     alt: string,
-    image: File | undefined
+    image: File
+}
+
+type ProductStat = {
+    id: number,
+    name: string,
+    unit: string | null,
+    value: string | number
+}
+
+abstract class StatWithElem {
+    public static elem: HTMLElement;
+    public static stat: ProductStat;
+}
+
+class UnitSelectionElement {
+    public element: HTMLSelectElement;
+    constructor() {
+        this.element = document.createElement("select");
+    }
+
+    public addOption(value: string, text: string) {
+        let optionElem = document.createElement("option");
+        optionElem.textContent = text;
+        optionElem.value = value;
+        let elem = this.element.appendChild(optionElem);
+        return elem;
+    }
 }
 
 class ProductDisplay {
@@ -23,6 +50,7 @@ class ProductDisplay {
         price?: HTMLInputElement,
         image?: HTMLImageElement,
         imageInput?: HTMLInputElement,
+        statsList?: HTMLElement,
         saveBtn?: HTMLButtonElement,
     };
 
@@ -36,15 +64,11 @@ class ProductDisplay {
         this._selectedProductImage = image;
     }
 
-    public set originalImage(image: ProductImage) {
-        console.log("Setting original Image from:");
-        console.log(this._originalImage);
-        console.log("to:");
-        console.log(image);
+    public set originalImage(image: ProductImage | undefined) {
         this._originalImage = image;
     }
 
-    public get originalImaage() {
+    public get originalImage() {
         return this._originalImage;
     }
 
@@ -52,9 +76,13 @@ class ProductDisplay {
     public originalTitle: string;
     public originalDescription: string;
     public originalPrice: number;
+    public originalStats: ProductStat[] | undefined;
     public _originalImage: ProductImage | undefined;
+    public setupDone: boolean = false;
 
     public needToSave: boolean = false;
+    public productStats: ProductStat[] | undefined;
+    public rootElement: HTMLDivElement | undefined;
     constructor(
         public id: number,
         public title: string,
@@ -66,26 +94,39 @@ class ProductDisplay {
         this.originalTitle = this.title;
         this.originalDescription = this.description;
         this.originalPrice = this.price;
-        console.log("Setting image to:");
-        console.log(this.image)
         this.originalImage = this.image;
 
         this.inputElems = {};
 
         this.selectedProductImage = this.originalImage;
-        this.setup();
+        this.setup()
     }
+    
+    public async setup() {
+        await this.loadOriginalImage();
+        await this.loadProductStats();
+        this.setupDone = true;
+    };
+    
+    public createElement(toAppendTo: HTMLElement) {
+        if (!this.setupDone) { setTimeout(() => { this.createElement(toAppendTo); }); return; };
+        const clone = (ProductManager.productTemplate.content.firstElementChild as HTMLDivElement).cloneNode(true);
+        this.populateTemplate(clone as HTMLDivElement);
+        this.rootElement = toAppendTo.appendChild(clone as HTMLDivElement);
+        
+        let newStatBtn = this.rootElement.querySelector(".stat .addButton");
+        if (newStatBtn === null) { throw new Error("New Stat Button not found!") };
 
-    public setup() {
+        newStatBtn.addEventListener("click", () => {
+            console.log("Adding new Stat");
+            this.statAddBtnListener();
+        });
+
+        this.generateStatElems();
     };
 
-    public createElement(toAppendTo: HTMLElement) {
-        const clone = ProductManager.productTemplate.content.cloneNode(true) as HTMLDivElement;
-        this.populateTemplate(clone);
-        toAppendTo.appendChild(clone);
-    }
-
     protected populateTemplate(clone: HTMLElement) {
+
         this.inputElems.title = this.setDataField(clone, "title", this.title) as HTMLInputElement;
         this.inputElems.description = this.setDataField(clone, "description", this.description) as HTMLTextAreaElement;
         this.inputElems.price = this.setDataField(clone, "price", this.price.toString()) as HTMLInputElement;
@@ -107,6 +148,141 @@ class ProductDisplay {
         this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); })
 
         this.setInputDefaults();
+    }
+
+    protected generateStatElems() {
+        if (!this.productStats) { console.error("Stats need to be loaded first!"); return; };
+        if (!this.rootElement) { console.error("Please set the root element"); return; };
+        this.inputElems.statsList = this.rootElement.querySelector(".stats-list") as HTMLElement;
+        if (!(this.inputElems.statsList instanceof HTMLElement)) { console.error("Please set the stats root element"); return; };
+        
+        this.productStats.forEach(stat => {
+            let statRoot = this.generateSingleStatElem(stat);
+
+            (this.inputElems.statsList as HTMLElement).appendChild(statRoot);
+        })
+    }
+
+    private generateSingleStatElem(stat: ProductStat): HTMLDivElement {
+
+        let statRoot = document.createElement('div');
+        statRoot.classList.add("stat");
+
+        let nameInput = document.createElement("input");
+        let valueInput = document.createElement("input");
+        let unitSelectionElem = new UnitSelectionElement();
+        unitSelectionElem.element.id = `stat-unit-${stat.id}`;
+        unitSelectionElem.element.classList.add("unitInput");
+
+        let voidOption = unitSelectionElem.addOption("", "");
+        let kmhOption = unitSelectionElem.addOption("kmh", "km/h");
+        let kgOption = unitSelectionElem.addOption("kg", "kg");
+
+        if (stat.unit === "kmh") {
+            kmhOption.selected = true;
+        } else if (stat.unit === "kg") {
+            kgOption.selected = true;
+        } else {
+            voidOption.selected = true;
+        }
+
+        nameInput.value = stat.name.toString();
+        nameInput.classList.add("nameInput");
+        nameInput.id = `stat-name-${stat.id}`
+        valueInput.value = stat.value.toString();
+        valueInput.classList.add("valueInput");
+        valueInput.id = `stat-value-${stat.id}`
+        
+        let removeBtn = document.createElement("button");
+        removeBtn.classList.add("removeBtn");
+        removeBtn.textContent = "-"
+
+        removeBtn.addEventListener('click', () => {
+            if (!this.productStats) { return; };
+            if (!this.inputElems.statsList) { return };
+
+            for (let i = 0; i < this.productStats.length; i++) {
+                const currentStat = this.productStats[i];
+                if (currentStat.id === stat.id) {
+                    this.productStats.splice(i, 1);
+                }
+            }
+
+            let currentStatElement = this.inputElems.statsList.querySelector(`[data-id="${stat.id}"]`);
+            console.log(currentStatElement)
+            currentStatElement?.remove();
+        });
+
+        statRoot.appendChild(nameInput);
+        statRoot.appendChild(valueInput);
+        statRoot.appendChild(unitSelectionElem.element);
+        statRoot.appendChild(removeBtn);
+
+        statRoot.dataset.id = stat.id.toString();
+
+        nameInput.disabled = true;
+        valueInput.disabled = true;
+        unitSelectionElem.element.disabled = true;
+
+        return statRoot;
+    }
+
+    protected statAddBtnListener() {
+        let root = this.inputElems.statsList;
+
+        if (!root) {
+            console.error("Root not given!");
+            return
+        }
+        if (!this.productStats) {
+            console.error("ProductStats not given!");
+            return
+        }
+
+        let nameInp = document.getElementById("stat-template-name") as HTMLInputElement | undefined;
+        let valueInp = document.getElementById("stat-template-value") as HTMLInputElement | undefined;
+        let unitInp = document.getElementById("stat-template-unit") as HTMLSelectElement | undefined;
+
+        if (!nameInp) { throw new Error("nameInp fehlt!") };
+        if (!valueInp) { throw new Error("ValueInp fehlt!") };
+        if (!unitInp) { throw new Error("UnitInp fehlt!") };
+
+        let name = nameInp.value;
+        let value = valueInp.value;
+        let unit = unitInp.selectedOptions[unitInp.selectedIndex].value;
+
+        let statElem = this.generateSingleStatElem({id: -1, name: name, value: value, unit: unit});
+
+        this.productStats.push({
+            id: -1,
+            name: name,
+            unit: unit,
+            value: value
+        })
+
+        root.appendChild(statElem);
+    }
+
+
+    protected async loadOriginalImage() {
+        let endpoint = this.image.path;
+        if (!this.originalImage) { return };
+
+        let res = await fetch(endpoint);
+        if (res.ok) {
+            this.originalImage.image = await res.blob() as File;
+        }
+    };
+
+    protected async loadProductStats() {
+        const endpoint = `/api/product/stats/${this.id}`;
+        const fetchRes = await fetch(endpoint);
+        if (!fetchRes.ok) {
+            throw new Error("Something went wrong!");
+        };
+        let jsonResp = await fetchRes.json() as ProductStat[];
+        this.productStats = jsonResp;
+        this.originalStats = this.productStats;
     }
 
     protected setInputDefaults() {
@@ -137,7 +313,7 @@ class ProductDisplay {
         if (!this.selectedProductImage) {
             console.error("Seleected Product Image not set!");
         }
-        if (!this.selectedProductImage) { this.selectedProductImage = { filename: "", alt: "", image: undefined, path: "" } };
+        if (!this.selectedProductImage) { this.selectedProductImage = { filename: image.name, alt: image.name, image: image, path: "" } };
         this.selectedProductImage.image = image;
         this.selectedProductImage.filename = image.name;
         this.selectedProductImage.alt = image.name;
@@ -167,7 +343,7 @@ class ProductDisplay {
     private addImageToFormData(image?: Blob | File, image_alt?: string, formData?: FormData): FormData {
 
         if (image === undefined && image_alt === undefined) {
-            if (this.originalImage?.image !== undefined && this.originalImage !== undefined) {
+            if (this.originalImage !== undefined && this.originalImage.image !== undefined) {
                 image = this.originalImage.image;
                 image_alt = this.originalImage.alt;
             } else {
@@ -194,19 +370,13 @@ class ProductDisplay {
         let title = titleElem.value;
         let description = descriptionElem.value;
         let price = priceElem.value;
-        console.info(`Title: ${title}`);
-        console.info(`Description: ${description}`);
-        console.info(`Price: ${price}`);
 
-        console.groupCollapsed(`SelectedProductImage:`);
-        console.log(this.selectedProductImage);
-        console.groupEnd();
 
         let formData = new FormData();
-        formData.append("id", this.id.toString());
         formData.append("title", title);
         formData.append("description", description);
         formData.append("price", price);
+        formData.append("stats", "");
 
         console.groupCollapsed(`Prepared FormData1:`);
         for (const singleData of formData.entries()) {
@@ -233,7 +403,7 @@ class ProductDisplay {
     }
 
     public async updateProduct() {
-        const endpoint = "/api/admin/products/update";
+        const endpoint = `/api/admin/product/${this.id}/update`;
 
         console.log("Selected Image:");
         console.log(this.selectedProductImage);
@@ -246,7 +416,7 @@ class ProductDisplay {
         }
 
         let resp = await fetch(endpoint, {
-            method: "POST",
+            method: "PUT",
             body: formData
         });
 
@@ -274,6 +444,7 @@ class ProductManager {
     public async setup() {
         await this.loadProducts();
 
+        
         this.displays.forEach((display) => {
             display.createElement(this.productSection);
         });
@@ -286,6 +457,7 @@ class ProductManager {
 
         for (const resp of jsonResp) {
             let img_path: string = `/api/product/image/get/${resp.id}`;
+            let image = await ((await fetch(img_path)).blob()) as File;
             let product = new ProductDisplay(
                 resp.id,
                 resp.title,
@@ -295,7 +467,7 @@ class ProductManager {
                     filename: resp.image_filename,
                     path: img_path,
                     alt: resp.image_alt,
-                    image: undefined
+                    image: image
                 }
             );
             this.displays.push(product);

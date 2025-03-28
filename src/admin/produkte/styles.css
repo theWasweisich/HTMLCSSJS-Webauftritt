@@ -1,8 +1,10 @@
 .product {
     --_img-max-width: 50%;
     margin-block: 2em;
-    padding: .5em;
-    background-color: darkblue;
+    padding: 2em;
+    border-radius: 1em;
+    overflow: hidden;
+    background-color: purple;
 
     img {
         display: block;
@@ -20,11 +22,21 @@
     }
     
     .file-picker-label {
+        max-width: 31.25em;
+        display: block;
         .wrapper {
-            max-width: var(--_img-max-width);
+            width: 100%;
             display: flex;
             flex-direction: column;
             gap: .5em;
         }
+    }
+}
+
+.stats-list {
+
+    .heading, .stat {
+        display: flex;
+        flex-direction: row;
     }
 }
