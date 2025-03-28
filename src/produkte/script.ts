@@ -7,7 +7,7 @@ type BicycleImage = {
 type BicycleStat = {
     name: string,
     value: string | number | boolean,
-    type: "speed" | "plain" | "mass"
+    type: string
 };
 
 class Bicycle {
@@ -21,7 +21,7 @@ class Bicycle {
     ) { };
 
     public createElement() {
-        function getMathElement(value: string, type: "kmh" | "kg" | "plain") {
+        function getMathElement(value: string, type: string) {
             let math = document.createElement('math');
             let mtext1 = document.createElement('mtext');
             let mvalue = document.createElement('mtext');
@@ -43,9 +43,6 @@ class Bicycle {
                     mtext1.innerText = "kg";
                     math.appendChild(mtext1);
                     break;
-                case "plain":
-                    // nothing
-                    break;
                 default:
                     break;
             }
@@ -63,10 +60,8 @@ class Bicycle {
         let sectionheading = sectiontext.querySelector('h2') as HTMLHeadingElement;
         let description = sectiontext.querySelector('.product-descr') as HTMLParagraphElement;
 
-        setImgProperties: {
-            imageElem.src = this.image.url;
-            imageElem.alt = this.image.alt;
-        }
+        imageElem.src = this.image.url;
+        imageElem.alt = this.image.alt;
 
 
         sectionheading.textContent = this.name;
@@ -81,12 +76,12 @@ class Bicycle {
             
             keyElem.textContent = stat.name + ": ";
             
-            if (stat.type === "plain") {
-                valueElem = getMathElement(stat.value.toString(), "plain");
-            } else if (stat.type === "mass") {
+            if (stat.type === "kg") {
                 valueElem = getMathElement(stat.value.toString(), "kg");
-            } else if (stat.type === "speed") {
+            } else if (stat.type === "kmh") {
                 valueElem = getMathElement(stat.value.toString(), "kmh");
+            } else {
+                valueElem = getMathElement(stat.value.toString(), "");
             }
             
             valueElem.classList.add("value");
@@ -104,11 +99,60 @@ function craftImagePath(imageName: string) {
     return imagesRoot.concat(imageName);
 }
 
+type returnedData = {
+    id: number,
+    title: string,
+    description: string,
+    price: number,
+    imgAlt: string
+}
+
+async function getNewData() {
+    type returnedData = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        imgAlt: string,
+        stats: {name: string, unit: string, value: string}[]
+    };
+
+    const fetchRes = await fetch("/api/products/get");
+    const dataList = (await fetchRes.json()) as returnedData[];
+
+    dataList.forEach((data) => {
+        let stats: BicycleStat[] = []
+;
+        data.stats.forEach((stat) => {
+            stats.push({
+                name: stat.name,
+                type: stat.unit,
+                value: stat.value
+            })
+        });
+        cycles.push(new Bicycle(
+            data.title,
+            data.description,
+            {
+                url: `/api/product/image/get/${data.id}`,
+                alt: data.imgAlt
+            },
+            stats
+        ))
+    })
+}
+
 function parseJson(data: any) {
+    let id = data["id"];
     let name = data["name"];
     let description = data["description"];
     let image_filename = data["image"]["file"];
-    let image: BicycleImage = { url: craftImagePath(image_filename), alt: data["image"]["alt"] };
+
+
+    let image: BicycleImage = {
+        url: craftImagePath(id),
+        alt: data["image"]["alt"]
+    };
     let stats: BicycleStat[] = [];
 
     for (const statData of data["stats"]) {
@@ -127,21 +171,12 @@ function parseJson(data: any) {
     cycles.push(cycle);
 }
 
-async function loadBicycles(endpoint: string = "bicyles.json") {
-    const abortSignal = new AbortController();
-    let resp = await fetch(endpoint, {
-        signal: abortSignal.signal
-    });
-    if (!resp.ok) { throw resp.status }
-    let data = (await resp.json()) as any[];
-
-    for (const bicycle of data) {
-        parseJson(bicycle);
-    }
+async function loadBicycles() {
+    await getNewData();
 
     cycles.forEach(cycle => {
         cycle.createElement();
-    })
+    });
 }
 
 var cycles: Array<Bicycle> = [];

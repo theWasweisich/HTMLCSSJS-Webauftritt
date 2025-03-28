@@ -15,16 +15,29 @@ class ProductDisplay {
     set selectedProductImage(image) {
         this._selectedProductImage = image;
     }
+    set originalImage(image) {
+        console.log("Setting original Image from:");
+        console.log(this._originalImage);
+        console.log("to:");
+        console.log(image);
+        this._originalImage = image;
+    }
+    get originalImaage() {
+        return this._originalImage;
+    }
     constructor(id, title, description, price, image) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.price = price;
         this.image = image;
+        this.needToSave = false;
         this.originalId = this.id;
         this.originalTitle = this.title;
         this.originalDescription = this.description;
         this.originalPrice = this.price;
+        console.log("Setting image to:");
+        console.log(this.image);
         this.originalImage = this.image;
         this.inputElems = {};
         this.selectedProductImage = this.originalImage;
@@ -52,6 +65,8 @@ class ProductDisplay {
         this.inputElems.imageInput.addEventListener("change", (ev) => { this.imageInputHandler(ev); });
         let imgLabelElem = clone.querySelector(".file-picker-label");
         imgLabelElem.htmlFor = this.inputElems.imageInput.id;
+        this.inputElems.saveBtn = clone.querySelector("button.save-btn");
+        this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); });
         this.setInputDefaults();
     }
     setInputDefaults() {
@@ -86,7 +101,7 @@ class ProductDisplay {
             console.error("Seleected Product Image not set!");
         }
         if (!this.selectedProductImage) {
-            throw new Error("AAAAAAAAAAAAAAAAAAA");
+            this.selectedProductImage = { filename: "", alt: "", image: undefined, path: "" };
         }
         ;
         this.selectedProductImage.image = image;
@@ -95,7 +110,13 @@ class ProductDisplay {
         this.selectedProductImage.path = URL.createObjectURL(image);
         this.updateImage();
     }
+    saveBtnHandler(ev) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.updateProduct();
+        });
+    }
     updateImage() {
+        console.debug("Updating Image!");
         if (this.selectedProductImage === undefined) {
             return;
         }
@@ -104,46 +125,65 @@ class ProductDisplay {
         img.alt = this.selectedProductImage.alt;
     }
     ;
-    sendNewImageToServer(image) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log("Sending new image to server");
-            let formData = new FormData();
-            formData.append("image", image);
-            const endpoint = "/api/admin/images/new";
-            let resp = yield fetch(endpoint, {
-                method: "POST",
-                body: formData
-            });
-            if (resp.ok) {
-                console.log("Success");
-                let json = yield resp.json();
-                let filepath = json["path"];
-                if (filepath) {
-                    return filepath;
-                }
+    addImageToFormData(image, image_alt, formData) {
+        var _a;
+        if (image === undefined && image_alt === undefined) {
+            if (((_a = this.originalImage) === null || _a === void 0 ? void 0 : _a.image) !== undefined && this.originalImage !== undefined) {
+                image = this.originalImage.image;
+                image_alt = this.originalImage.alt;
             }
             else {
-                console.error("Error");
+                throw new Error("If image and alt are not given, this.originalImage has to be set!");
             }
-            ;
-            return new Error("Error during file upload");
-        });
+        }
+        else if (image !== undefined && image_alt !== undefined) {
+            image = image;
+            image_alt = image_alt;
+        }
+        formData = new FormData();
+        formData.append("image", image);
+        formData.append("image_alt", image_alt);
+        return formData;
     }
     prepareProductFormData() {
-        var _a;
         let titleElem = this.inputElems.title;
         let descriptionElem = this.inputElems.description;
         let priceElem = this.inputElems.price;
+        let image = this.selectedProductImage;
+        let title = titleElem.value;
+        let description = descriptionElem.value;
+        let price = priceElem.value;
+        console.info(`Title: ${title}`);
+        console.info(`Description: ${description}`);
+        console.info(`Price: ${price}`);
+        console.groupCollapsed(`SelectedProductImage:`);
+        console.log(this.selectedProductImage);
+        console.groupEnd();
         let formData = new FormData();
         formData.append("id", this.id.toString());
-        formData.append("title", titleElem.value);
-        formData.append("description", descriptionElem.value);
-        formData.append("price", priceElem.value);
-        if ((_a = this.selectedProductImage) === null || _a === void 0 ? void 0 : _a.image) {
-            console.log("Image is set! adding it to form data");
-            formData.append("image", this.selectedProductImage.image);
-            formData.append("image-alt", this.selectedProductImage.alt);
+        formData.append("title", title);
+        formData.append("description", description);
+        formData.append("price", price);
+        console.groupCollapsed(`Prepared FormData1:`);
+        for (const singleData of formData.entries()) {
+            console.log(singleData);
         }
+        console.groupEnd();
+        let receivedFormData;
+        if (image !== undefined && image.image !== undefined) {
+            receivedFormData = this.addImageToFormData(image.image, image.alt, formData);
+        }
+        else {
+            receivedFormData = this.addImageToFormData();
+        }
+        for (const data of receivedFormData.entries()) {
+            formData.append(data[0], data[1]);
+        }
+        console.groupCollapsed(`Prepared FormData:`);
+        for (const singleData of formData.entries()) {
+            console.log(singleData);
+        }
+        console.groupEnd();
         return formData;
     }
     updateProduct() {
@@ -151,13 +191,11 @@ class ProductDisplay {
             const endpoint = "/api/admin/products/update";
             console.log("Selected Image:");
             console.log(this.selectedProductImage);
-            if (this.selectedProductImage !== undefined) {
-                console.warn("Skippinng seperate Image send");
-                // await this.sendNewImageToServer(this.selectedImage);
-            }
             let formData = this.prepareProductFormData();
             console.log("Formdata:");
-            console.log(formData);
+            for (const data of formData) {
+                console.log(data[0], data[1]);
+            }
             let resp = yield fetch(endpoint, {
                 method: "POST",
                 body: formData
@@ -187,13 +225,14 @@ class ProductManager {
             });
         });
     }
+    ;
     loadProducts() {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = "/api/admin/products/get";
             let resp = yield fetch(endpoint);
             let jsonResp = yield resp.json();
             for (const resp of jsonResp) {
-                let img_path = "/assets/images/products/" + resp.image_filename;
+                let img_path = `/api/product/image/get/${resp.id}`;
                 let product = new ProductDisplay(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,
                     path: img_path,

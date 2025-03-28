@@ -1,5 +1,6 @@
 [
     {
+        "id": 0,
         "name": "Fahrrad 1",
         "description": "Sehr schönes Fahrrad! mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text mehr text",
         "image": {
@@ -30,6 +31,7 @@
         ]
     },
     {
+        "id": 1,
         "name": "Fahrrad 3",
         "description": "Das vielleicht schönste?",
         "image": {
@@ -60,6 +62,7 @@
         ]
     },
     {
+        "id": 2,
         "name": "Fahrrad 2",
         "description": "Weiteres schönes Fahrrad!",
         "image": {
@@ -90,6 +93,7 @@
         ]
     },
     {
+        "id": 3,
         "name": "Fahrrad 4",
         "description": "nvm, das hier ist schöner",
         "image": {
@@ -120,6 +124,7 @@
         ]
     },
     {
+        "id": 4,
         "name": "Fahrrad 6",
         "description": "Dies ist auch ein tolles Fahrrad",
         "image": {

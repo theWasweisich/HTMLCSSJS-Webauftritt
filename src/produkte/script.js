@@ -37,9 +37,6 @@ class Bicycle {
                     mtext1.innerText = "kg";
                     math.appendChild(mtext1);
                     break;
-                case "plain":
-                    // nothing
-                    break;
                 default:
                     break;
             }
@@ -55,10 +52,8 @@ class Bicycle {
         let imageElem = clone.querySelector('.card img');
         let sectionheading = sectiontext.querySelector('h2');
         let description = sectiontext.querySelector('.product-descr');
-        setImgProperties: {
-            imageElem.src = this.image.url;
-            imageElem.alt = this.image.alt;
-        }
+        imageElem.src = this.image.url;
+        imageElem.alt = this.image.alt;
         sectionheading.textContent = this.name;
         description.textContent = this.description;
         let statsWrapper = clone.querySelector('div.stats');
@@ -66,14 +61,14 @@ class Bicycle {
             let keyElem = document.createElement("span");
             let valueElem = document.createElement("math");
             keyElem.textContent = stat.name + ": ";
-            if (stat.type === "plain") {
-                valueElem = getMathElement(stat.value.toString(), "plain");
-            }
-            else if (stat.type === "mass") {
+            if (stat.type === "kg") {
                 valueElem = getMathElement(stat.value.toString(), "kg");
             }
-            else if (stat.type === "speed") {
+            else if (stat.type === "kmh") {
                 valueElem = getMathElement(stat.value.toString(), "kmh");
+            }
+            else {
+                valueElem = getMathElement(stat.value.toString(), "");
             }
             valueElem.classList.add("value");
             statsWrapper.append(keyElem);
@@ -87,11 +82,35 @@ function craftImagePath(imageName) {
     const imagesRoot = "/assets/images/products/";
     return imagesRoot.concat(imageName);
 }
+function getNewData() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const fetchRes = yield fetch("/api/products/get");
+        const dataList = (yield fetchRes.json());
+        dataList.forEach((data) => {
+            let stats = [];
+            data.stats.forEach((stat) => {
+                stats.push({
+                    name: stat.name,
+                    type: stat.unit,
+                    value: stat.value
+                });
+            });
+            cycles.push(new Bicycle(data.title, data.description, {
+                url: `/api/product/image/get/${data.id}`,
+                alt: data.imgAlt
+            }, stats));
+        });
+    });
+}
 function parseJson(data) {
+    let id = data["id"];
     let name = data["name"];
     let description = data["description"];
     let image_filename = data["image"]["file"];
-    let image = { url: craftImagePath(image_filename), alt: data["image"]["alt"] };
+    let image = {
+        url: craftImagePath(id),
+        alt: data["image"]["alt"]
+    };
     let stats = [];
     for (const statData of data["stats"]) {
         let stat = {
@@ -109,18 +128,8 @@ function parseJson(data) {
     cycles.push(cycle);
 }
 function loadBicycles() {
-    return __awaiter(this, arguments, void 0, function* (endpoint = "bicyles.json") {
-        const abortSignal = new AbortController();
-        let resp = yield fetch(endpoint, {
-            signal: abortSignal.signal
-        });
-        if (!resp.ok) {
-            throw resp.status;
-        }
-        let data = (yield resp.json());
-        for (const bicycle of data) {
-            parseJson(bicycle);
-        }
+    return __awaiter(this, void 0, void 0, function* () {
+        yield getNewData();
         cycles.forEach(cycle => {
             cycle.createElement();
         });

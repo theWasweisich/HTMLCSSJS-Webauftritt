@@ -15,9 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
 const express_fileupload_1 = __importDefault(require("express-fileupload"));
-const router = express_1.default.Router();
-exports.default = router;
-router.use((0, express_fileupload_1.default)({
+const node_path_1 = __importDefault(require("node:path"));
+const apiRouter = express_1.default.Router();
+exports.default = apiRouter;
+apiRouter.use((0, express_fileupload_1.default)({
     useTempFiles: true,
     debug: true,
 }));
@@ -25,7 +26,7 @@ let feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
     feature__flags = flags;
 });
-router.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     // console.log(body, typeof body);
     console.log("New Contact Message received!");
@@ -39,7 +40,7 @@ router.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, func
     }
     ;
 }));
-router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     const handler = new dataHandling_1.DataBaseHandling();
     try {
@@ -55,7 +56,7 @@ router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* 
     req.session.token = undefined;
     res.status(401).send("Invalid");
 }));
-router.get("/cookies", (req, res) => {
+apiRouter.get("/cookies", (req, res) => {
     if (!feature__flags) {
         res.status(500).end("?");
         return;
@@ -66,21 +67,36 @@ router.get("/cookies", (req, res) => {
     }
     res.end("ok");
 });
-router.get("/products/get", function (req, res) {
+apiRouter.get("/products/get", function (req, res) {
+    console.log("Getting all Products!!!");
     const handler = new dataHandling_1.DataBaseHandling();
     const allProducts = handler.getAllProducts();
     let toReturn = allProducts.map(value => {
         return {
+            id: value.id,
             title: value.title,
             description: value.description,
             price: value.price,
-            img__filename: value.image_filename,
-            img__alt: value.image_alt,
+            imgAlt: value.img_alt,
+            stats: value.stats,
         };
     });
     res.json(toReturn);
 });
-router.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.get("/product/image/get/:id", function (req, res) {
+    const productId = req.params.id;
+    const handler = new dataHandling_1.DataBaseHandling();
+    var imagePath = handler.getProductImagePath(Number(productId));
+    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+    if (imagePath) {
+        imagePath = node_path_1.default.join(__dirname, imagePath);
+        res.sendFile(imagePath);
+        return;
+    }
+    ;
+    res.status(404).end("The requested image could not be found");
+});
+apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     const handler = new dataHandling_1.DataBaseHandling();
     let usrname = body["username"];
@@ -98,13 +114,13 @@ router.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, functi
         res.status(500).end("Something went wrong :(");
     }
 }));
-router.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Requested Messages!");
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.getContactMessages();
     res.status(200).json(result);
 }));
-router.post("/admin/products/new", (req, res) => {
+apiRouter.post("/admin/products/new", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     const newProduct = {
@@ -122,7 +138,7 @@ router.post("/admin/products/new", (req, res) => {
     }
     ;
 });
-router.delete("/admin/contact/delete", (req, res) => {
+apiRouter.delete("/admin/contact/delete", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     console.log(body);
@@ -141,32 +157,34 @@ router.delete("/admin/contact/delete", (req, res) => {
         res.status(500).end(":(");
     }
 });
-router.get("/admin/products/get", (req, res) => {
+apiRouter.get("/admin/products/get", (req, res) => {
     let handler = new dataHandling_1.DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
-router.post("/admin/products/update", function (req, res) {
+apiRouter.post("/admin/products/update", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;
+        console.log(`Body: ${body}`);
         let id;
         let title;
         let description;
         let price;
         let image;
         let image_alt;
-        id = body["id"];
-        title = body["title"];
-        description = body["description"];
-        price = body["price"];
+        id = body.id;
+        title = body.title;
+        description = body.description;
+        price = body.price;
         if (!req.files) {
-            res.status(500).end("Could not read files!");
+            console.error("Req.files not available!");
             return;
         }
-        image = req.files.image;
-        image_alt = body["image-alt"];
-        console.log(image);
+        else {
+            image = req.files.image;
+        }
+        image_alt = body.image_alt;
         let success = yield handler.updateProduct(id, title, description, price, image, image_alt);
         if (success) {
             res.status(200).end("Success");

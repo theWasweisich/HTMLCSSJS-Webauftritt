@@ -2,7 +2,8 @@
 import express from 'express';
 import morgan from 'morgan';
 import session from "express-session";
-import router from './apiEndpoints';
+import apiRouter from './apiEndpoints';
+import fs from 'node:fs';
 import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
 
 const app = express();
@@ -28,7 +29,12 @@ getFeatureFlags().then((flags) => {
     feature__flags = flags;
 });
 
+app.use(morgan("common", {
+    stream: fs.createWriteStream("./access.log", { encoding: "utf-8", flags: 'a' })
+}));
 app.use(morgan("dev"));
+
+
 app.use(express.json());
 app.use(session({
     secret: "dies ist sehr geheim",
@@ -80,7 +86,7 @@ app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
     return res.redirect(308, "/assets/icons/favicon-dark.svg");
 })
 
-app.use("/api/", router);
+app.use("/api/", apiRouter);
 
 app.use(express.static("src/"));
 app.listen(port, () => {

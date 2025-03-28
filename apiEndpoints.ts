@@ -2,11 +2,12 @@ import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { v4 as uuidV4 } from "uuid";
-const router = express.Router();
+import path from "node:path";
+const apiRouter = express.Router();
 
-export default router;
+export default apiRouter;
 
-router.use(fileUpload({
+apiRouter.use(fileUpload({
     useTempFiles: true,
     debug: true,
 }));
@@ -18,7 +19,7 @@ getFeatureFlags().then((flags) => {
 });
 
 
-router.post('/contact/new', async (req, res) => {
+apiRouter.post('/contact/new', async (req, res) => {
     const body = req.body;
     // console.log(body, typeof body);
     console.log("New Contact Message received!");
@@ -33,7 +34,7 @@ router.post('/contact/new', async (req, res) => {
     };
 });
 
-router.post('/login', async (req, res) => {
+apiRouter.post('/login', async (req, res) => {
     const body = req.body;
     const handler = new DataBaseHandling();
     
@@ -51,7 +52,7 @@ router.post('/login', async (req, res) => {
     res.status(401).send("Invalid");
 });
 
-router.get("/cookies", (req, res) => {
+apiRouter.get("/cookies", (req, res) => {
     if (!feature__flags) {
         res.status(500).end("?");
         return;
@@ -62,22 +63,49 @@ router.get("/cookies", (req, res) => {
     res.end("ok");
 });
 
-router.get("/products/get", function (req, res) {
+apiRouter.get("/products/get", function (req, res) {
+    console.log("Getting all Products!!!");
     const handler = new DataBaseHandling();
     const allProducts = handler.getAllProducts();
-    let toReturn: object[] = allProducts.map(value => {
+
+    type returnedData = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        imgAlt: string,
+        stats: {name: string, unit: string, value: string}[]
+    }
+
+    let toReturn: returnedData[] = allProducts.map(value => {
         return {
+            id: value.id,
             title: value.title,
             description: value.description,
             price: value.price,
-            img__filename: value.image_filename,
-            img__alt: value.image_alt,
-        };
+            imgAlt: value.img_alt,
+            stats: value.stats,
+        } as returnedData;
     });
-    res.json(toReturn);
+    res.json(toReturn as returnedData[]);
 });
 
-router.post('/users/new', async (req, res) => {
+apiRouter.get("/product/image/get/:id", function (req, res) {
+    const productId = req.params.id;
+    const handler = new DataBaseHandling();
+    var imagePath = handler.getProductImagePath(Number(productId));
+
+    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+
+    if (imagePath) {
+        imagePath = path.join(__dirname, imagePath);
+        res.sendFile(imagePath);
+        return;
+    };
+    res.status(404).end("The requested image could not be found");
+})
+
+apiRouter.post('/users/new', async (req, res) => {
     const body = req.body;
     const handler = new DataBaseHandling();
 
@@ -94,7 +122,7 @@ router.post('/users/new', async (req, res) => {
     }
 });
 
-router.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
     console.log("Requested Messages!")
     const handler = new DataBaseHandling();
 
@@ -103,7 +131,7 @@ router.get("/admin/contact/get", async (req: express.Request, res: express.Respo
     res.status(200).json(result);
 });
 
-router.post("/admin/products/new", (req: express.Request, res: express.Response) => {
+apiRouter.post("/admin/products/new", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -123,7 +151,7 @@ router.post("/admin/products/new", (req: express.Request, res: express.Response)
     };
 });
 
-router.delete("/admin/contact/delete", (req: express.Request, res: express.Response) => {
+apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -144,33 +172,48 @@ router.delete("/admin/contact/delete", (req: express.Request, res: express.Respo
     }
 })
 
-router.get("/admin/products/get", (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/products/get", (req: express.Request, res: express.Response) => {
     let handler = new DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
 
-router.post("/admin/products/update", async function(req: express.Request, res: express.Response) {
+apiRouter.post("/admin/products/update", async function(req: express.Request, res: express.Response) {
+
+    type uploadBody = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        image: fileUpload.UploadedFile,
+        image_alt: string
+    };
+
     const handler = new DataBaseHandling();
-    const body = req.body;
+    const body = req.body as uploadBody;
 
-    let id: number | undefined;
-    let title: string | undefined;
-    let description: string | undefined;
-    let price: number | undefined;
+    console.log(`Body: ${body}`);
+
+    let id: number;
+    let title: string;
+    let description: string;
+    let price: number;
     let image: fileUpload.UploadedFile;
-    let image_alt: string | undefined;
+    let image_alt: string;
 
     
-    id = body["id"];
-    title = body["title"];
-    description = body["description"];
-    price = body["price"];
-    if (!req.files) { res.status(500).end("Could not read files!"); return; }
-    image = req.files.image as UploadedFile;
-    image_alt = body["image-alt"]
+    id = body.id;
+    title = body.title;
+    description = body.description;
+    price = body.price;
+    if (!req.files) {
+        console.error("Req.files not available!");
+        return;
+    } else {
+        image = req.files.image as UploadedFile;
+    }
+    image_alt = body.image_alt
     
-    console.log(image);
     let success = await handler.updateProduct(id, title, description, price, image, image_alt);
 
     if (success) {

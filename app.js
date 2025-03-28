@@ -16,6 +16,7 @@ const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_session_1 = __importDefault(require("express-session"));
 const apiEndpoints_1 = __importDefault(require("./apiEndpoints"));
+const node_fs_1 = __importDefault(require("node:fs"));
 const dataHandling_1 = require("./dataHandling");
 const app = (0, express_1.default)();
 var port = 3000;
@@ -28,6 +29,9 @@ var feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
     feature__flags = flags;
 });
+app.use((0, morgan_1.default)("common", {
+    stream: node_fs_1.default.createWriteStream("./access.log", { encoding: "utf-8", flags: 'a' })
+}));
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
