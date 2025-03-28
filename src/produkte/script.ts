@@ -21,7 +21,7 @@ class Bicycle {
     ) { };
 
     public createElement() {
-        function getMathElement(value: string, type: "kmh" | "kg" | "plain") {
+        function getMathElement(value: string, type: string) {
             let math = document.createElement('math');
             let mtext1 = document.createElement('mtext');
             let mvalue = document.createElement('mtext');
@@ -42,9 +42,6 @@ class Bicycle {
                 case "kg":
                     mtext1.innerText = "kg";
                     math.appendChild(mtext1);
-                    break;
-                case "plain":
-                    // nothing
                     break;
                 default:
                     break;
@@ -79,12 +76,12 @@ class Bicycle {
             
             keyElem.textContent = stat.name + ": ";
             
-            if (stat.type === "plain") {
-                valueElem = getMathElement(stat.value.toString(), "plain");
-            } else if (stat.type === "mass") {
+            if (stat.type === "kg") {
                 valueElem = getMathElement(stat.value.toString(), "kg");
-            } else if (stat.type === "speed") {
+            } else if (stat.type === "kmh") {
                 valueElem = getMathElement(stat.value.toString(), "kmh");
+            } else {
+                valueElem = getMathElement(stat.value.toString(), "");
             }
             
             valueElem.classList.add("value");

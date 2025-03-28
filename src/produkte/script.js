@@ -37,9 +37,6 @@ class Bicycle {
                     mtext1.innerText = "kg";
                     math.appendChild(mtext1);
                     break;
-                case "plain":
-                    // nothing
-                    break;
                 default:
                     break;
             }
@@ -64,14 +61,14 @@ class Bicycle {
             let keyElem = document.createElement("span");
             let valueElem = document.createElement("math");
             keyElem.textContent = stat.name + ": ";
-            if (stat.type === "plain") {
-                valueElem = getMathElement(stat.value.toString(), "plain");
-            }
-            else if (stat.type === "mass") {
+            if (stat.type === "kg") {
                 valueElem = getMathElement(stat.value.toString(), "kg");
             }
-            else if (stat.type === "speed") {
+            else if (stat.type === "kmh") {
                 valueElem = getMathElement(stat.value.toString(), "kmh");
+            }
+            else {
+                valueElem = getMathElement(stat.value.toString(), "");
             }
             valueElem.classList.add("value");
             statsWrapper.append(keyElem);

@@ -16,11 +16,9 @@ exports.DataBaseHandling = void 0;
 exports.getFeatureFlags = getFeatureFlags;
 exports.isAuthTokenValid = isAuthTokenValid;
 const promises_1 = __importDefault(require("node:fs/promises"));
-const sqlite3_1 = __importDefault(require("sqlite3"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const uuid_1 = require("uuid");
-sqlite3_1.default.verbose();
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         const feature__flags = JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
@@ -216,35 +214,37 @@ class DataBaseHandling {
     }
     updateProduct(id, title, description, price, image, image_alt) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(id, title, description, price, image, image_alt);
+            console.log(`Id: ${id}`);
+            console.log(`Title: ${title}`);
+            console.log(`Description: ${description}`);
+            console.log(`Price: ${price}`);
+            console.log(`Image: ${image}`);
+            console.log(`Image Alt: ${image_alt}`);
             let imgId;
-            if (image && image_alt) {
-                const constructedPath = `./uploads/${image.name}`;
-                image.mv(constructedPath, (err) => {
-                    if (err) {
-                        console.error("Something went wrong with moving the image");
-                        return;
-                    }
-                    console.log("Image moved successfully to " + constructedPath);
-                });
-                imgId = (yield this.insertNewImage(constructedPath, image_alt));
-            }
-            else {
-                imgId = undefined;
-            }
+            const constructedPath = `./uploads/${image.name}`;
+            image.mv(constructedPath, (err) => {
+                if (err) {
+                    console.error("Something went wrong with moving the image");
+                    return;
+                }
+                console.log("Image moved successfully to " + constructedPath);
+            });
+            imgId = (yield this.insertNewImage(constructedPath, image_alt));
             let dataToInsert = [];
             let propertiesToInsert = [];
             let filepath;
             const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
             const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
             let originalData = selectStmt.get(id);
+            console.log(originalData);
             let newRow = {
-                name: title ? title : originalData.name,
-                description: description ? description : originalData.description,
-                price: price ? price : originalData.price,
-                image: imgId ? imgId : originalData.image
+                name: title,
+                description: description,
+                price: price,
+                image: imgId
             };
             let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
+            console.log(`Changes: ${res.changes}`);
             let success = res.changes > 0;
             return success;
         });

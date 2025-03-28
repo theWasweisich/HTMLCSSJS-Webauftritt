@@ -23,6 +23,7 @@ class ProductDisplay {
         price?: HTMLInputElement,
         image?: HTMLImageElement,
         imageInput?: HTMLInputElement,
+        saveBtn?: HTMLButtonElement,
     };
 
     private _selectedProductImage: ProductImage | undefined;
@@ -35,12 +36,25 @@ class ProductDisplay {
         this._selectedProductImage = image;
     }
 
+    public set originalImage(image: ProductImage) {
+        console.log("Setting original Image from:");
+        console.log(this._originalImage);
+        console.log("to:");
+        console.log(image);
+        this._originalImage = image;
+    }
+
+    public get originalImaage() {
+        return this._originalImage;
+    }
+
     public originalId: number;
     public originalTitle: string;
     public originalDescription: string;
     public originalPrice: number;
-    public originalImage: ProductImage;
+    public _originalImage: ProductImage | undefined;
 
+    public needToSave: boolean = false;
     constructor(
         public id: number,
         public title: string,
@@ -52,6 +66,8 @@ class ProductDisplay {
         this.originalTitle = this.title;
         this.originalDescription = this.description;
         this.originalPrice = this.price;
+        console.log("Setting image to:");
+        console.log(this.image)
         this.originalImage = this.image;
 
         this.inputElems = {};
@@ -62,7 +78,7 @@ class ProductDisplay {
 
     public setup() {
     };
-    
+
     public createElement(toAppendTo: HTMLElement) {
         const clone = ProductManager.productTemplate.content.cloneNode(true) as HTMLDivElement;
         this.populateTemplate(clone);
@@ -86,6 +102,9 @@ class ProductDisplay {
 
         let imgLabelElem = clone.querySelector(".file-picker-label") as HTMLLabelElement;
         imgLabelElem.htmlFor = this.inputElems.imageInput.id;
+
+        this.inputElems.saveBtn = clone.querySelector("button.save-btn") as HTMLButtonElement;
+        this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); })
 
         this.setInputDefaults();
     }
@@ -118,7 +137,7 @@ class ProductDisplay {
         if (!this.selectedProductImage) {
             console.error("Seleected Product Image not set!");
         }
-        if (!this.selectedProductImage) { throw new Error("AAAAAAAAAAAAAAAAAAA") };
+        if (!this.selectedProductImage) { this.selectedProductImage = { filename: "", alt: "", image: undefined, path: "" } };
         this.selectedProductImage.image = image;
         this.selectedProductImage.filename = image.name;
         this.selectedProductImage.alt = image.name;
@@ -127,54 +146,89 @@ class ProductDisplay {
         this.updateImage();
     }
 
+    protected async saveBtnHandler(ev: Event) {
+        await this.updateProduct();
+    }
+
     private updateImage() {
+        console.debug("Updating Image!");
         if (this.selectedProductImage === undefined) { return; }
         let img = this.inputElems.image as HTMLImageElement;
         img.src = this.selectedProductImage.path;
         img.alt = this.selectedProductImage.alt;
     };
 
-    private async sendNewImageToServer(image: Blob) {
-        console.log("Sending new image to server");
-        let formData = new FormData();
-        formData.append("image", image);
+    /**
+     * @param image The image to use
+     * @param image_alt The alt text
+     */
+    private addImageToFormData(): FormData;
+    private addImageToFormData(image: Blob | File, image_alt: string, formData: FormData): FormData;
+    private addImageToFormData(image?: Blob | File, image_alt?: string, formData?: FormData): FormData {
 
-        const endpoint = "/api/admin/images/new";
-        let resp = await fetch(endpoint, {
-            method: "POST",
-            body: formData
-        })
-
-        if (resp.ok) {
-            console.log("Success");
-            let json = await resp.json();
-            let filepath = json["path"];
-            if (filepath) {
-                return filepath;
+        if (image === undefined && image_alt === undefined) {
+            if (this.originalImage?.image !== undefined && this.originalImage !== undefined) {
+                image = this.originalImage.image;
+                image_alt = this.originalImage.alt;
+            } else {
+                throw new Error("If image and alt are not given, this.originalImage has to be set!");
             }
-        } else {
-            console.error("Error");
-        };
-        return new Error("Error during file upload");
+        } else if (image !== undefined && image_alt !== undefined) {
+            image = image as Blob;
+            image_alt = image_alt as string;
+        }
+
+        formData = new FormData();
+        formData.append("image", image as Blob);
+        formData.append("image_alt", image_alt as string);
+
+        return formData;
     }
 
     protected prepareProductFormData() {
         let titleElem = this.inputElems.title as HTMLInputElement;
         let descriptionElem = this.inputElems.description as HTMLTextAreaElement;
         let priceElem = this.inputElems.price as HTMLInputElement
+        let image = this.selectedProductImage;
+
+        let title = titleElem.value;
+        let description = descriptionElem.value;
+        let price = priceElem.value;
+        console.info(`Title: ${title}`);
+        console.info(`Description: ${description}`);
+        console.info(`Price: ${price}`);
+
+        console.groupCollapsed(`SelectedProductImage:`);
+        console.log(this.selectedProductImage);
+        console.groupEnd();
 
         let formData = new FormData();
         formData.append("id", this.id.toString());
-        formData.append("title", titleElem.value);
-        formData.append("description", descriptionElem.value);
-        formData.append("price", priceElem.value);
+        formData.append("title", title);
+        formData.append("description", description);
+        formData.append("price", price);
 
-        if (this.selectedProductImage?.image) {
-            console.log("Image is set! adding it to form data")
-            formData.append("image", this.selectedProductImage.image as Blob);
-            formData.append("image-alt", this.selectedProductImage.alt);
+        console.groupCollapsed(`Prepared FormData1:`);
+        for (const singleData of formData.entries()) {
+            console.log(singleData);
+        }
+        console.groupEnd();
+
+        let receivedFormData;
+        if (image !== undefined && image.image !== undefined) {
+            receivedFormData = this.addImageToFormData(image.image as Blob, image.alt, formData);
+        } else {
+            receivedFormData = this.addImageToFormData();
+        }
+        for (const data of receivedFormData.entries()) {
+            formData.append(data[0], data[1]);
         }
 
+        console.groupCollapsed(`Prepared FormData:`);
+        for (const singleData of formData.entries()) {
+            console.log(singleData);
+        }
+        console.groupEnd();
         return formData;
     }
 
@@ -183,15 +237,13 @@ class ProductDisplay {
 
         console.log("Selected Image:");
         console.log(this.selectedProductImage);
-        if (this.selectedProductImage !== undefined) {
-            console.warn("Skippinng seperate Image send");
-            // await this.sendNewImageToServer(this.selectedImage);
-        }
 
         let formData = this.prepareProductFormData();
 
         console.log("Formdata:");
-        console.log(formData);
+        for (const data of formData) {
+            console.log(data[0], data[1]);
+        }
 
         let resp = await fetch(endpoint, {
             method: "POST",
@@ -224,8 +276,8 @@ class ProductManager {
 
         this.displays.forEach((display) => {
             display.createElement(this.productSection);
-        })
-    }
+        });
+    };
 
     public async loadProducts() {
         const endpoint = "/api/admin/products/get";
@@ -233,7 +285,7 @@ class ProductManager {
         let jsonResp = await resp.json() as productResponse[];
 
         for (const resp of jsonResp) {
-            let img_path: string = "/assets/images/products/" + resp.image_filename;
+            let img_path: string = `/api/product/image/get/${resp.id}`;
             let product = new ProductDisplay(
                 resp.id,
                 resp.title,

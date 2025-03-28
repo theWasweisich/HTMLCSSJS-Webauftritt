@@ -14,13 +14,10 @@ export interface FeatureFlags {
 }
 
 import fs from "node:fs/promises";
-import sqlite3 from "sqlite3";
 import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
 import fileUpload from "express-fileupload";
-
-sqlite3.verbose();
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
@@ -269,33 +266,34 @@ export class DataBaseHandling {
 
         return id;
     }
-
     public async updateProduct(
-        id: number | undefined,
-        title: string | undefined,
-        description: string | undefined,
-        price: number | undefined,
-        image: fileUpload.UploadedFile | undefined,
-        image_alt: string | undefined,
+
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        image: fileUpload.UploadedFile,
+        image_alt: string,
     ): Promise<boolean> {
 
-        console.log(id, title, description, price, image, image_alt);
+        console.log(`Id: ${id}`);
+        console.log(`Title: ${title}`);
+        console.log(`Description: ${description}`);
+        console.log(`Price: ${price}`);
+        console.log(`Image: ${image}`);
+        console.log(`Image Alt: ${image_alt}`);
 
         type productsRow = { name: string, description: string, price: number, image: number };
 
 
         let imgId;
 
-        if (image && image_alt) {
-            const constructedPath = `./uploads/${image.name}`;
-            image.mv(constructedPath, (err) => {
-                if (err) { console.error("Something went wrong with moving the image"); return }
-                console.log("Image moved successfully to " + constructedPath);
-            })
-            imgId = await this.insertNewImage(constructedPath, image_alt) as number;
-        } else {
-            imgId = undefined;
-        }
+        const constructedPath = `./uploads/${image.name}`;
+        image.mv(constructedPath, (err) => {
+            if (err) { console.error("Something went wrong with moving the image"); return }
+            console.log("Image moved successfully to " + constructedPath);
+        })
+        imgId = await this.insertNewImage(constructedPath, image_alt) as number;
 
 
         let dataToInsert: string[] = [];
@@ -307,14 +305,16 @@ export class DataBaseHandling {
 
 
         let originalData = selectStmt.get(id) as productsRow;
+        console.log(originalData);
         let newRow: productsRow = {
-            name: title ? title : originalData.name,
-            description: description ? description : originalData.description,
-            price: price ? price : originalData.price,
-            image: imgId ? imgId : originalData.image
+            name: title,
+            description: description,
+            price: price,
+            image: imgId
         }
 
         let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
+        console.log(`Changes: ${res.changes}`);
         let success = res.changes > 0;
 
         return success
