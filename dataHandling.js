@@ -12,9 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = void 0;
-exports.getFeatureFlags = getFeatureFlags;
-exports.isAuthTokenValid = isAuthTokenValid;
+exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -26,9 +24,11 @@ function getFeatureFlags() {
         return feature__flags;
     });
 }
+exports.getFeatureFlags = getFeatureFlags;
 function isAuthTokenValid(token) {
     return true;
 }
+exports.isAuthTokenValid = isAuthTokenValid;
 /**
  * The Class for all Data handling activities
  */
@@ -97,7 +97,7 @@ class DataBaseHandling {
     ;
     generateNewAuthToken() {
         const newToken = encodeURIComponent((0, uuid_1.v4)());
-        utils_1.logger.info("Generating new Token...");
+        console.log("Generating new Token...");
         const insertStmt = this.db.prepare("INSERT INTO authTokens (token, insertDate) VALUES (?, ?)");
         insertStmt.run(newToken, new Date().toISOString());
         return newToken;
@@ -122,6 +122,7 @@ class DataBaseHandling {
      */
     newContactMessage(name, prename, email, topic, shortMsg, longMsg) {
         return __awaiter(this, void 0, void 0, function* () {
+            // console.log(name, prename, email, topic, shortMsg, longMsg);
             const stmt = this.db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
             const timestamp = new Date().toISOString();
             const dbResult = stmt.run(timestamp, name, prename, email, topic, shortMsg, longMsg);
@@ -162,6 +163,7 @@ class DataBaseHandling {
         let dbRes = productStmt.all();
         dbRes.forEach((value, index, array) => {
             let row = value;
+            console.log(row);
             if (typeof row.image === "number") {
                 let imgRes = imgAltStmt.get(row.image);
             }
@@ -178,21 +180,22 @@ class DataBaseHandling {
     }
     ;
     getProductImagePath(id) {
+        console.log("Trying to get image for id " + String(id));
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
         const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
         try {
             let imgId = getImgIdStmt.get(id.toFixed(0)).image;
-            utils_1.logger.info(`The image id for Product ${id} is ${imgId}`);
+            console.log(`The image id is ${imgId}`);
             let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
             let imgFileName = imgFileNameRow.filename;
             return imgFileName;
         }
-        catch (e) {
+        finally {
             return null;
         }
     }
     getProductStats(id) {
-        utils_1.logger.info("Trying to get stats for product id: " + String(id));
+        console.log("Trying to get stats for product id: " + String(id));
         const getStatsStmt = this.db.prepare("SELECT id, name, unit, value FROM stats WHERE product=?");
         let stats = [];
         getStatsStmt.all(id).forEach((row) => {
@@ -210,10 +213,6 @@ class DataBaseHandling {
         statsList.forEach(stat => {
             this.newStat(stat.name, stat.unit, stat.value, productId);
         });
-    }
-    removeStat(statId, productId) {
-        const removeStatStmt = this.db.prepare("DELETE FROM stats WHERE product=? AND id=?");
-        removeStatStmt.run(productId, statId);
     }
     getStatsOfProduct(productId) {
         const getStatsStmt = this.db.prepare("SELECT name, unit, value FROM stats WHERE product=?");
@@ -239,9 +238,14 @@ class DataBaseHandling {
     }
     updateProduct(id, title, description, price) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Id: ${id}`);
+            console.log(`Title: ${title}`);
+            console.log(`Description: ${description}`);
+            console.log(`Price: ${price}`);
             const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=? WHERE id=?");
             const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
             let originalData = selectStmt.get(id);
+            console.log(originalData);
             let newRow = {
                 name: title,
                 description: description,
@@ -249,6 +253,7 @@ class DataBaseHandling {
             };
             try {
                 let res = updateStmt.run(newRow.name, newRow.description, newRow.price, id);
+                console.log(`Changes: ${res.changes}`);
                 let success = res.changes > 0;
                 return success;
             }
@@ -262,6 +267,7 @@ class DataBaseHandling {
     }
     updateProductImage(image, image_alt, productId) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Image name: ${image.name}`);
             if (image.name === "blob") {
                 console.error("Image name is blob! Rejecting...");
                 return new Error("Please do not provide a blob!");

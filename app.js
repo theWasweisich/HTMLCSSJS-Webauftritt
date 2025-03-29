@@ -18,7 +18,6 @@ const express_session_1 = __importDefault(require("express-session"));
 const apiEndpoints_1 = __importDefault(require("./apiEndpoints"));
 const node_fs_1 = __importDefault(require("node:fs"));
 const dataHandling_1 = require("./dataHandling");
-const utils_1 = require("./utils");
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
@@ -37,7 +36,7 @@ app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172800 }, // Das sind 2 Tage
+    cookie: { maxAge: 172800 },
     resave: false,
     saveUninitialized: false
 }));
@@ -45,7 +44,7 @@ function checkAuthMiddleware(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
         if (isAuthNeeded) {
-            utils_1.logger.info("Auth is needed!");
+            console.log("Auth is needed");
             if (!req.session.token) {
                 res.redirect(307, "/login/");
                 return;
@@ -54,7 +53,7 @@ function checkAuthMiddleware(req, res, next) {
                 try {
                     const db = new dataHandling_1.DataBaseHandling();
                     let res = yield db.isAuthTokenKnown(req.session.token);
-                    utils_1.logger.info("DB res: " + res);
+                    console.log("DB res: " + res);
                     if (res) {
                         next();
                         return;
@@ -90,5 +89,5 @@ app.get("/favicon.ico", (req, res) => {
 app.use("/api/", apiEndpoints_1.default);
 app.use(express_1.default.static("src/"));
 app.listen(port, () => {
-    utils_1.logger.info(`Listening on Port ${port}`);
+    console.log(`Listening on Port ${port}`);
 });
