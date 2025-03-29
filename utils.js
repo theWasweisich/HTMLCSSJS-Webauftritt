@@ -1,6 +1,25 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.COLORS = void 0;
+exports.COLORS = exports.logger = void 0;
+const winston_1 = __importDefault(require("winston"));
+const format = winston_1.default.format.combine(winston_1.default.format(info => (Object.assign(Object.assign({}, info), { level: info.level.toUpperCase() })))(), winston_1.default.format.align(), winston_1.default.format.colorize(), winston_1.default.format.errors({ stack: true }), winston_1.default.format.prettyPrint(), winston_1.default.format.simple(), winston_1.default.format.splat(), winston_1.default.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), winston_1.default.format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`));
+exports.logger = winston_1.default.createLogger({
+    level: 'info',
+    format: winston_1.default.format.combine(format, winston_1.default.format.uncolorize()),
+    transports: [
+        new winston_1.default.transports.File({ filename: 'errors.log', level: 'error' }),
+        new winston_1.default.transports.File({ filename: 'logs.log', level: 'info' })
+    ]
+});
+if (process.env.NODE_ENV !== "production") {
+    exports.logger.add(new winston_1.default.transports.Console({
+        format: format,
+    }));
+}
+;
 exports.COLORS = {
     Reset: "\x1b[0m",
     Bold: "\x1b[1m",

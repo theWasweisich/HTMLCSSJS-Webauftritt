@@ -5,6 +5,7 @@ import session from "express-session";
 import apiRouter from './apiEndpoints';
 import fs from 'node:fs';
 import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
+import { logger } from './utils';
 
 const app = express();
 
@@ -47,13 +48,13 @@ async function checkAuthMiddleware(req: express.Request, res: express.Response, 
     const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
     
     if (isAuthNeeded) {
-        console.log("Auth is needed");
+        logger.info("Auth is needed!");
         if (!req.session.token) { res.redirect(307, "/login/"); return; }
         if (req.session.token) {
             try {
                 const db = new DataBaseHandling();
                 let res = await db.isAuthTokenKnown(req.session.token);
-                console.log("DB res: " + res);
+                logger.info("DB res: " + res);
                 if (res) {
                     next();
                     return;
@@ -90,5 +91,5 @@ app.use("/api/", apiRouter);
 
 app.use(express.static("src/"));
 app.listen(port, () => {
-    console.log(`Listening on Port ${port}`);
+    logger.info(`Listening on Port ${port}`);
 });
