@@ -68,7 +68,6 @@ apiRouter.get("/cookies", (req, res) => {
     res.end("ok");
 });
 apiRouter.get("/products/get", function (req, res) {
-    console.log("Getting all Products!!!");
     const handler = new dataHandling_1.DataBaseHandling();
     const allProducts = handler.getAllProducts();
     let toReturn = allProducts.map(value => {
@@ -83,7 +82,7 @@ apiRouter.get("/products/get", function (req, res) {
     });
     res.json(toReturn);
 });
-apiRouter.get("/product/image/get/:id", function (req, res) {
+apiRouter.get("/product/:id/image/get/", function (req, res) {
     const productId = req.params.id;
     const handler = new dataHandling_1.DataBaseHandling();
     var imagePath = handler.getProductImagePath(Number(productId));
@@ -106,14 +105,15 @@ apiRouter.get("/product/stats/:id", function (req, res) {
     let stats = handler.getProductStats(id);
     res.json(stats);
 });
-apiRouter.route("/admin/product/stats/:id")
-    .get(function (req, res) {
-    res.sendStatus(501);
-})
+apiRouter.route("/admin/product/:id/stats")
     .delete(function (req, res) {
     res.sendStatus(501);
 })
     .put(function (req, res) {
+    const handling = new dataHandling_1.DataBaseHandling();
+    const stats = JSON.parse(req.body.stats);
+    console.log(stats);
+    handling.newStats(stats, Number(req.params.id));
     res.sendStatus(501);
 });
 apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -182,7 +182,7 @@ apiRouter.get("/admin/products/get", (req, res) => {
     let response = handler.getAllProducts();
     res.json(response);
 });
-apiRouter.post("/admin/product/:id/update", function (req, res) {
+apiRouter.put("/admin/product/:id/update", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;

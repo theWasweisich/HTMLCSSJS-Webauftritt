@@ -206,7 +206,7 @@ class ProductDisplay {
         ;
         let name = nameInp.value;
         let value = valueInp.value;
-        let unit = unitInp.selectedOptions[unitInp.selectedIndex].value;
+        let unit = unitInp.selectedOptions[0].value;
         let statElem = this.generateSingleStatElem({ id: -1, name: name, value: value, unit: unit });
         this.productStats.push({
             id: -1,
@@ -290,7 +290,6 @@ class ProductDisplay {
         });
     }
     updateImage() {
-        console.debug("Updating Image!");
         if (this.selectedProductImage === undefined) {
             return;
         }
@@ -356,13 +355,8 @@ class ProductDisplay {
     updateProduct() {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = `/api/admin/product/${this.id}/update`;
-            console.log("Selected Image:");
-            console.log(this.selectedProductImage);
             let formData = this.prepareProductFormData();
-            console.log("Formdata:");
-            for (const data of formData) {
-                console.log(data[0], data[1]);
-            }
+            yield this.updateStats();
             let resp = yield fetch(endpoint, {
                 method: "PUT",
                 body: formData
@@ -375,6 +369,32 @@ class ProductDisplay {
                 console.error("Error!");
                 console.error(txt);
             }
+        });
+    }
+    updateStats() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.productStats) {
+                throw new Error("Stats need to be set!");
+            }
+            ;
+            this.productStats.forEach(stat => {
+                stat;
+            });
+            let statsJson = JSON.stringify(this.productStats);
+            console.log(statsJson);
+            const formData = new FormData();
+            formData.append("stats", statsJson);
+            const endpoint = `/api/admin/product/${this.id}/stats`;
+            let fetchRes = yield fetch(endpoint, {
+                method: "PUT",
+                body: formData
+            });
+            if (!fetchRes.ok) {
+                let resText = yield fetchRes.text();
+                console.error(resText);
+                return false;
+            }
+            return true;
         });
     }
 }
@@ -399,7 +419,7 @@ class ProductManager {
             let resp = yield fetch(endpoint);
             let jsonResp = yield resp.json();
             for (const resp of jsonResp) {
-                let img_path = `/api/product/image/get/${resp.id}`;
+                let img_path = `/api/product/${resp.id}/image/get`;
                 let image = yield ((yield fetch(img_path)).blob());
                 let product = new ProductDisplay(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,

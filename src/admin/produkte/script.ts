@@ -249,7 +249,7 @@ class ProductDisplay {
 
         let name = nameInp.value;
         let value = valueInp.value;
-        let unit = unitInp.selectedOptions[unitInp.selectedIndex].value;
+        let unit = unitInp.selectedOptions[0].value;
 
         let statElem = this.generateSingleStatElem({id: -1, name: name, value: value, unit: unit});
 
@@ -327,7 +327,6 @@ class ProductDisplay {
     }
 
     private updateImage() {
-        console.debug("Updating Image!");
         if (this.selectedProductImage === undefined) { return; }
         let img = this.inputElems.image as HTMLImageElement;
         img.src = this.selectedProductImage.path;
@@ -405,15 +404,9 @@ class ProductDisplay {
     public async updateProduct() {
         const endpoint = `/api/admin/product/${this.id}/update`;
 
-        console.log("Selected Image:");
-        console.log(this.selectedProductImage);
-
         let formData = this.prepareProductFormData();
 
-        console.log("Formdata:");
-        for (const data of formData) {
-            console.log(data[0], data[1]);
-        }
+        await this.updateStats();
 
         let resp = await fetch(endpoint, {
             method: "PUT",
@@ -427,6 +420,35 @@ class ProductDisplay {
             console.error("Error!");
             console.error(txt);
         }
+    }
+
+    private async updateStats() {
+        if (!this.productStats) { throw new Error("Stats need to be set!"); };
+
+        this.productStats.forEach(stat => {
+            stat as ProductStat;
+        });
+
+        let statsJson: string = JSON.stringify(this.productStats);
+
+        console.log(statsJson)
+
+        const formData = new FormData();
+        formData.append("stats", statsJson);
+
+        const endpoint = `/api/admin/product/${this.id}/stats`;
+
+        let fetchRes = await fetch(endpoint, {
+            method: "PUT",
+            body: formData
+        });
+
+        if (!fetchRes.ok) {
+            let resText = await fetchRes.text();
+            console.error(resText);
+            return false;
+        }
+        return true;
     }
 }
 
@@ -456,7 +478,7 @@ class ProductManager {
         let jsonResp = await resp.json() as productResponse[];
 
         for (const resp of jsonResp) {
-            let img_path: string = `/api/product/image/get/${resp.id}`;
+            let img_path: string = `/api/product/${resp.id}/image/get`;
             let image = await ((await fetch(img_path)).blob()) as File;
             let product = new ProductDisplay(
                 resp.id,

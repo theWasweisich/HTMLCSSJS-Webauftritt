@@ -151,7 +151,7 @@ class DataBaseHandling {
             return productId;
         }
         stats.forEach((stat) => {
-            this.newStat(stat.name, stat.type, stat.value);
+            this.newStat(stat.name, stat.type, stat.value, Number(productId));
         });
         return productId;
     }
@@ -195,9 +195,14 @@ class DataBaseHandling {
         });
         return stats;
     }
-    newStat(name, type, value) {
+    newStat(name, type, value, productId) {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
-        statInsertStmt.run(name, type, value);
+        statInsertStmt.run(name, type, value, productId);
+    }
+    newStats(statsList, productId) {
+        statsList.forEach(stat => {
+            this.newStat(stat.name, stat.unit, stat.value, productId);
+        });
     }
     getStatsOfProduct(productId) {
         const getStatsStmt = this.db.prepare("SELECT name, unit, value FROM stats WHERE product=?");

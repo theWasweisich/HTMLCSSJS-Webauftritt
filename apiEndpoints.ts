@@ -64,7 +64,6 @@ apiRouter.get("/cookies", (req, res) => {
 });
 
 apiRouter.get("/products/get", function (req, res) {
-    console.log("Getting all Products!!!");
     const handler = new DataBaseHandling();
     const allProducts = handler.getAllProducts();
 
@@ -90,7 +89,7 @@ apiRouter.get("/products/get", function (req, res) {
     res.json(toReturn as returnedData[]);
 });
 
-apiRouter.get("/product/image/get/:id", function (req, res) {
+apiRouter.get("/product/:id/image/get/", function (req, res) {
     const productId = req.params.id;
     const handler = new DataBaseHandling();
     var imagePath = handler.getProductImagePath(Number(productId));
@@ -120,14 +119,15 @@ apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.
     res.json(stats);
 })
 
-apiRouter.route("/admin/product/stats/:id")
-    .get(function(req: express.Request, res: express.Response) {
-        res.sendStatus(501);
-    })
+apiRouter.route("/admin/product/:id/stats")
     .delete(function(req: express.Request, res: express.Response) {
         res.sendStatus(501);
     })
     .put(function(req: express.Request, res: express.Response) {
+        const handling = new DataBaseHandling();
+        const stats = JSON.parse(req.body.stats) as {id: number, name: string, unit: string | null, value: string | number}[];
+        console.log(stats);
+        handling.newStats(stats, Number(req.params.id));
         res.sendStatus(501);
     });
 
@@ -204,7 +204,7 @@ apiRouter.get("/admin/products/get", (req: express.Request, res: express.Respons
     res.json(response);
 });
 
-apiRouter.post("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
+apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
 
     type uploadBody = {
         title: string,
