@@ -12,7 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
+exports.DataBaseHandling = void 0;
+exports.getFeatureFlags = getFeatureFlags;
+exports.isAuthTokenValid = isAuthTokenValid;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -24,11 +26,9 @@ function getFeatureFlags() {
         return feature__flags;
     });
 }
-exports.getFeatureFlags = getFeatureFlags;
 function isAuthTokenValid(token) {
     return true;
 }
-exports.isAuthTokenValid = isAuthTokenValid;
 /**
  * The Class for all Data handling activities
  */

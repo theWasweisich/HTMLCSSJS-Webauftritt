@@ -110,7 +110,7 @@ PartialsLoader.partialUrls = {
 };
 class consentMgr {
     static get consent() {
-        return Number(localStorage.getItem(consentMgr.storageName.expiry));
+        return Number(localStorage.getItem(_a.storageName.expiry));
     }
     static set consent(value) {
         localStorage.setItem(this.storageName.expiry, value.toString());
@@ -119,24 +119,24 @@ class consentMgr {
      * The Milliseconds after which consent will be lost
      */
     static get consentRemaining() {
-        return Number((consentMgr.consent + this.consentValidForMS) - Date.now());
+        return Number((_a.consent + this.consentValidForMS) - Date.now());
     }
     /**
      * @returns True if consent has been given, and false if not
      */
-    static checkConsent() { return consentMgr.consentRemaining > 0; }
+    static checkConsent() { return _a.consentRemaining > 0; }
     static ensureConsent(...args) {
-        if (!consentMgr.checkConsent()) {
-            consentMgr.promptConsent();
+        if (!_a.checkConsent()) {
+            _a.promptConsent();
         }
         return;
     }
     static ensureConsentRepeat(...args) {
-        if (!consentMgr.checkConsent()) {
-            consentMgr.promptConsent();
+        if (!_a.checkConsent()) {
+            _a.promptConsent();
         }
         else {
-            setTimeout(consentMgr.promptConsent, consentMgr.consentRemaining);
+            setTimeout(_a.promptConsent, _a.consentRemaining);
         }
     }
     static revokeConsent() {
@@ -160,7 +160,7 @@ class consentMgr {
             }
             ;
             document.body.style.overflow = "hidden";
-            consentMgr.setListeners(replacer);
+            _a.setListeners(replacer);
             replacer.showModal();
         });
     }
@@ -173,7 +173,7 @@ class consentMgr {
         });
         modal.addEventListener('close', onClose);
         function onClose() {
-            consentMgr.ensureConsent();
+            _a.ensureConsent();
             modal.removeEventListener('close', onClose);
         }
     }

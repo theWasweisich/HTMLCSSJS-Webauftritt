@@ -77,7 +77,7 @@ apiRouter.get("/products/get", function (req, res) {
     });
     res.json(toReturn);
 });
-apiRouter.get("/product/:id/image/get/", function (req, res) {
+apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
     const handler = new dataHandling_1.DataBaseHandling();
     try {
@@ -85,12 +85,14 @@ apiRouter.get("/product/:id/image/get/", function (req, res) {
         console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
         if (imagePath !== null) {
             imagePath = node_path_1.default.join(__dirname, imagePath);
+            console.log("Sending file");
             res.sendFile(imagePath);
+            next();
             return;
         }
         ;
     }
-    finally {
+    catch (e) {
         res.status(404).end("The requested image could not be found");
     }
 });

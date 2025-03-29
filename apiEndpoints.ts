@@ -83,7 +83,7 @@ apiRouter.get("/products/get", function (req, res) {
     res.json(toReturn as returnedData[]);
 });
 
-apiRouter.get("/product/:id/image/get/", function (req, res) {
+apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
     const handler = new DataBaseHandling();
 
@@ -94,10 +94,12 @@ apiRouter.get("/product/:id/image/get/", function (req, res) {
 
         if (imagePath !== null) {
             imagePath = path.join(__dirname, imagePath);
+            console.log("Sending file")
             res.sendFile(imagePath);
+            next();
             return;
         };
-    } finally {
+    } catch (e) {
         res.status(404).end("The requested image could not be found");
     }
 });

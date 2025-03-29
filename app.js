@@ -36,7 +36,7 @@ app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172800 },
+    cookie: { maxAge: 172800 }, // Das sind 2 Tage
     resave: false,
     saveUninitialized: false
 }));

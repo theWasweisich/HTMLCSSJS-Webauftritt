@@ -134,7 +134,7 @@ async function getNewData() {
             data.title,
             data.description,
             {
-                url: `/api/product/image/get/${data.id}`,
+                url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
             },
             stats
