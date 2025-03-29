@@ -17,7 +17,8 @@ import fs from "node:fs/promises";
 import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
-import fileUpload from "express-fileupload";
+import fileUpload, { UploadedFile } from "express-fileupload";
+import { COLORS } from "./utils";
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
@@ -28,6 +29,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
 export function isAuthTokenValid(token: string) {
     return true;
 }
+
 type ContactMessageData = {
     id?: number,
     timestamp: Date,
@@ -52,7 +54,6 @@ type productResponse = {
     title: string,
     description: string,
     price: number,
-    img_alt: string,
     stats: statsRow[],
 }
 
@@ -211,31 +212,36 @@ export class DataBaseHandling {
         let dbRes = productStmt.all();
         dbRes.forEach((value, index, array) => {
             let row = value as productRow;
-            let imgRes = imgAltStmt.get(row.image) as { alt: string };
+            console.log(row);
+            if (typeof row.image === "number") {
+                let imgRes = imgAltStmt.get(row.image) as { alt: string };
+            }
             let stats = this.getStatsOfProduct(row.id);
             products.push({
                 id: row.id,
                 title: row.name,
                 description: row.description,
                 price: row.price,
-                img_alt: imgRes.alt,
                 stats: stats
             });
         });
         return products;
     };
 
-    public getProductImagePath(id: number) {
+    public getProductImagePath(id: number): string | null {
         console.log("Trying to get image for id " + String(id));
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
         const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
-        let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;
-        
-        console.log(`The image id is ${imgId}`);
-        let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
-        let imgFileName = imgFileNameRow.filename;
 
-        return imgFileName;
+        try {
+            let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
+            console.log(`The image id is ${imgId}`);
+            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
+            let imgFileName = imgFileNameRow.filename;
+            return imgFileName;
+        } finally {
+            return null;
+        }
     }
 
     public getProductStats(id: number) {
@@ -255,7 +261,9 @@ export class DataBaseHandling {
         statInsertStmt.run(name, type, value, productId);
     }
 
-    public newStats(statsList: {name: string, unit: string | null, value: string | number}[], productId: number) {
+    public replaceStats(statsList: {name: string, unit: string | null, value: string | number}[], productId: number) {
+        const removeStmt = this.db.prepare("DELETE FROM stats WHERE product=?");
+        removeStmt.run(productId);
         statsList.forEach(stat => {
             this.newStat(stat.name, stat.unit, stat.value, productId);
         })
@@ -281,7 +289,6 @@ export class DataBaseHandling {
         const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
         let runres = insertStmt.run(filename, alt);
         let id = runres.lastInsertRowid;
-
         return id;
     }
     public async updateProduct(
@@ -290,81 +297,64 @@ export class DataBaseHandling {
         title: string,
         description: string,
         price: number,
-        image: fileUpload.UploadedFile,
-        image_alt: string,
     ): Promise<boolean> {
 
         console.log(`Id: ${id}`);
         console.log(`Title: ${title}`);
         console.log(`Description: ${description}`);
         console.log(`Price: ${price}`);
-        console.log(`Image: ${image}`);
-        console.log(`Image Alt: ${image_alt}`);
 
         type productsRow = { name: string, description: string, price: number, image: number };
 
-
-        let imgId;
-
-        const constructedPath = `./uploads/${image.name}`;
-        image.mv(constructedPath, (err) => {
-            if (err) { console.error("Something went wrong with moving the image"); return }
-            console.log("Image moved successfully to " + constructedPath);
-        })
-        imgId = await this.insertNewImage(constructedPath, image_alt) as number;
-
-
-        let dataToInsert: string[] = [];
-        let propertiesToInsert: any[] = [];
-        let filepath;
-        const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+        const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=? WHERE id=?");
         const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
-
-
 
         let originalData = selectStmt.get(id) as productsRow;
         console.log(originalData);
-        let newRow: productsRow = {
+        let newRow: Partial<productsRow> = {
             name: title,
             description: description,
             price: price,
-            image: imgId
         }
 
-        let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
-        console.log(`Changes: ${res.changes}`);
-        let success = res.changes > 0;
-
-        return success
+        try {
+            let res = updateStmt.run(newRow.name, newRow.description, newRow.price, id);
+            console.log(`Changes: ${res.changes}`);
+            let success = res.changes > 0;
+            return success
+        } catch (error) {
+            if (error instanceof Database.SqliteError) {
+                console.error(COLORS.FgRed + COLORS.Bold + error.code + COLORS.Reset);
+            }
+            return false;
+        }
     }
 
-    protected async handleImageUpdate(newImg: fileUpload.UploadedFile): Promise<boolean | string> {
-        let generatedFileName;
-        let tmp;
-        let fileExtension;
-        let generatedFileNameWithExtension;
-        let uploadPath;
-        let generatedPath;
+    public async updateProductImage(image: fileUpload.UploadedFile, image_alt: string, productId: number): Promise<number | Error> {
+        console.log(`Image name: ${image.name}`);
 
-        generatedFileName = uuidV4();
-        tmp = newImg.name.split('.').pop();
-        if (!tmp) { return false; }
-        fileExtension = tmp;
-        generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
-        uploadPath = __dirname + '/uploads/' + newImg.name;
+        if (image.name === "blob") {
+            console.error("Image name is blob! Rejecting...");
+            return new Error("Please do not provide a blob!");
+        }
 
-        generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
+        const constructedPath = `./uploads/${image.name}`;
+        try {
+            console.info(`Copying file from "${image.tempFilePath}" to "${constructedPath}"...`);
+            await fs.copyFile(image.tempFilePath, constructedPath);
+        } catch (error) {
+            let thisError = error as Error;
+            console.error(thisError);
+            return thisError;
+        };
 
-        let toReturn: string | boolean = false;
+        let imgId = await this.insertNewImage(constructedPath, image_alt) as number;
 
-        newImg.mv(generatedPath, function(err: any) {
-            if (err) {
-                console.warn(err);
-            }
-            toReturn = generatedPath;
-        });
+        const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
 
-        return toReturn;
+        imageToProductStmt.run(imgId, productId);
+
+        return imgId;
     }
 
     protected cleanImageLeftovers(): boolean {

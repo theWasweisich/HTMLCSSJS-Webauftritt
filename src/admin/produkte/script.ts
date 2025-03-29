@@ -52,19 +52,19 @@ class ProductDisplay {
         imageInput?: HTMLInputElement,
         statsList?: HTMLElement,
         saveBtn?: HTMLButtonElement,
-    };
+    } = {};
 
-    private _selectedProductImage: ProductImage | undefined;
+    private _selectedProductImage: ProductImage;
 
     public get selectedProductImage() {
         return this._selectedProductImage;
     }
 
-    public set selectedProductImage(image: ProductImage | undefined) {
+    public set selectedProductImage(image: ProductImage) {
         this._selectedProductImage = image;
     }
 
-    public set originalImage(image: ProductImage | undefined) {
+    public set originalImage(image: ProductImage) {
         this._originalImage = image;
     }
 
@@ -77,13 +77,14 @@ class ProductDisplay {
     public originalDescription: string;
     public originalPrice: number;
     public originalStats: ProductStat[] | undefined;
-    public _originalImage: ProductImage | undefined;
+    private _originalImage: ProductImage;
     public setupDone: boolean = false;
 
     public needToSave: boolean = false;
     public productStats: ProductStat[] | undefined;
     public rootElement: HTMLDivElement | undefined;
-    constructor(
+
+    private constructor(
         public id: number,
         public title: string,
         public description: string,
@@ -94,20 +95,25 @@ class ProductDisplay {
         this.originalTitle = this.title;
         this.originalDescription = this.description;
         this.originalPrice = this.price;
-        this.originalImage = this.image;
 
-        this.inputElems = {};
-
+        this._originalImage = this.image;
+        this._selectedProductImage = this._originalImage;
         this.selectedProductImage = this.originalImage;
+
         this.setup()
+    };
+
+    public static async new(id: number, title: string, description: string, price: number, image: ProductImage, toAppendTo: HTMLElement) {
+        let product = new ProductDisplay(id, title, description, price, image);
+        product.createElement(toAppendTo);
+        return product;
     }
     
-    public async setup() {
-        await this.loadOriginalImage();
+    private async setup() {
         await this.loadProductStats();
         this.setupDone = true;
     };
-    
+
     public createElement(toAppendTo: HTMLElement) {
         if (!this.setupDone) { setTimeout(() => { this.createElement(toAppendTo); }); return; };
         const clone = (ProductManager.productTemplate.content.firstElementChild as HTMLDivElement).cloneNode(true);
@@ -263,17 +269,6 @@ class ProductDisplay {
         root.appendChild(statElem);
     }
 
-
-    protected async loadOriginalImage() {
-        let endpoint = this.image.path;
-        if (!this.originalImage) { return };
-
-        let res = await fetch(endpoint);
-        if (res.ok) {
-            this.originalImage.image = await res.blob() as File;
-        }
-    };
-
     protected async loadProductStats() {
         const endpoint = `/api/product/stats/${this.id}`;
         const fetchRes = await fetch(endpoint);
@@ -338,24 +333,27 @@ class ProductDisplay {
      * @param image_alt The alt text
      */
     private addImageToFormData(): FormData;
-    private addImageToFormData(image: Blob | File, image_alt: string, formData: FormData): FormData;
-    private addImageToFormData(image?: Blob | File, image_alt?: string, formData?: FormData): FormData {
+    private addImageToFormData(image: ProductImage): FormData;
+    private addImageToFormData(image?: ProductImage): FormData {
 
-        if (image === undefined && image_alt === undefined) {
+        const isImageAvailable = image !== undefined;
+
+        if (!isImageAvailable) {
             if (this.originalImage !== undefined && this.originalImage.image !== undefined) {
-                image = this.originalImage.image;
-                image_alt = this.originalImage.alt;
+                image = this.originalImage;
             } else {
                 throw new Error("If image and alt are not given, this.originalImage has to be set!");
             }
-        } else if (image !== undefined && image_alt !== undefined) {
-            image = image as Blob;
-            image_alt = image_alt as string;
+        } else {
+            image = image as ProductImage;
         }
 
+        let formData;
+
         formData = new FormData();
-        formData.append("image", image as Blob);
-        formData.append("image_alt", image_alt as string);
+        formData.append("image", image.image);
+        formData.append("filename", image.filename);
+        formData.append("alt", image.alt as string);
 
         return formData;
     }
@@ -364,7 +362,6 @@ class ProductDisplay {
         let titleElem = this.inputElems.title as HTMLInputElement;
         let descriptionElem = this.inputElems.description as HTMLTextAreaElement;
         let priceElem = this.inputElems.price as HTMLInputElement
-        let image = this.selectedProductImage;
 
         let title = titleElem.value;
         let description = descriptionElem.value;
@@ -383,21 +380,6 @@ class ProductDisplay {
         }
         console.groupEnd();
 
-        let receivedFormData;
-        if (image !== undefined && image.image !== undefined) {
-            receivedFormData = this.addImageToFormData(image.image as Blob, image.alt, formData);
-        } else {
-            receivedFormData = this.addImageToFormData();
-        }
-        for (const data of receivedFormData.entries()) {
-            formData.append(data[0], data[1]);
-        }
-
-        console.groupCollapsed(`Prepared FormData:`);
-        for (const singleData of formData.entries()) {
-            console.log(singleData);
-        }
-        console.groupEnd();
         return formData;
     }
 
@@ -450,6 +432,22 @@ class ProductDisplay {
         }
         return true;
     }
+
+    public async sendImageToServer() {
+        const endpoint = `/api/admin/product/${this.id}/image`;
+        let formData: FormData;
+
+        if (this.selectedProductImage !== undefined) {
+            formData = this.addImageToFormData(this.selectedProductImage);
+        } else {
+            formData = this.addImageToFormData();
+        };
+
+        let fetchRes = await fetch(endpoint, {
+            method: "PUT",
+            body: formData
+        });
+    }
 }
 
 class ProductManager {
@@ -465,11 +463,6 @@ class ProductManager {
 
     public async setup() {
         await this.loadProducts();
-
-        
-        this.displays.forEach((display) => {
-            display.createElement(this.productSection);
-        });
     };
 
     public async loadProducts() {
@@ -480,7 +473,7 @@ class ProductManager {
         for (const resp of jsonResp) {
             let img_path: string = `/api/product/${resp.id}/image/get`;
             let image = await ((await fetch(img_path)).blob()) as File;
-            let product = new ProductDisplay(
+            let product = await ProductDisplay.new(
                 resp.id,
                 resp.title,
                 resp.description,
@@ -490,7 +483,8 @@ class ProductManager {
                     path: img_path,
                     alt: resp.image_alt,
                     image: image
-                }
+                },
+                this.productSection
             );
             this.displays.push(product);
         }

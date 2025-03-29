@@ -12,22 +12,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = void 0;
-exports.getFeatureFlags = getFeatureFlags;
-exports.isAuthTokenValid = isAuthTokenValid;
+exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const uuid_1 = require("uuid");
+const utils_1 = require("./utils");
 function getFeatureFlags() {
     return __awaiter(this, void 0, void 0, function* () {
         const feature__flags = JSON.parse(yield promises_1.default.readFile('./feature__flags.json', { encoding: 'utf-8' }));
         return feature__flags;
     });
 }
+exports.getFeatureFlags = getFeatureFlags;
 function isAuthTokenValid(token) {
     return true;
 }
+exports.isAuthTokenValid = isAuthTokenValid;
 /**
  * The Class for all Data handling activities
  */
@@ -162,14 +163,16 @@ class DataBaseHandling {
         let dbRes = productStmt.all();
         dbRes.forEach((value, index, array) => {
             let row = value;
-            let imgRes = imgAltStmt.get(row.image);
+            console.log(row);
+            if (typeof row.image === "number") {
+                let imgRes = imgAltStmt.get(row.image);
+            }
             let stats = this.getStatsOfProduct(row.id);
             products.push({
                 id: row.id,
                 title: row.name,
                 description: row.description,
                 price: row.price,
-                img_alt: imgRes.alt,
                 stats: stats
             });
         });
@@ -180,11 +183,16 @@ class DataBaseHandling {
         console.log("Trying to get image for id " + String(id));
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
         const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
-        let imgId = getImgIdStmt.get(id.toFixed(0)).image;
-        console.log(`The image id is ${imgId}`);
-        let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
-        let imgFileName = imgFileNameRow.filename;
-        return imgFileName;
+        try {
+            let imgId = getImgIdStmt.get(id.toFixed(0)).image;
+            console.log(`The image id is ${imgId}`);
+            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
+            let imgFileName = imgFileNameRow.filename;
+            return imgFileName;
+        }
+        finally {
+            return null;
+        }
     }
     getProductStats(id) {
         console.log("Trying to get stats for product id: " + String(id));
@@ -199,7 +207,9 @@ class DataBaseHandling {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
         statInsertStmt.run(name, type, value, productId);
     }
-    newStats(statsList, productId) {
+    replaceStats(statsList, productId) {
+        const removeStmt = this.db.prepare("DELETE FROM stats WHERE product=?");
+        removeStmt.run(productId);
         statsList.forEach(stat => {
             this.newStat(stat.name, stat.unit, stat.value, productId);
         });
@@ -226,28 +236,13 @@ class DataBaseHandling {
             return id;
         });
     }
-    updateProduct(id, title, description, price, image, image_alt) {
+    updateProduct(id, title, description, price) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(`Id: ${id}`);
             console.log(`Title: ${title}`);
             console.log(`Description: ${description}`);
             console.log(`Price: ${price}`);
-            console.log(`Image: ${image}`);
-            console.log(`Image Alt: ${image_alt}`);
-            let imgId;
-            const constructedPath = `./uploads/${image.name}`;
-            image.mv(constructedPath, (err) => {
-                if (err) {
-                    console.error("Something went wrong with moving the image");
-                    return;
-                }
-                console.log("Image moved successfully to " + constructedPath);
-            });
-            imgId = (yield this.insertNewImage(constructedPath, image_alt));
-            let dataToInsert = [];
-            let propertiesToInsert = [];
-            let filepath;
-            const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+            const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=? WHERE id=?");
             const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
             let originalData = selectStmt.get(id);
             console.log(originalData);
@@ -255,39 +250,43 @@ class DataBaseHandling {
                 name: title,
                 description: description,
                 price: price,
-                image: imgId
             };
-            let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
-            console.log(`Changes: ${res.changes}`);
-            let success = res.changes > 0;
-            return success;
-        });
-    }
-    handleImageUpdate(newImg) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let generatedFileName;
-            let tmp;
-            let fileExtension;
-            let generatedFileNameWithExtension;
-            let uploadPath;
-            let generatedPath;
-            generatedFileName = (0, uuid_1.v4)();
-            tmp = newImg.name.split('.').pop();
-            if (!tmp) {
+            try {
+                let res = updateStmt.run(newRow.name, newRow.description, newRow.price, id);
+                console.log(`Changes: ${res.changes}`);
+                let success = res.changes > 0;
+                return success;
+            }
+            catch (error) {
+                if (error instanceof better_sqlite3_1.default.SqliteError) {
+                    console.error(utils_1.COLORS.FgRed + utils_1.COLORS.Bold + error.code + utils_1.COLORS.Reset);
+                }
                 return false;
             }
-            fileExtension = tmp;
-            generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
-            uploadPath = __dirname + '/uploads/' + newImg.name;
-            generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
-            let toReturn = false;
-            newImg.mv(generatedPath, function (err) {
-                if (err) {
-                    console.warn(err);
-                }
-                toReturn = generatedPath;
-            });
-            return toReturn;
+        });
+    }
+    updateProductImage(image, image_alt, productId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Image name: ${image.name}`);
+            if (image.name === "blob") {
+                console.error("Image name is blob! Rejecting...");
+                return new Error("Please do not provide a blob!");
+            }
+            const constructedPath = `./uploads/${image.name}`;
+            try {
+                console.info(`Copying file from "${image.tempFilePath}" to "${constructedPath}"...`);
+                yield promises_1.default.copyFile(image.tempFilePath, constructedPath);
+            }
+            catch (error) {
+                let thisError = error;
+                console.error(thisError);
+                return thisError;
+            }
+            ;
+            let imgId = yield this.insertNewImage(constructedPath, image_alt);
+            const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
+            imageToProductStmt.run(imgId, productId);
+            return imgId;
         });
     }
     cleanImageLeftovers() {

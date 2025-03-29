@@ -23,6 +23,24 @@ class UnitSelectionElement {
     }
 }
 class ProductDisplay {
+    constructor(id, title, description, price, image) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.price = price;
+        this.image = image;
+        this.inputElems = {};
+        this.setupDone = false;
+        this.needToSave = false;
+        this.originalId = this.id;
+        this.originalTitle = this.title;
+        this.originalDescription = this.description;
+        this.originalPrice = this.price;
+        this._originalImage = this.image;
+        this._selectedProductImage = this._originalImage;
+        this.selectedProductImage = this.originalImage;
+        this.setup();
+    }
     get selectedProductImage() {
         return this._selectedProductImage;
     }
@@ -35,26 +53,16 @@ class ProductDisplay {
     get originalImage() {
         return this._originalImage;
     }
-    constructor(id, title, description, price, image) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.price = price;
-        this.image = image;
-        this.setupDone = false;
-        this.needToSave = false;
-        this.originalId = this.id;
-        this.originalTitle = this.title;
-        this.originalDescription = this.description;
-        this.originalPrice = this.price;
-        this.originalImage = this.image;
-        this.inputElems = {};
-        this.selectedProductImage = this.originalImage;
-        this.setup();
+    ;
+    static new(id, title, description, price, image, toAppendTo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let product = new ProductDisplay(id, title, description, price, image);
+            product.createElement(toAppendTo);
+            return product;
+        });
     }
     setup() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.loadOriginalImage();
             yield this.loadProductStats();
             this.setupDone = true;
         });
@@ -216,20 +224,6 @@ class ProductDisplay {
         });
         root.appendChild(statElem);
     }
-    loadOriginalImage() {
-        return __awaiter(this, void 0, void 0, function* () {
-            let endpoint = this.image.path;
-            if (!this.originalImage) {
-                return;
-            }
-            ;
-            let res = yield fetch(endpoint);
-            if (res.ok) {
-                this.originalImage.image = (yield res.blob());
-            }
-        });
-    }
-    ;
     loadProductStats() {
         return __awaiter(this, void 0, void 0, function* () {
             const endpoint = `/api/product/stats/${this.id}`;
@@ -298,30 +292,30 @@ class ProductDisplay {
         img.alt = this.selectedProductImage.alt;
     }
     ;
-    addImageToFormData(image, image_alt, formData) {
-        if (image === undefined && image_alt === undefined) {
+    addImageToFormData(image) {
+        const isImageAvailable = image !== undefined;
+        if (!isImageAvailable) {
             if (this.originalImage !== undefined && this.originalImage.image !== undefined) {
-                image = this.originalImage.image;
-                image_alt = this.originalImage.alt;
+                image = this.originalImage;
             }
             else {
                 throw new Error("If image and alt are not given, this.originalImage has to be set!");
             }
         }
-        else if (image !== undefined && image_alt !== undefined) {
+        else {
             image = image;
-            image_alt = image_alt;
         }
+        let formData;
         formData = new FormData();
-        formData.append("image", image);
-        formData.append("image_alt", image_alt);
+        formData.append("image", image.image);
+        formData.append("filename", image.filename);
+        formData.append("alt", image.alt);
         return formData;
     }
     prepareProductFormData() {
         let titleElem = this.inputElems.title;
         let descriptionElem = this.inputElems.description;
         let priceElem = this.inputElems.price;
-        let image = this.selectedProductImage;
         let title = titleElem.value;
         let description = descriptionElem.value;
         let price = priceElem.value;
@@ -331,21 +325,6 @@ class ProductDisplay {
         formData.append("price", price);
         formData.append("stats", "");
         console.groupCollapsed(`Prepared FormData1:`);
-        for (const singleData of formData.entries()) {
-            console.log(singleData);
-        }
-        console.groupEnd();
-        let receivedFormData;
-        if (image !== undefined && image.image !== undefined) {
-            receivedFormData = this.addImageToFormData(image.image, image.alt, formData);
-        }
-        else {
-            receivedFormData = this.addImageToFormData();
-        }
-        for (const data of receivedFormData.entries()) {
-            formData.append(data[0], data[1]);
-        }
-        console.groupCollapsed(`Prepared FormData:`);
         for (const singleData of formData.entries()) {
             console.log(singleData);
         }
@@ -397,6 +376,23 @@ class ProductDisplay {
             return true;
         });
     }
+    sendImageToServer() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const endpoint = `/api/admin/product/${this.id}/image`;
+            let formData;
+            if (this.selectedProductImage !== undefined) {
+                formData = this.addImageToFormData(this.selectedProductImage);
+            }
+            else {
+                formData = this.addImageToFormData();
+            }
+            ;
+            let fetchRes = yield fetch(endpoint, {
+                method: "PUT",
+                body: formData
+            });
+        });
+    }
 }
 class ProductManager {
     constructor(productSection) {
@@ -407,9 +403,6 @@ class ProductManager {
     setup() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.loadProducts();
-            this.displays.forEach((display) => {
-                display.createElement(this.productSection);
-            });
         });
     }
     ;
@@ -421,12 +414,12 @@ class ProductManager {
             for (const resp of jsonResp) {
                 let img_path = `/api/product/${resp.id}/image/get`;
                 let image = yield ((yield fetch(img_path)).blob());
-                let product = new ProductDisplay(resp.id, resp.title, resp.description, resp.price, {
+                let product = yield ProductDisplay.new(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,
                     path: img_path,
                     alt: resp.image_alt,
                     image: image
-                });
+                }, this.productSection);
                 this.displays.push(product);
             }
         });

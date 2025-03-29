@@ -1,16 +1,11 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
-import fileUpload, { UploadedFile } from "express-fileupload";
+import formidable from "formidable";
 import { v4 as uuidV4 } from "uuid";
 import path from "node:path";
 const apiRouter = express.Router();
 
 export default apiRouter;
-
-apiRouter.use(fileUpload({
-    useTempFiles: true,
-    debug: true,
-}));
 
 let feature__flags: FeatureFlags | undefined; 
 
@@ -82,7 +77,6 @@ apiRouter.get("/products/get", function (req, res) {
             title: value.title,
             description: value.description,
             price: value.price,
-            imgAlt: value.img_alt,
             stats: value.stats,
         } as returnedData;
     });
@@ -92,16 +86,20 @@ apiRouter.get("/products/get", function (req, res) {
 apiRouter.get("/product/:id/image/get/", function (req, res) {
     const productId = req.params.id;
     const handler = new DataBaseHandling();
-    var imagePath = handler.getProductImagePath(Number(productId));
 
-    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+    try {
+        var imagePath = handler.getProductImagePath(Number(productId));
+    
+        console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
 
-    if (imagePath) {
-        imagePath = path.join(__dirname, imagePath);
-        res.sendFile(imagePath);
-        return;
-    };
-    res.status(404).end("The requested image could not be found");
+        if (imagePath !== null) {
+            imagePath = path.join(__dirname, imagePath);
+            res.sendFile(imagePath);
+            return;
+        };
+    } finally {
+        res.status(404).end("The requested image could not be found");
+    }
 });
 
 apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.Response) {
@@ -127,7 +125,7 @@ apiRouter.route("/admin/product/:id/stats")
         const handling = new DataBaseHandling();
         const stats = JSON.parse(req.body.stats) as {id: number, name: string, unit: string | null, value: string | number}[];
         console.log(stats);
-        handling.newStats(stats, Number(req.params.id));
+        handling.replaceStats(stats, Number(req.params.id));
         res.sendStatus(501);
     });
 
@@ -210,8 +208,6 @@ apiRouter.put("/admin/product/:id/update", async function(req: express.Request, 
         title: string,
         description: string,
         price: number,
-        image: fileUpload.UploadedFile,
-        image_alt: string
     };
 
     const handler = new DataBaseHandling();
@@ -223,27 +219,41 @@ apiRouter.put("/admin/product/:id/update", async function(req: express.Request, 
     let title: string;
     let description: string;
     let price: number;
-    let image: fileUpload.UploadedFile;
-    let image_alt: string;
 
     
     id = Number(req.params.id);
     title = body.title;
     description = body.description;
     price = body.price;
-    if (!req.files) {
-        console.error("Req.files not available!");
-        return;
-    } else {
-        image = req.files.image as UploadedFile;
-    }
-    image_alt = body.image_alt
-    
-    let success = await handler.updateProduct(id, title, description, price, image, image_alt);
+
+    let success = await handler.updateProduct(id, title, description, price);
 
     if (success) {
         res.status(200).end("Success");
     } else {
         res.status(500).end("Something went wrong :(");
     }
+})
+
+
+apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: express.Response) => {
+    const form = new formidable.IncomingForm({
+        multiples: false,
+        uploadDir: './uploads',
+        maxFiles: 1,
+        maxFileSize: 500 * 1024 * 1024,
+        keepExtensions: true,
+        filter: (part) => {
+            return true;
+        },
+        allowEmptyFiles: true,
+    });
+
+    form.parse(req, (err: any, fields: formidable.Fields<string>, files: formidable.Files<string>) => {
+        let alt = fields["alt"];
+        let filename = fields["filename"];
+
+        console.log(fields);
+        console.log(files);        
+    })
 })

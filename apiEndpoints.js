@@ -14,14 +14,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
-const express_fileupload_1 = __importDefault(require("express-fileupload"));
+const formidable_1 = __importDefault(require("formidable"));
 const node_path_1 = __importDefault(require("node:path"));
 const apiRouter = express_1.default.Router();
 exports.default = apiRouter;
-apiRouter.use((0, express_fileupload_1.default)({
-    useTempFiles: true,
-    debug: true,
-}));
 let feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
     feature__flags = flags;
@@ -76,7 +72,6 @@ apiRouter.get("/products/get", function (req, res) {
             title: value.title,
             description: value.description,
             price: value.price,
-            imgAlt: value.img_alt,
             stats: value.stats,
         };
     });
@@ -85,15 +80,19 @@ apiRouter.get("/products/get", function (req, res) {
 apiRouter.get("/product/:id/image/get/", function (req, res) {
     const productId = req.params.id;
     const handler = new dataHandling_1.DataBaseHandling();
-    var imagePath = handler.getProductImagePath(Number(productId));
-    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
-    if (imagePath) {
-        imagePath = node_path_1.default.join(__dirname, imagePath);
-        res.sendFile(imagePath);
-        return;
+    try {
+        var imagePath = handler.getProductImagePath(Number(productId));
+        console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+        if (imagePath !== null) {
+            imagePath = node_path_1.default.join(__dirname, imagePath);
+            res.sendFile(imagePath);
+            return;
+        }
+        ;
     }
-    ;
-    res.status(404).end("The requested image could not be found");
+    finally {
+        res.status(404).end("The requested image could not be found");
+    }
 });
 apiRouter.get("/product/stats/:id", function (req, res) {
     const id = Number(req.params.id);
@@ -113,7 +112,7 @@ apiRouter.route("/admin/product/:id/stats")
     const handling = new dataHandling_1.DataBaseHandling();
     const stats = JSON.parse(req.body.stats);
     console.log(stats);
-    handling.newStats(stats, Number(req.params.id));
+    handling.replaceStats(stats, Number(req.params.id));
     res.sendStatus(501);
 });
 apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -191,21 +190,11 @@ apiRouter.put("/admin/product/:id/update", function (req, res) {
         let title;
         let description;
         let price;
-        let image;
-        let image_alt;
         id = Number(req.params.id);
         title = body.title;
         description = body.description;
         price = body.price;
-        if (!req.files) {
-            console.error("Req.files not available!");
-            return;
-        }
-        else {
-            image = req.files.image;
-        }
-        image_alt = body.image_alt;
-        let success = yield handler.updateProduct(id, title, description, price, image, image_alt);
+        let success = yield handler.updateProduct(id, title, description, price);
         if (success) {
             res.status(200).end("Success");
         }
@@ -214,3 +203,22 @@ apiRouter.put("/admin/product/:id/update", function (req, res) {
         }
     });
 });
+apiRouter.put("/admin/product/:id/image", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const form = new formidable_1.default.IncomingForm({
+        multiples: false,
+        uploadDir: './uploads',
+        maxFiles: 1,
+        maxFileSize: 500 * 1024 * 1024,
+        keepExtensions: true,
+        filter: (part) => {
+            return true;
+        },
+        allowEmptyFiles: true,
+    });
+    form.parse(req, (err, fields, files) => {
+        let alt = fields["alt"];
+        let filename = fields["filename"];
+        console.log(fields);
+        console.log(files);
+    });
+}));
