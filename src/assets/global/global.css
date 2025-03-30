@@ -113,7 +113,6 @@ nav {
 
     background-color: var(--header-color);
 
-    /* border-top-right-radius: 0.625rem; */
     border-bottom-right-radius: 0.625rem;
 
     .closebtn {
@@ -150,6 +149,7 @@ nav {
         width: var(--navbar-width);
         z-index: 10;
     }
+
 }
 
 main {

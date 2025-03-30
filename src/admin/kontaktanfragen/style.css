@@ -1,4 +1,9 @@
 
+.messages-container {
+    h2 span {
+        font-size: medium;
+    }
+}
 
 #contactMsg-output {
     max-width: 100%;
