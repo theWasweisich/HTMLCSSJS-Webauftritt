@@ -6,6 +6,7 @@
     <title>Admin - Kontaktanfragen</title>
 
     <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="../style.css">
 
     <script src="/assets/global/global.js"></script>
@@ -50,30 +51,32 @@
             </div>
         </div>
         <div class="message-content">
-            <dt>Name</dt>
-            <dd>
-                <p data-field="name"></p>
-            </dd>
-            <dt>Email</dt>
-            <dd>
-                <a target="_blank" href="" data-field="email"></a>
-            </dd>
-            <dt>Thema</dt>
-            <dd>
-                <p data-field="topic"></p>
-            </dd>
-            <dt>Kurzbeschreibung</dt>
-            <dd>
-                <p data-field="short"></p>
-            </dd>
-            <dt>Nachricht</dt>
-            <dd>
-                <p data-field="message"></p>
-            </dd>
-            <button class="delete-btn" title="Nachricht löschen">
-                <img src="/assets/icons/trash.svg" alt="Mülleimer">
-            </button>
-        </div>
+            <div class="content-wrapper">
+                <dt>Name</dt>
+                <dd>
+                    <p data-field="name"></p>
+                </dd>
+                <dt>Email</dt>
+                <dd>
+                    <a target="_blank" href="" data-field="email"></a>
+                </dd>
+                <dt>Thema</dt>
+                <dd>
+                    <p data-field="topic"></p>
+                </dd>
+                <dt>Kurzbeschreibung</dt>
+                <dd>
+                    <p data-field="short"></p>
+                </dd>
+                <dt>Nachricht</dt>
+                <dd>
+                    <p data-field="message"></p>
+                </dd>
+                <button class="delete-btn" title="Nachricht löschen">
+                    <img src="/assets/icons/trash.svg" alt="Mülleimer">
+                </button>
+                        </div>
+            </div>
     </div>
 </template>
 </html>

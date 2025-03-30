@@ -11,17 +11,9 @@ interface contactMessage {
     elem?: HTMLElement,
 }
 
-interface productResponse {
-    id: number,
-    title: string,
-    description: string,
-    price: number,
-    image_filename: string,
-    image_alt: string
-}
 
 class singleContactMessage {
-    public elem: HTMLElement | undefined;
+    public elem: HTMLElement;
     private selectElems: {label: HTMLLabelElement, input: HTMLInputElement};
 
     constructor(
