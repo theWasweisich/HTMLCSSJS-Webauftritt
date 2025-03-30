@@ -14,11 +14,14 @@ export interface FeatureFlags {
 }
 
 import fs from "node:fs/promises";
+import * as fsSync from "node:fs";
 import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { COLORS } from "./utils";
+import path from "node:path";
+import formidable from "formidable";
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
@@ -326,9 +329,9 @@ export class DataBaseHandling {
         return statsOfProduct;
     };
 
-    private async insertNewImage(filename: string, alt: string): Promise<number | bigint> {
+    private async insertNewImage(filenamee: string, alt: string): Promise<number | bigint> {
         const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-        let runres = insertStmt.run(filename, alt);
+        let runres = insertStmt.run(filenamee, alt);
         let id = runres.lastInsertRowid;
         return id;
     }
@@ -371,25 +374,11 @@ export class DataBaseHandling {
         }
     }
 
-    public async updateProductImage(image: fileUpload.UploadedFile, image_alt: string, productId: number): Promise<number | Error> {
-        console.log(`Image name: ${image.name}`);
+    public async updateProductImage(image_path: string, image_alt: string, productId: number): Promise<number | Error> {
+        console.log(`Image name: ${image_path}`);
 
-        if (image.name === "blob") {
-            console.error("Image name is blob! Rejecting...");
-            return new Error("Please do not provide a blob!");
-        }
 
-        const constructedPath = `./uploads/${image.name}`;
-        try {
-            console.info(`Copying file from "${image.tempFilePath}" to "${constructedPath}"...`);
-            await fs.copyFile(image.tempFilePath, constructedPath);
-        } catch (error) {
-            let thisError = error as Error;
-            console.error(thisError);
-            return thisError;
-        };
-
-        let imgId = await this.insertNewImage(constructedPath, image_alt) as number;
+        let imgId = await this.insertNewImage(image_path as string, image_alt) as number;
 
         const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
 
@@ -398,39 +387,65 @@ export class DataBaseHandling {
         return imgId;
     }
 
-    protected cleanImageLeftovers(): boolean {
-        const selectImgsStmt = this.db.prepare("SELECT id FROM images;");
-        const selectProductImageIdsStmt = this.db.prepare("SELECT image FROM products;");
-        const imageDeleteStmt = this.db.prepare("DELETE FROM images WHERE id=?");
+    public async cleanImageLeftovers(): Promise<boolean> {
+        const filesInUploadDir: string[] = [];
 
-        const imgsids = selectImgsStmt.all() as {id: number}[];
-        const productImgsIds = selectProductImageIdsStmt.all() as {id: number}[];
-        var cleanUpSuccessfull: boolean = true;
+        const stmts = {
+            deleteImage: this.db.prepare("DELETE FROM images WHERE id=?"),
+            selectProductImageIds: this.db.prepare("SELECT image FROM products;"),
+            selectImgs: this.db.prepare("SELECT id, filename FROM images;"),
+        }
 
-        let usedIds: number[] = [];
-        let IdsToDelete: number[] = [];
+        type productsRow = { image: number };
+        type imagesRow = { id: number, filename: string };
 
-        productImgsIds.forEach((row => {
-            usedIds.push(row.id);
+        type filename = string;
+
+        fsSync.readdirSync("./uploads/").forEach((file) => {
+            filesInUploadDir.push(file);
+        })
+
+        const productImgs = stmts.selectProductImageIds.all() as productsRow[];
+
+        const imgs: { [imageId: number]: filename } = {};
+
+        (stmts.selectImgs.all() as imagesRow[]).forEach((img => {
+            imgs[img.id] = img.filename
         }));
 
-        imgsids.forEach(row => {
-            if (!usedIds.includes(row.id)) {
-                IdsToDelete.push(row.id);
+        const filesThatShouldNotBeDeleted: filename[] = [];
+
+        productImgs.forEach((row) => {
+            let filename = imgs[row.image];
+            filename = filename.substring(10);
+            filesThatShouldNotBeDeleted.push(filename);
+        });
+
+        console.log("Files that should not be deleted:");
+        console.log(filesThatShouldNotBeDeleted);
+        console.log("⛔");
+
+        console.log("Files that are in the uploads directory:");
+        console.log(filesInUploadDir);
+        console.log("📂");
+
+        const filesThatShouldAbsolutelyBeDeleted: filename[] = [];
+
+        filesInUploadDir.forEach(file => {
+            if (!filesThatShouldNotBeDeleted.includes(file)) {
+                filesThatShouldAbsolutelyBeDeleted.push(file);
             };
         });
 
-        IdsToDelete.forEach(toDeleteId => {
-            
-            try {
-                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
-                    cleanUpSuccessfull = false;
-                }
-            } catch (error) {
-                cleanUpSuccessfull = false
-                console.error(error);
-            }
+        console.log("These files should absolutely be deleted:");
+        console.log(filesThatShouldAbsolutelyBeDeleted);
+        console.log("✅");
+
+        filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
+            fsSync.rmSync(`./uploads/${file}`);
         });
+
+        var cleanUpSuccessfull: boolean = true;
 
         return cleanUpSuccessfull;
     }

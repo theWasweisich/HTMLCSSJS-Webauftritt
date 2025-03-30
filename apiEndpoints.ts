@@ -1,6 +1,6 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
-import formidable from "formidable";
+import * as formidable from "formidable";
 import { checkAuthMiddleware } from "./app";
 import path from "node:path";
 import { HTTPError } from "./utils";
@@ -128,10 +128,10 @@ apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.
 })
 
 apiRouter.route("/admin/product/:id/stats")
-    .delete(checkAuthMiddleware, function(req: express.Request, res: express.Response) {
+    .delete(function(req: express.Request, res: express.Response) {
         res.sendStatus(501);
     })
-    .put(checkAuthMiddleware, function(req: express.Request, res: express.Response) {
+    .put(function(req: express.Request, res: express.Response) {
         const handling = new DataBaseHandling();
         const stats = JSON.parse(req.body.stats) as {id: number, name: string, unit: string | null, value: string | number}[];
         console.log(stats);
@@ -156,7 +156,7 @@ apiRouter.post('/users/new', async (req, res) => {
     }
 });
 
-apiRouter.get("/admin/contact/get", checkAuthMiddleware, async (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
     console.log("Requested Messages!")
     const handler = new DataBaseHandling();
 
@@ -165,7 +165,7 @@ apiRouter.get("/admin/contact/get", checkAuthMiddleware, async (req: express.Req
     res.status(200).json(result);
 });
 
-apiRouter.post("/admin/products/new", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
+apiRouter.post("/admin/products/new", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -185,7 +185,7 @@ apiRouter.post("/admin/products/new", checkAuthMiddleware, (req: express.Request
     };
 });
 
-apiRouter.delete("/admin/contact/delete", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
+apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -206,13 +206,13 @@ apiRouter.delete("/admin/contact/delete", checkAuthMiddleware, (req: express.Req
     }
 })
 
-apiRouter.get("/admin/products/get", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/products/get", (req: express.Request, res: express.Response) => {
     let handler = new DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
 
-apiRouter.put("/admin/product/:id/update", checkAuthMiddleware, async function(req: express.Request, res: express.Response) {
+apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
 
     type uploadBody = {
         title: string,
@@ -245,9 +245,8 @@ apiRouter.put("/admin/product/:id/update", checkAuthMiddleware, async function(r
     }
 })
 
-
-apiRouter.put("/admin/product/:id/image", checkAuthMiddleware, async (req: express.Request, res: express.Response) => {
-    const form = new formidable.IncomingForm({
+apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const form = new formidable.Formidable({
         multiples: false,
         uploadDir: './uploads',
         maxFiles: 1,
@@ -259,11 +258,45 @@ apiRouter.put("/admin/product/:id/image", checkAuthMiddleware, async (req: expre
         allowEmptyFiles: true,
     });
 
-    form.parse(req, (err: any, fields: formidable.Fields<string>, files: formidable.Files<string>) => {
-        let alt = fields["alt"];
-        let filename = fields["filename"];
+    const handler = new DataBaseHandling();
+    const productId = req.params.id;
 
-        console.log(fields);
-        console.log(files);        
+    form.parse(req, async (err: any, fields: formidable.Fields<string>, files: formidable.Files<string>) => {
+        if (err) {
+            next(err);
+        }
+
+        let alt = fields["alt"] ? fields["alt"][0] : "";
+        let filename = fields["filename"];
+        let file = files["image"];
+        if (file === undefined) {
+            throw new Error();
+        }
+        let singlefile = file[0];
+
+        console.log(`File: ${singlefile}`);
+        console.log(`Filename: ${filename}`);
+        console.log(`Filepath: ${singlefile.filepath}`);
+        console.log(`Alt: ${alt}`);
+
+        let filenameOfFile = `./uploads/${singlefile.newFilename}`;
+
+        await handler.updateProductImage(
+            filenameOfFile,
+            alt as unknown as string,
+            Number(productId)
+        );
+
+
+        
+        
+        if (file instanceof formidable.File) {
+            (file as unknown as formidable.File).filepath
+        }
+        
+        
+       
+        handler.cleanImageLeftovers();
+        res.sendStatus(201);
     })
 })

@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -14,8 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
-const formidable_1 = __importDefault(require("formidable"));
-const app_1 = require("./app");
+const formidable = __importStar(require("formidable"));
 const node_path_1 = __importDefault(require("node:path"));
 const utils_1 = require("./utils");
 const apiRouter = express_1.default.Router();
@@ -113,10 +135,10 @@ apiRouter.get("/product/stats/:id", function (req, res) {
     res.json(stats);
 });
 apiRouter.route("/admin/product/:id/stats")
-    .delete(app_1.checkAuthMiddleware, function (req, res) {
+    .delete(function (req, res) {
     res.sendStatus(501);
 })
-    .put(app_1.checkAuthMiddleware, function (req, res) {
+    .put(function (req, res) {
     const handling = new dataHandling_1.DataBaseHandling();
     const stats = JSON.parse(req.body.stats);
     console.log(stats);
@@ -141,13 +163,13 @@ apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(500).end("Something went wrong :(");
     }
 }));
-apiRouter.get("/admin/contact/get", app_1.checkAuthMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Requested Messages!");
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.getContactMessages();
     res.status(200).json(result);
 }));
-apiRouter.post("/admin/products/new", app_1.checkAuthMiddleware, (req, res) => {
+apiRouter.post("/admin/products/new", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     const newProduct = {
@@ -165,7 +187,7 @@ apiRouter.post("/admin/products/new", app_1.checkAuthMiddleware, (req, res) => {
     }
     ;
 });
-apiRouter.delete("/admin/contact/delete", app_1.checkAuthMiddleware, (req, res) => {
+apiRouter.delete("/admin/contact/delete", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     console.log(body);
@@ -184,12 +206,12 @@ apiRouter.delete("/admin/contact/delete", app_1.checkAuthMiddleware, (req, res) 
         res.status(500).end(":(");
     }
 });
-apiRouter.get("/admin/products/get", app_1.checkAuthMiddleware, (req, res) => {
+apiRouter.get("/admin/products/get", (req, res) => {
     let handler = new dataHandling_1.DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
-apiRouter.put("/admin/product/:id/update", app_1.checkAuthMiddleware, function (req, res) {
+apiRouter.put("/admin/product/:id/update", function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;
@@ -211,8 +233,8 @@ apiRouter.put("/admin/product/:id/update", app_1.checkAuthMiddleware, function (
         }
     });
 });
-apiRouter.put("/admin/product/:id/image", app_1.checkAuthMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const form = new formidable_1.default.IncomingForm({
+apiRouter.put("/admin/product/:id/image", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const form = new formidable.Formidable({
         multiples: false,
         uploadDir: './uploads',
         maxFiles: 1,
@@ -223,10 +245,29 @@ apiRouter.put("/admin/product/:id/image", app_1.checkAuthMiddleware, (req, res) 
         },
         allowEmptyFiles: true,
     });
-    form.parse(req, (err, fields, files) => {
-        let alt = fields["alt"];
+    const handler = new dataHandling_1.DataBaseHandling();
+    const productId = req.params.id;
+    form.parse(req, (err, fields, files) => __awaiter(void 0, void 0, void 0, function* () {
+        if (err) {
+            next(err);
+        }
+        let alt = fields["alt"] ? fields["alt"][0] : "";
         let filename = fields["filename"];
-        console.log(fields);
-        console.log(files);
-    });
+        let file = files["image"];
+        if (file === undefined) {
+            throw new Error();
+        }
+        let singlefile = file[0];
+        console.log(`File: ${singlefile}`);
+        console.log(`Filename: ${filename}`);
+        console.log(`Filepath: ${singlefile.filepath}`);
+        console.log(`Alt: ${alt}`);
+        let filenameOfFile = `./uploads/${singlefile.newFilename}`;
+        yield handler.updateProductImage(filenameOfFile, alt, Number(productId));
+        if (file instanceof formidable.File) {
+            file.filepath;
+        }
+        handler.cleanImageLeftovers();
+        res.sendStatus(201);
+    }));
 }));

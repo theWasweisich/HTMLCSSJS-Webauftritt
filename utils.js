@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HTTPError = exports.COLORS = void 0;
-exports.getCookies = getCookies;
+exports.getCookies = exports.HTTPError = exports.COLORS = void 0;
 exports.COLORS = {
     Reset: "\x1b[0m",
     Bold: "\x1b[1m",
@@ -49,3 +48,4 @@ function getCookies(req) {
     });
     return cookieObjs;
 }
+exports.getCookies = getCookies;

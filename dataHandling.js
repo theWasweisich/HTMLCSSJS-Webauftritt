@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -12,10 +35,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataBaseHandling = void 0;
-exports.getFeatureFlags = getFeatureFlags;
-exports.isAuthTokenValid = isAuthTokenValid;
+exports.DataBaseHandling = exports.isAuthTokenValid = exports.getFeatureFlags = void 0;
 const promises_1 = __importDefault(require("node:fs/promises"));
+const fsSync = __importStar(require("node:fs"));
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const uuid_1 = require("uuid");
@@ -26,9 +48,11 @@ function getFeatureFlags() {
         return feature__flags;
     });
 }
+exports.getFeatureFlags = getFeatureFlags;
 function isAuthTokenValid(token) {
     return true;
 }
+exports.isAuthTokenValid = isAuthTokenValid;
 /**
  * The Class for all Data handling activities
  */
@@ -257,10 +281,10 @@ class DataBaseHandling {
         return statsOfProduct;
     }
     ;
-    insertNewImage(filename, alt) {
+    insertNewImage(filenamee, alt) {
         return __awaiter(this, void 0, void 0, function* () {
             const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-            let runres = insertStmt.run(filename, alt);
+            let runres = insertStmt.run(filenamee, alt);
             let id = runres.lastInsertRowid;
             return id;
         });
@@ -294,60 +318,59 @@ class DataBaseHandling {
             }
         });
     }
-    updateProductImage(image, image_alt, productId) {
+    updateProductImage(image_path, image_alt, productId) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Image name: ${image.name}`);
-            if (image.name === "blob") {
-                console.error("Image name is blob! Rejecting...");
-                return new Error("Please do not provide a blob!");
-            }
-            const constructedPath = `./uploads/${image.name}`;
-            try {
-                console.info(`Copying file from "${image.tempFilePath}" to "${constructedPath}"...`);
-                yield promises_1.default.copyFile(image.tempFilePath, constructedPath);
-            }
-            catch (error) {
-                let thisError = error;
-                console.error(thisError);
-                return thisError;
-            }
-            ;
-            let imgId = yield this.insertNewImage(constructedPath, image_alt);
+            console.log(`Image name: ${image_path}`);
+            let imgId = yield this.insertNewImage(image_path, image_alt);
             const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
             imageToProductStmt.run(imgId, productId);
             return imgId;
         });
     }
     cleanImageLeftovers() {
-        const selectImgsStmt = this.db.prepare("SELECT id FROM images;");
-        const selectProductImageIdsStmt = this.db.prepare("SELECT image FROM products;");
-        const imageDeleteStmt = this.db.prepare("DELETE FROM images WHERE id=?");
-        const imgsids = selectImgsStmt.all();
-        const productImgsIds = selectProductImageIdsStmt.all();
-        var cleanUpSuccessfull = true;
-        let usedIds = [];
-        let IdsToDelete = [];
-        productImgsIds.forEach((row => {
-            usedIds.push(row.id);
-        }));
-        imgsids.forEach(row => {
-            if (!usedIds.includes(row.id)) {
-                IdsToDelete.push(row.id);
-            }
-            ;
-        });
-        IdsToDelete.forEach(toDeleteId => {
-            try {
-                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
-                    cleanUpSuccessfull = false;
+        return __awaiter(this, void 0, void 0, function* () {
+            const filesInUploadDir = [];
+            const stmts = {
+                deleteImage: this.db.prepare("DELETE FROM images WHERE id=?"),
+                selectProductImageIds: this.db.prepare("SELECT image FROM products;"),
+                selectImgs: this.db.prepare("SELECT id, filename FROM images;"),
+            };
+            fsSync.readdirSync("./uploads/").forEach((file) => {
+                filesInUploadDir.push(file);
+            });
+            const productImgs = stmts.selectProductImageIds.all();
+            const imgs = {};
+            stmts.selectImgs.all().forEach((img => {
+                imgs[img.id] = img.filename;
+            }));
+            const filesThatShouldNotBeDeleted = [];
+            productImgs.forEach((row) => {
+                let filename = imgs[row.image];
+                filename = filename.substring(10);
+                filesThatShouldNotBeDeleted.push(filename);
+            });
+            console.log("Files that should not be deleted:");
+            console.log(filesThatShouldNotBeDeleted);
+            console.log("⛔");
+            console.log("Files that are in the uploads directory:");
+            console.log(filesInUploadDir);
+            console.log("📂");
+            const filesThatShouldAbsolutelyBeDeleted = [];
+            filesInUploadDir.forEach(file => {
+                if (!filesThatShouldNotBeDeleted.includes(file)) {
+                    filesThatShouldAbsolutelyBeDeleted.push(file);
                 }
-            }
-            catch (error) {
-                cleanUpSuccessfull = false;
-                console.error(error);
-            }
+                ;
+            });
+            console.log("These files should absolutely be deleted:");
+            console.log(filesThatShouldAbsolutelyBeDeleted);
+            console.log("✅");
+            filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
+                fsSync.rmSync(`./uploads/${file}`);
+            });
+            var cleanUpSuccessfull = true;
+            return cleanUpSuccessfull;
         });
-        return cleanUpSuccessfull;
     }
 }
 exports.DataBaseHandling = DataBaseHandling;

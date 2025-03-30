@@ -443,10 +443,25 @@ class ProductDisplay {
             formData = this.addImageToFormData();
         };
 
+        console.groupCollapsed("Sending Image");
+        console.info("Formdata:");
+        let entries = formData.entries();
+        for (const entry of entries) {
+            console.log(entry);
+        }
+        console.groupEnd();
+
         let fetchRes = await fetch(endpoint, {
             method: "PUT",
             body: formData
         });
+
+        if (fetchRes.ok) {
+            return true;
+        }
+        let text = await fetchRes.text();
+        console.error(text);
+        return false;
     }
 }
 
