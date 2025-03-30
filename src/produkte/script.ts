@@ -115,7 +115,7 @@ async function getNewData() {
         price: number,
         imgAlt: string,
         stats: {name: string, unit: string, value: string}[]
-    };
+    }
 
     const fetchRes = await fetch("/api/products/get");
     const dataList = (await fetchRes.json()) as returnedData[];

@@ -87,11 +87,15 @@ class DataBaseHandling {
         });
     }
     ;
-    isAuthTokenKnown(token) {
+    isAuthTokenValid(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const selectStmt = this.db.prepare("SELECT id FROM authTokens WHERE token=?");
+            const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
             const answ = selectStmt.get(token);
-            return answ !== undefined;
+            let inserted = new Date(answ.insertDate);
+            let insertedSince = (Date.now() - inserted.getTime());
+            let isMoreThanADayOld = insertedSince > 86400000;
+            let authTokenValid = answ.id !== undefined && !isMoreThanADayOld;
+            return authTokenValid;
         });
     }
     ;
@@ -187,10 +191,11 @@ class DataBaseHandling {
             let imgId = getImgIdStmt.get(id.toFixed(0)).image;
             console.log(`The image id is ${imgId}`);
             let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0));
+            console.log(imgFileNameRow);
             let imgFileName = imgFileNameRow.filename;
             return imgFileName;
         }
-        finally {
+        catch (e) {
             return null;
         }
     }

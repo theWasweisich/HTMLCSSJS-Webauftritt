@@ -47,6 +47,7 @@ class NavCommander {
     }
     ;
     static keyDownHandler(event) {
+        var _b;
         const target = event.target;
         const exceptType = [
             HTMLInputElement,
@@ -67,6 +68,9 @@ class NavCommander {
         // Wenn m (für "menü") gedrückt wird, toggle navbar
         if (event.key === "m") {
             NavCommander.navbarState = !NavCommander.navbarState;
+            if (NavCommander.navbarState) {
+                (_b = NavCommander.navbar.querySelector("a[href]")) === null || _b === void 0 ? void 0 : _b.focus();
+            }
         }
         ;
     }

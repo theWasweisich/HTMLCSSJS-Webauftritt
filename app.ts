@@ -5,6 +5,8 @@ import session from "express-session";
 import apiRouter from './apiEndpoints';
 import fs from 'node:fs';
 import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
+import { HTTPError, getCookies } from './utils';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
@@ -27,6 +29,7 @@ var feature__flags: FeatureFlags | undefined;
 
 getFeatureFlags().then((flags) => {
     feature__flags = flags;
+    console.log(feature__flags);
 });
 
 app.use(morgan("common", {
@@ -34,36 +37,33 @@ app.use(morgan("common", {
 }));
 app.use(morgan("dev"));
 
-
 app.use(express.json());
+const twoDaysInMS = 48 * 60 * 60 * 1000;
 app.use(session({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172_800 }, // Das sind 2 Tage
+    cookie: { maxAge: twoDaysInMS },
     resave: false,
     saveUninitialized: false
 }));
+app.use(cookieParser());
 
-async function checkAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
-    
-    if (isAuthNeeded) {
-        console.log("Auth is needed");
-        if (!req.session.token) { res.redirect(307, "/login/"); return; }
-        if (req.session.token) {
-            try {
-                const db = new DataBaseHandling();
-                let res = await db.isAuthTokenKnown(req.session.token);
-                console.log("DB res: " + res);
-                if (res) {
-                    next();
-                    return;
-                }
-            } catch (e) {
-            }
-        };
-        res.redirect(307, "/login/"); return;
-    }
-    next();
+export async function checkAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const db = new DataBaseHandling();
+
+    var result;
+    if (!req.cookies.authToken) {
+        let error = new HTTPError(401, "No session token available! Aborting...");
+        next(error);
+    } else {
+        try {
+            result = await db.isAuthTokenValid(req.cookies.authToken);
+        } catch (e) {
+            next(e);
+        }
+        if (result) {
+            next();
+        }
+    };
 };
 
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -71,14 +71,11 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
         res.status(500).end("Initialization not finished!");
         return;
     }
-    if (feature__flags?.checkAuth) {
-        checkAuthMiddleware(req, res, next);
-    }
     next();
-})
-
+});
 
 app.get('/', (_req, res) => {
+    console.log(_req.cookies);
     res.redirect("/index/");
 });
 
@@ -89,6 +86,18 @@ app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
 app.use("/api/", apiRouter);
 
 app.use(express.static("src/"));
+
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof HTTPError && err.status === 401) {
+        return res.redirect('/login');
+    };
+
+    const status = err instanceof HTTPError ? err.status : 500;
+    const message = err instanceof HTTPError ? err.message : "Server error";
+
+    res.status(status).send(message);
+})
+
 app.listen(port, () => {
     console.log(`Listening on Port ${port}`);
 });

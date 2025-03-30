@@ -43,7 +43,7 @@
 
 .card .section-text {
     padding-inline: 1em;
-    padding-bottom: 1em;
+    padding-block: 1em;
 
     span.strike {
         text-decoration: line-through;
@@ -74,7 +74,8 @@
     transition: all 500ms;
 }
 
-.card .buybtn:hover {
+.card .buybtn:hover,
+.card .buybtn:focus {
     color: var(--btn-bg-clr);
     background-color: var(--btn-fg-clr);
 }

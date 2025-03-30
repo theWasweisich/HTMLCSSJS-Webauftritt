@@ -1,8 +1,10 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
 import formidable from "formidable";
-import { v4 as uuidV4 } from "uuid";
+import { checkAuthMiddleware } from "./app";
 import path from "node:path";
+import { HTTPError } from "./utils";
+
 const apiRouter = express.Router();
 
 export default apiRouter;
@@ -29,22 +31,28 @@ apiRouter.post('/contact/new', async (req, res) => {
     };
 });
 
-apiRouter.post('/login', async (req, res) => {
+apiRouter.post('/login', async (req, res, next) => {
     const body = req.body;
     const handler = new DataBaseHandling();
-    
+    let err: HTTPError;
+
     try {
         if (await handler.isUserValid(body["username"], body["password"])) {
-            req.session.token = handler.generateNewAuthToken();
+            let token = handler.generateNewAuthToken();
+
+            res.cookie("authToken", token, { httpOnly: true });
+
             res.redirect("/admin/");
             return;
         }
     } catch (error) {
-        res.status(401).send("Invalid :(");
+        err = new HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
+        next(err);
     }
 
     req.session.token = undefined;
-    res.status(401).send("Invalid");
+    err = new HTTPError(401, "Invalid");
+    next(err);
 });
 
 apiRouter.get("/cookies", (req, res) => {
@@ -94,11 +102,11 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
 
         if (imagePath !== null) {
             imagePath = path.join(__dirname, imagePath);
-            console.log("Sending file")
+            console.log(`Sending file ${imagePath}`);
             res.sendFile(imagePath);
-            next();
-            return;
-        };
+        } else {
+            res.sendStatus(404);
+        }
     } catch (e) {
         res.status(404).end("The requested image could not be found");
     }
@@ -120,10 +128,10 @@ apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.
 })
 
 apiRouter.route("/admin/product/:id/stats")
-    .delete(function(req: express.Request, res: express.Response) {
+    .delete(checkAuthMiddleware, function(req: express.Request, res: express.Response) {
         res.sendStatus(501);
     })
-    .put(function(req: express.Request, res: express.Response) {
+    .put(checkAuthMiddleware, function(req: express.Request, res: express.Response) {
         const handling = new DataBaseHandling();
         const stats = JSON.parse(req.body.stats) as {id: number, name: string, unit: string | null, value: string | number}[];
         console.log(stats);
@@ -148,7 +156,7 @@ apiRouter.post('/users/new', async (req, res) => {
     }
 });
 
-apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/contact/get", checkAuthMiddleware, async (req: express.Request, res: express.Response) => {
     console.log("Requested Messages!")
     const handler = new DataBaseHandling();
 
@@ -157,7 +165,7 @@ apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Re
     res.status(200).json(result);
 });
 
-apiRouter.post("/admin/products/new", (req: express.Request, res: express.Response) => {
+apiRouter.post("/admin/products/new", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -177,7 +185,7 @@ apiRouter.post("/admin/products/new", (req: express.Request, res: express.Respon
     };
 });
 
-apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Response) => {
+apiRouter.delete("/admin/contact/delete", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
@@ -198,13 +206,13 @@ apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Re
     }
 })
 
-apiRouter.get("/admin/products/get", (req: express.Request, res: express.Response) => {
+apiRouter.get("/admin/products/get", checkAuthMiddleware, (req: express.Request, res: express.Response) => {
     let handler = new DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
 
-apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
+apiRouter.put("/admin/product/:id/update", checkAuthMiddleware, async function(req: express.Request, res: express.Response) {
 
     type uploadBody = {
         title: string,
@@ -238,7 +246,7 @@ apiRouter.put("/admin/product/:id/update", async function(req: express.Request, 
 })
 
 
-apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: express.Response) => {
+apiRouter.put("/admin/product/:id/image", checkAuthMiddleware, async (req: express.Request, res: express.Response) => {
     const form = new formidable.IncomingForm({
         multiples: false,
         uploadDir: './uploads',

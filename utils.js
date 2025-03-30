@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.COLORS = void 0;
+exports.HTTPError = exports.COLORS = void 0;
+exports.getCookies = getCookies;
 exports.COLORS = {
     Reset: "\x1b[0m",
     Bold: "\x1b[1m",
@@ -28,3 +29,23 @@ exports.COLORS = {
     BgWhite: "\x1b[47m",
     BgGray: "\x1b[100m",
 };
+class HTTPError extends Error {
+    constructor(status, message) {
+        super(message);
+        this.status = status;
+        Object.setPrototypeOf(this, HTTPError.prototype);
+    }
+}
+exports.HTTPError = HTTPError;
+function getCookies(req) {
+    var cookie = req.headers.cookie;
+    var cookies = cookie ? cookie.split("; ") : [];
+    var cookieObjs = [];
+    cookies.forEach(cookieString => {
+        let equalsPos = cookieString.indexOf("=");
+        let key = cookieString.substring(0, equalsPos);
+        let value = cookieString.substring(equalsPos + 1);
+        cookieObjs.push({ key: key, value: value });
+    });
+    return cookieObjs;
+}

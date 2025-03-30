@@ -117,12 +117,18 @@ export class DataBaseHandling {
         return false;
     };
 
-    public async isAuthTokenKnown(token: string): Promise<boolean> {
-        const selectStmt = this.db.prepare("SELECT id FROM authTokens WHERE token=?");
+    public async isAuthTokenValid(token: string): Promise<boolean> {
+        const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
 
-        const answ = selectStmt.get(token) as {id: number};
+        const answ = selectStmt.get(token) as {id: number, insertDate: string};
 
-        return answ !== undefined;
+        let inserted = new Date(answ.insertDate);
+        let insertedSince = (Date.now() - inserted.getTime());
+        let isMoreThanADayOld = insertedSince > 86400000;
+
+        let authTokenValid = answ.id !== undefined && !isMoreThanADayOld;
+
+        return authTokenValid;
     };
 
     public generateNewAuthToken(): string {
@@ -237,9 +243,10 @@ export class DataBaseHandling {
             let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
             console.log(`The image id is ${imgId}`);
             let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
+            console.log(imgFileNameRow);
             let imgFileName = imgFileNameRow.filename;
             return imgFileName;
-        } finally {
+        } catch (e) {
             return null;
         }
     }

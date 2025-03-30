@@ -67,6 +67,9 @@ class NavCommander {
         // Wenn m (für "menü") gedrückt wird, toggle navbar
         if (event.key === "m") {
             NavCommander.navbarState = !NavCommander.navbarState;
+            if (NavCommander.navbarState) {
+                (NavCommander.navbar.querySelector("a[href]") as HTMLAnchorElement | undefined)?.focus();
+            }
         };
     };
 }

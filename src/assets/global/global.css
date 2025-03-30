@@ -132,6 +132,7 @@ nav {
         padding: .6rem;
         text-decoration: none;
         text-align: end;
+        outline: none;
 
         transition: background-color .5s;
 
@@ -139,7 +140,7 @@ nav {
             background-color: color-mix(in srgb, var(--navlink-color) 75%, blue 25%);
         }
 
-        &:hover {
+        &:hover, &:focus-within {
             background-color: color(from var(--navlink-color) srgb calc(r * 1.5) calc(g * 1.5) calc(b * 1.5));
         }
     }

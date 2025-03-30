@@ -15,7 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
 const formidable_1 = __importDefault(require("formidable"));
+const app_1 = require("./app");
 const node_path_1 = __importDefault(require("node:path"));
+const utils_1 = require("./utils");
 const apiRouter = express_1.default.Router();
 exports.default = apiRouter;
 let feature__flags;
@@ -36,21 +38,25 @@ apiRouter.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, f
     }
     ;
 }));
-apiRouter.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.post('/login', (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     const handler = new dataHandling_1.DataBaseHandling();
+    let err;
     try {
         if (yield handler.isUserValid(body["username"], body["password"])) {
-            req.session.token = handler.generateNewAuthToken();
+            let token = handler.generateNewAuthToken();
+            res.cookie("authToken", token, { httpOnly: true });
             res.redirect("/admin/");
             return;
         }
     }
     catch (error) {
-        res.status(401).send("Invalid :(");
+        err = new utils_1.HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
+        next(err);
     }
     req.session.token = undefined;
-    res.status(401).send("Invalid");
+    err = new utils_1.HTTPError(401, "Invalid");
+    next(err);
 }));
 apiRouter.get("/cookies", (req, res) => {
     if (!feature__flags) {
@@ -85,12 +91,12 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
         console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
         if (imagePath !== null) {
             imagePath = node_path_1.default.join(__dirname, imagePath);
-            console.log("Sending file");
+            console.log(`Sending file ${imagePath}`);
             res.sendFile(imagePath);
-            next();
-            return;
         }
-        ;
+        else {
+            res.sendStatus(404);
+        }
     }
     catch (e) {
         res.status(404).end("The requested image could not be found");
@@ -107,10 +113,10 @@ apiRouter.get("/product/stats/:id", function (req, res) {
     res.json(stats);
 });
 apiRouter.route("/admin/product/:id/stats")
-    .delete(function (req, res) {
+    .delete(app_1.checkAuthMiddleware, function (req, res) {
     res.sendStatus(501);
 })
-    .put(function (req, res) {
+    .put(app_1.checkAuthMiddleware, function (req, res) {
     const handling = new dataHandling_1.DataBaseHandling();
     const stats = JSON.parse(req.body.stats);
     console.log(stats);
@@ -135,13 +141,13 @@ apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(500).end("Something went wrong :(");
     }
 }));
-apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.get("/admin/contact/get", app_1.checkAuthMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Requested Messages!");
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.getContactMessages();
     res.status(200).json(result);
 }));
-apiRouter.post("/admin/products/new", (req, res) => {
+apiRouter.post("/admin/products/new", app_1.checkAuthMiddleware, (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     const newProduct = {
@@ -159,7 +165,7 @@ apiRouter.post("/admin/products/new", (req, res) => {
     }
     ;
 });
-apiRouter.delete("/admin/contact/delete", (req, res) => {
+apiRouter.delete("/admin/contact/delete", app_1.checkAuthMiddleware, (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
     console.log(body);
@@ -178,12 +184,12 @@ apiRouter.delete("/admin/contact/delete", (req, res) => {
         res.status(500).end(":(");
     }
 });
-apiRouter.get("/admin/products/get", (req, res) => {
+apiRouter.get("/admin/products/get", app_1.checkAuthMiddleware, (req, res) => {
     let handler = new dataHandling_1.DataBaseHandling();
     let response = handler.getAllProducts();
     res.json(response);
 });
-apiRouter.put("/admin/product/:id/update", function (req, res) {
+apiRouter.put("/admin/product/:id/update", app_1.checkAuthMiddleware, function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
         const body = req.body;
@@ -205,7 +211,7 @@ apiRouter.put("/admin/product/:id/update", function (req, res) {
         }
     });
 });
-apiRouter.put("/admin/product/:id/image", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+apiRouter.put("/admin/product/:id/image", app_1.checkAuthMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const form = new formidable_1.default.IncomingForm({
         multiples: false,
         uploadDir: './uploads',

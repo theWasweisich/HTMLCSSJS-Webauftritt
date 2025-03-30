@@ -1,4 +1,4 @@
-
+import express from 'express';
 
 
 export const COLORS = {
@@ -30,4 +30,29 @@ export const COLORS = {
     BgWhite: "\x1b[47m",
     BgGray: "\x1b[100m",
     
+}
+
+export class HTTPError extends Error {
+    status: number;
+
+    constructor(status: number, message?: string) {
+        super(message);
+        this.status = status;
+
+        Object.setPrototypeOf(this, HTTPError.prototype);
+    }
+}
+
+export function getCookies(req: express.Request): {key: string, value: string}[] {
+    var cookie = req.headers.cookie;
+    var cookies = cookie ? cookie.split("; ") : [];
+    var cookieObjs: {key: string, value: string}[] = [];
+
+    cookies.forEach(cookieString => {
+        let equalsPos = cookieString.indexOf("=");
+        let key = cookieString.substring(0, equalsPos);
+        let value = cookieString.substring(equalsPos + 1);
+        cookieObjs.push({key: key, value: value});
+    })
+    return cookieObjs;
 }
