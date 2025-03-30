@@ -117,19 +117,53 @@ export class DataBaseHandling {
         return false;
     };
 
-    public async isAuthTokenValid(token: string): Promise<boolean> {
+    public isAuthTokenValid(token: string): boolean {
         const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
 
         const answ = selectStmt.get(token) as {id: number, insertDate: string};
 
         let inserted = new Date(answ.insertDate);
-        let insertedSince = (Date.now() - inserted.getTime());
-        let isMoreThanADayOld = insertedSince > 86400000;
 
-        let authTokenValid = answ.id !== undefined && !isMoreThanADayOld;
+        let authTokenValid = answ.id !== undefined && !this.isTokenExpired(inserted);
+
+        this.purgeAuthTokens();
+
+        console.debug(`Is auth valid? ${authTokenValid}`);
 
         return authTokenValid;
     };
+
+    private isTokenExpired(insertDate: Date) {
+        let insertedSince = Date.now() - insertDate.getTime();
+        let isMoreThanADayOld = insertedSince > 86400000;
+        return isMoreThanADayOld;
+    }
+
+    private async purgeAuthTokens() {
+
+        const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens;");
+        const deleteStmt = this.db.prepare("DELETE FROM authTokens WHERE id=?");
+        type resultRow = { id: number, insertDate: string | number };
+
+        let rowIdsToDelete: number[] = [];
+
+        (selectStmt.all() as resultRow[]).forEach((resVal) => {
+            let tokenDate = new Date(resVal.insertDate);
+            if (this.isTokenExpired(tokenDate)) {
+                rowIdsToDelete.push(resVal.id);
+            }
+        });
+
+        let numOfRowsToDelete = rowIdsToDelete.length;
+
+        if (numOfRowsToDelete < 1) { return }
+
+        console.warn(`Deleting ${numOfRowsToDelete} authTokens, because they are more than a day old!`);
+
+        rowIdsToDelete.forEach((rowId: number) => {
+            deleteStmt.run(rowId.toFixed());
+        });
+    }
 
     public generateNewAuthToken(): string {
         const newToken = encodeURIComponent(uuidV4());

@@ -56,11 +56,12 @@ export async function checkAuthMiddleware(req: express.Request, res: express.Res
         next(error);
     } else {
         try {
-            result = await db.isAuthTokenValid(req.cookies.authToken);
+            result = db.isAuthTokenValid(req.cookies.authToken);
         } catch (e) {
             next(e);
         }
         if (result) {
+            console.info("AuthToken is valid, continuing with request");
             next();
         }
     };

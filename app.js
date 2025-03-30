@@ -56,12 +56,13 @@ function checkAuthMiddleware(req, res, next) {
         }
         else {
             try {
-                result = yield db.isAuthTokenValid(req.cookies.authToken);
+                result = db.isAuthTokenValid(req.cookies.authToken);
             }
             catch (e) {
                 next(e);
             }
             if (result) {
+                console.info("AuthToken is valid, continuing with request");
                 next();
             }
         }

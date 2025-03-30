@@ -88,17 +88,41 @@ class DataBaseHandling {
     }
     ;
     isAuthTokenValid(token) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
-            const answ = selectStmt.get(token);
-            let inserted = new Date(answ.insertDate);
-            let insertedSince = (Date.now() - inserted.getTime());
-            let isMoreThanADayOld = insertedSince > 86400000;
-            let authTokenValid = answ.id !== undefined && !isMoreThanADayOld;
-            return authTokenValid;
-        });
+        const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
+        const answ = selectStmt.get(token);
+        let inserted = new Date(answ.insertDate);
+        let authTokenValid = answ.id !== undefined && !this.isTokenExpired(inserted);
+        this.purgeAuthTokens();
+        console.debug(`Is auth valid? ${authTokenValid}`);
+        return authTokenValid;
     }
     ;
+    isTokenExpired(insertDate) {
+        let insertedSince = Date.now() - insertDate.getTime();
+        let isMoreThanADayOld = insertedSince > 86400000;
+        return isMoreThanADayOld;
+    }
+    purgeAuthTokens() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens;");
+            const deleteStmt = this.db.prepare("DELETE FROM authTokens WHERE id=?");
+            let rowIdsToDelete = [];
+            selectStmt.all().forEach((resVal) => {
+                let tokenDate = new Date(resVal.insertDate);
+                if (this.isTokenExpired(tokenDate)) {
+                    rowIdsToDelete.push(resVal.id);
+                }
+            });
+            let numOfRowsToDelete = rowIdsToDelete.length;
+            if (numOfRowsToDelete < 1) {
+                return;
+            }
+            console.warn(`Deleting ${numOfRowsToDelete} authTokens, because they are more than a day old!`);
+            rowIdsToDelete.forEach((rowId) => {
+                deleteStmt.run(rowId.toFixed());
+            });
+        });
+    }
     generateNewAuthToken() {
         const newToken = encodeURIComponent((0, uuid_1.v4)());
         console.log("Generating new Token...");
