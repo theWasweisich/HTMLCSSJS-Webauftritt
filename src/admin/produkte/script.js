@@ -336,6 +336,7 @@ class ProductDisplay {
             const endpoint = `/api/admin/product/${this.id}/update`;
             let formData = this.prepareProductFormData();
             yield this.updateStats();
+            yield this.sendImageToServer();
             let resp = yield fetch(endpoint, {
                 method: "PUT",
                 body: formData

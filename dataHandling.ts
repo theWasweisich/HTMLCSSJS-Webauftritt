@@ -78,7 +78,7 @@ export class DataBaseHandling {
     };
 
     private openDB(): Database.Database {
-        let better_db = new Database(DataBaseHandling.filename, { verbose: console.debug });
+        let better_db = new Database(DataBaseHandling.filename);
         better_db.pragma('journal_mode = WAL');
         return better_db;
     };
@@ -131,7 +131,6 @@ export class DataBaseHandling {
 
         this.purgeAuthTokens();
 
-        console.debug(`Is auth valid? ${authTokenValid}`);
 
         return authTokenValid;
     };
@@ -202,7 +201,6 @@ export class DataBaseHandling {
         topic: string,
         shortMsg: string,
         longMsg: string) {
-        // console.log(name, prename, email, topic, shortMsg, longMsg);
         const stmt = this.db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
         const timestamp = new Date().toISOString();
 
@@ -255,7 +253,6 @@ export class DataBaseHandling {
         let dbRes = productStmt.all();
         dbRes.forEach((value, index, array) => {
             let row = value as productRow;
-            console.log(row);
             if (typeof row.image === "number") {
                 let imgRes = imgAltStmt.get(row.image) as { alt: string };
             }
@@ -272,15 +269,12 @@ export class DataBaseHandling {
     };
 
     public getProductImagePath(id: number): string | null {
-        console.log("Trying to get image for id " + String(id));
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
         const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
 
         try {
             let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
-            console.log(`The image id is ${imgId}`);
             let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
-            console.log(imgFileNameRow);
             let imgFileName = imgFileNameRow.filename;
             return imgFileName;
         } catch (e) {
@@ -289,7 +283,6 @@ export class DataBaseHandling {
     }
 
     public getProductStats(id: number) {
-        console.log("Trying to get stats for product id: " + String(id));
         const getStatsStmt = this.db.prepare("SELECT id, name, unit, value FROM stats WHERE product=?");
         let stats: statsRow[] = [];
 
@@ -343,10 +336,6 @@ export class DataBaseHandling {
         price: number,
     ): Promise<boolean> {
 
-        console.log(`Id: ${id}`);
-        console.log(`Title: ${title}`);
-        console.log(`Description: ${description}`);
-        console.log(`Price: ${price}`);
 
         type productsRow = { name: string, description: string, price: number, image: number };
 
@@ -354,7 +343,6 @@ export class DataBaseHandling {
         const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
 
         let originalData = selectStmt.get(id) as productsRow;
-        console.log(originalData);
         let newRow: Partial<productsRow> = {
             name: title,
             description: description,
@@ -363,7 +351,6 @@ export class DataBaseHandling {
 
         try {
             let res = updateStmt.run(newRow.name, newRow.description, newRow.price, id);
-            console.log(`Changes: ${res.changes}`);
             let success = res.changes > 0;
             return success
         } catch (error) {
@@ -375,8 +362,6 @@ export class DataBaseHandling {
     }
 
     public async updateProductImage(image_path: string, image_alt: string, productId: number): Promise<number | Error> {
-        console.log(`Image name: ${image_path}`);
-
 
         let imgId = await this.insertNewImage(image_path as string, image_alt) as number;
 

@@ -53,7 +53,7 @@
                         <option value="allgemein">allgemeine Frage</option>
                     </select>
                     <label for="short-inp">Kurzbeschreibung</label>
-                    <input type="text" name="short" id="short-inp" maxlength="25" class="accent-purple">
+                    <input type="text" name="short" id="short-inp" maxlength="50" class="accent-purple">
                     <label for="long-inp">Ihre Nachricht</label>
                     <textarea name="long" id="long-inp" cols="50" rows="10" class="accent-purple"></textarea>
                     <input type="submit" value="Absenden" class="accent-purple">
@@ -72,11 +72,20 @@
         </form>
     </dialog>
     <dialog id="failed-msg">
-        <h1>&#128544; Ihre Nachricht ist verlohren gegangen!</h1>
+        <h1>Ihre Nachricht ist verlohren gegangen! 😡</h1>
         <p>Leider hat ihre Nachricht unsere Server nicht erreicht</p>
         <p>Eventuell war Ihre Nachricht einfach nicht stark genug, um sich durch die tiefen Weiten des Internets zu
             kämpfen</p>
         <p>Rüsten Sie ihre Nachricht das nächste Mal besser aus!</p>
+        <form method="dialog">
+            <button type="submit">Fertig</button>
+        </form>
+    </dialog>
+    <dialog id="wait-msg">
+        <h1>Bitte haben Sie etwas Geduld! 😴</h1>
+        <p>Sie haben vor kurzem bereits schon einmal eine Kontaktnachricht versandt!</p>
+        <p>Wenn Sie zu viele Nachrichten schicken, überlasten Sie das Internet, weil das braucht auch manchmal eine Pause.</p>
+        <p>Haben Sie also etwas Geduld, sonst könnten Sie mit ihren Kontaktnachrichten eventuell das Internet für die ganze Stadt kaputt machen!</p>
         <form method="dialog">
             <button type="submit">Fertig</button>
         </form>

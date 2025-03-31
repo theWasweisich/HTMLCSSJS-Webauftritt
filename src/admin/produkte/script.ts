@@ -389,6 +389,7 @@ class ProductDisplay {
         let formData = this.prepareProductFormData();
 
         await this.updateStats();
+        await this.sendImageToServer();
 
         let resp = await fetch(endpoint, {
             method: "PUT",

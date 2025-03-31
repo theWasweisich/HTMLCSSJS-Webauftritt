@@ -58,8 +58,6 @@ let feature__flags;
 });
 apiRouter.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    // console.log(body, typeof body);
-    console.log("New Contact Message received!");
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
     if (result) {
@@ -124,10 +122,8 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const handler = new dataHandling_1.DataBaseHandling();
     try {
         var imagePath = handler.getProductImagePath(Number(productId));
-        console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
         if (imagePath !== null) {
             imagePath = node_path_1.default.join(__dirname, imagePath);
-            console.log(`Sending file ${imagePath}`);
             res.sendFile(imagePath);
         }
         else {
@@ -155,7 +151,6 @@ apiRouter.route("/admin/product/:id/stats")
     .put(function (req, res) {
     const handling = new dataHandling_1.DataBaseHandling();
     const stats = JSON.parse(req.body.stats);
-    console.log(stats);
     handling.replaceStats(stats, Number(req.params.id));
     res.sendStatus(501);
 });
@@ -178,7 +173,6 @@ apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 }));
 apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Requested Messages!");
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.getContactMessages();
     res.status(200).json(result);
@@ -204,7 +198,6 @@ apiRouter.post("/admin/products/new", (req, res) => {
 apiRouter.delete("/admin/contact/delete", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
     const body = req.body;
-    console.log(body);
     let id;
     if (body["multiple"]) {
         id = body["ids"];
@@ -225,26 +218,41 @@ apiRouter.get("/admin/products/get", (req, res) => {
     let response = handler.getAllProducts();
     res.json(response);
 });
-apiRouter.put("/admin/product/:id/update", function (req, res) {
+apiRouter.put("/admin/product/:id/update", function (req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const handler = new dataHandling_1.DataBaseHandling();
-        const body = req.body;
-        console.log(`Body: ${body}`);
+        const form = new formidable.Formidable();
         let id;
         let title;
         let description;
         let price;
-        id = Number(req.params.id);
-        title = body.title;
-        description = body.description;
-        price = body.price;
-        let success = yield handler.updateProduct(id, title, description, price);
-        if (success) {
-            res.status(200).end("Success");
-        }
-        else {
-            res.status(500).end("Something went wrong :(");
-        }
+        form.parse(req, (err, fields, files) => __awaiter(this, void 0, void 0, function* () {
+            if (err) {
+                next(err);
+                return;
+            }
+            let titleField = fields["title"];
+            let descrField = fields["description"];
+            let priceField = fields["price"];
+            if (titleField && descrField && priceField) {
+                title = titleField[0];
+                description = descrField[0];
+                price = Number(priceField[0]);
+            }
+            else {
+                let err = new utils_1.HTTPError(500);
+                next(err);
+                return;
+            }
+            id = Number(req.params.id);
+            let success = yield handler.updateProduct(id, title, description, price);
+            if (success) {
+                res.status(200).end("Success");
+            }
+            else {
+                res.status(500).end("Something went wrong :(");
+            }
+        }));
     });
 });
 apiRouter.put("/admin/product/:id/image", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -272,10 +280,6 @@ apiRouter.put("/admin/product/:id/image", (req, res, next) => __awaiter(void 0, 
             throw new Error();
         }
         let singlefile = file[0];
-        console.log(`File: ${singlefile}`);
-        console.log(`Filename: ${filename}`);
-        console.log(`Filepath: ${singlefile.filepath}`);
-        console.log(`Alt: ${alt}`);
         let filenameOfFile = `./uploads/${singlefile.newFilename}`;
         yield handler.updateProductImage(filenameOfFile, alt, Number(productId));
         if (file instanceof formidable.File) {

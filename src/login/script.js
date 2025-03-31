@@ -34,8 +34,11 @@ class LoginFormHandler {
     }
     setup() {
         this.loginFormRoot.addEventListener("submit", ev => { this.handleSubmitEvent(ev); });
-        this.usernameInp.addEventListener('input', (ev) => { this.keyDownEventHandler(ev); });
-        this.passwordInp.addEventListener('input', (ev) => { this.keyDownEventHandler(ev); });
+        this.setupErrorState();
+    }
+    setupErrorState() {
+        this.usernameInp.addEventListener('input', (ev) => { this.inputEventHandler(ev); });
+        this.passwordInp.addEventListener('input', (ev) => { this.inputEventHandler(ev); });
     }
     handleSubmitEvent(ev) {
         ev.preventDefault();
@@ -48,9 +51,11 @@ class LoginFormHandler {
         this.sendToServer(username, password);
     }
     ;
-    keyDownEventHandler(ev) {
+    inputEventHandler(ev) {
         if (this.inErrorState) {
-            this.inErrorState = false;
+            setTimeout(() => {
+                this.inErrorState = false;
+            }, 500);
         }
     }
     sendToServer(username, password) {

@@ -18,8 +18,6 @@ getFeatureFlags().then((flags) => {
 
 apiRouter.post('/contact/new', async (req, res) => {
     const body = req.body;
-    // console.log(body, typeof body);
-    console.log("New Contact Message received!");
 
     const handler = new DataBaseHandling();
     let result = await handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
@@ -103,12 +101,9 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
 
     try {
         var imagePath = handler.getProductImagePath(Number(productId));
-    
-        console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
 
         if (imagePath !== null) {
             imagePath = path.join(__dirname, imagePath);
-            console.log(`Sending file ${imagePath}`);
             res.sendFile(imagePath);
         } else {
             res.sendStatus(404);
@@ -140,7 +135,6 @@ apiRouter.route("/admin/product/:id/stats")
     .put(function(req: express.Request, res: express.Response) {
         const handling = new DataBaseHandling();
         const stats = JSON.parse(req.body.stats) as {id: number, name: string, unit: string | null, value: string | number}[];
-        console.log(stats);
         handling.replaceStats(stats, Number(req.params.id));
         res.sendStatus(501);
     });
@@ -163,7 +157,6 @@ apiRouter.post('/users/new', async (req, res) => {
 });
 
 apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
-    console.log("Requested Messages!")
     const handler = new DataBaseHandling();
 
     let result = await handler.getContactMessages();
@@ -195,7 +188,6 @@ apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Re
     const handler = new DataBaseHandling();
     const body = req.body;
 
-    console.log(body);
     let id: number[];
     if (body["multiple"]) {
         id = body["ids"];
@@ -218,37 +210,47 @@ apiRouter.get("/admin/products/get", (req: express.Request, res: express.Respons
     res.json(response);
 });
 
-apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response) {
-
-    type uploadBody = {
-        title: string,
-        description: string,
-        price: number,
-    };
+apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response, next: express.NextFunction) {
 
     const handler = new DataBaseHandling();
-    const body = req.body as uploadBody;
-
-    console.log(`Body: ${body}`);
-
+    const form = new formidable.Formidable();
     let id: number;
     let title: string;
     let description: string;
     let price: number;
 
+    form.parse(req, async (err: any, fields: formidable.Fields, files: formidable.Files) => {
+        if (err) {
+            next(err);
+            return;
+        }
+        let titleField = fields["title"];
+        let descrField = fields["description"];
+        let priceField = fields["price"];
+
+        if (titleField && descrField && priceField) {
+            title = titleField[0];
+            description = descrField[0];
+            price = Number(priceField[0]);
+        } else {
+            let err = new HTTPError(500);
+            next(err);
+            return;
+        }
+
+        id = Number(req.params.id);
     
-    id = Number(req.params.id);
-    title = body.title;
-    description = body.description;
-    price = body.price;
+        let success = await handler.updateProduct(id, title, description, price);
+    
+        if (success) {
+            res.status(200).end("Success");
+        } else {
+            res.status(500).end("Something went wrong :(");
+        }
+    })
 
-    let success = await handler.updateProduct(id, title, description, price);
 
-    if (success) {
-        res.status(200).end("Success");
-    } else {
-        res.status(500).end("Something went wrong :(");
-    }
+    
 })
 
 apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -280,10 +282,6 @@ apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: expr
         }
         let singlefile = file[0];
 
-        console.log(`File: ${singlefile}`);
-        console.log(`Filename: ${filename}`);
-        console.log(`Filepath: ${singlefile.filepath}`);
-        console.log(`Alt: ${alt}`);
 
         let filenameOfFile = `./uploads/${singlefile.newFilename}`;
 

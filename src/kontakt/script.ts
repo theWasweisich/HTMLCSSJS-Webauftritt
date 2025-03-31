@@ -7,6 +7,18 @@ type FormElements = {
     longInp: HTMLTextAreaElement;
 }
 
+enum validationResult {
+    OK,
+    NOT_OK,
+    SILENT_FAIL
+}
+
+enum responseType {
+    SEND_SUCCESS,
+    SEND_FAILED,
+    NEED_TO_WAIT
+}
+
 class FormMaster {
     static badWords: string[] = [
         "kaputt", "garantie", "betrug", "schlecht"
@@ -48,19 +60,32 @@ class FormMaster {
 
             let lastSubmit = localStorage.getItem("lastSubmit");
             if (lastSubmit !== null) {
-                if ((Date.now() - Number(lastSubmit)) < 5000) {
+                const secondsPassed = (Date.now() - Number(lastSubmit)) / 1000;
+                const minutesPassed = secondsPassed / 60;
+                if (minutesPassed < 15) {
+                    FormMaster.triggerResponse(responseType.NEED_TO_WAIT);
                     return;
-                }
-            }
+                };
+            };
 
-            this.validator();
-            let isValid = this.formRoot.checkValidity();
-            if (isValid) {
+            let validity = this.validator();
+            let isValid = this.formRoot.reportValidity();
+
+            if (isValid && validity === validationResult.OK) {
                 this.sendData().then((res) => {
-                    FormMaster.triggerResponse(res.ok);
+                    if (res.ok) {
+                        FormMaster.triggerResponse(responseType.SEND_SUCCESS);
+                    } else {
+                        FormMaster.triggerResponse(responseType.SEND_FAILED);
+                    }
                     FormMaster.lastSubmitted = Date.now();
                     this.formRoot.reset();
                 });
+            } else if (isValid && validity === validationResult.SILENT_FAIL) {
+                // Rückerstattungen machen wir nicht, aber wir tun so, als ob alles bestens wäre :)
+                console.log("🤫 Das ignorieren wir heimlich");
+                this.formRoot.reset();
+                FormMaster.triggerResponse(responseType.SEND_SUCCESS);
             };
         });
 
@@ -71,31 +96,35 @@ class FormMaster {
         });
     }
 
-    static triggerResponse(success: boolean) {
-        if (success) {
-            let dialog = document.getElementById('success-msg') as HTMLDialogElement;
-            dialog.showModal()
+    static triggerResponse(type: responseType) {
+        let dialog: HTMLDialogElement;
+        if (type === responseType.SEND_SUCCESS) {
+            dialog = document.getElementById('success-msg') as HTMLDialogElement;
+        } else if (type === responseType.SEND_FAILED) {
+            dialog = document.getElementById('failed-msg') as HTMLDialogElement;
+        } else if (type === responseType.NEED_TO_WAIT) {
+            dialog = document.getElementById("wait-msg") as HTMLDialogElement;
         } else {
-            let dialog = document.getElementById('failed-msg') as HTMLDialogElement;
-            dialog.showModal();
+            throw new Error("Hmmmmmmmmmmmmmm");
         }
+        dialog.showModal();
     }
 
     /**
      * @returns True if valid, false if invalid
      */
-    validator(inputToCheck?: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
-        var isValid: boolean = true;
+    validator(inputToCheck?: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): validationResult {
+        var isValid: validationResult = validationResult.OK;
 
         const validateNameInputs = () => {
             // Required
             if (this.elements.nameInp.value.replace(" ", "") === "") {
-                this.elements.nameInp.setCustomValidity("Bitte angeben"); isValid = false
+                this.elements.nameInp.setCustomValidity("Bitte angeben"); isValid = validationResult.NOT_OK
             } else {
                 this.elements.nameInp.setCustomValidity("")
             }
             if (this.elements.prenameInp.value === "") {
-                this.elements.prenameInp.setCustomValidity("Bitte angeben"); isValid = false
+                this.elements.prenameInp.setCustomValidity("Bitte angeben"); isValid = validationResult.NOT_OK
             } else {
                 this.elements.nameInp.setCustomValidity("")
             }
@@ -103,15 +132,16 @@ class FormMaster {
 
         const checkForBadWords = () => {
             for (const word of FormMaster.badWords) {
-                if (this.elements.longInp.value.includes(word)) { isValid = false };
-                if (this.elements.shortInp.value.includes(word)) { isValid = false };
+                const toCheck = word.toLowerCase()
+                if (this.elements.longInp.value.includes(word)) { isValid = validationResult.NOT_OK };
+                if (this.elements.shortInp.value.includes(word)) { isValid = validationResult.NOT_OK };
             };
         }
 
         const checkEmailValidity = () => {
             if (!FormMaster.emailRegex.test(this.elements.emailInp.value.toLowerCase())) {
                 this.elements.emailInp.setCustomValidity("Die Email sieht aber nicht gut aus!");
-                isValid = false;
+                isValid = validationResult.NOT_OK;
             } else {
                 this.elements.emailInp.setCustomValidity("");
             }
@@ -122,10 +152,12 @@ class FormMaster {
             this.elements.topicSel.setCustomValidity("");
             if (selected === "garantie") {
                 this.elements.topicSel.setCustomValidity("Bei uns gibt es keine Garantie!");
-                isValid = false;
+                isValid = validationResult.NOT_OK;
             } else if (selected === "allgemein") {
                 this.elements.topicSel.setCustomValidity("Bitte seien sie etwas genauer");
-                isValid = false;
+                isValid = validationResult.NOT_OK;
+            } else if (selected === "erstattung") {
+                isValid = validationResult.SILENT_FAIL;
             } else {
                 this.elements.topicSel.setCustomValidity("");
             }
