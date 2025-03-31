@@ -23,6 +23,18 @@ class UnitSelectionElement {
     }
 }
 class ProductDisplay {
+    get selectedProductImage() {
+        return this._selectedProductImage;
+    }
+    set selectedProductImage(image) {
+        this._selectedProductImage = image;
+    }
+    set originalImage(image) {
+        this._originalImage = image;
+    }
+    get originalImage() {
+        return this._originalImage;
+    }
     constructor(id, title, description, price, image) {
         this.id = id;
         this.title = title;
@@ -40,18 +52,6 @@ class ProductDisplay {
         this._selectedProductImage = this._originalImage;
         this.selectedProductImage = this.originalImage;
         this.setup();
-    }
-    get selectedProductImage() {
-        return this._selectedProductImage;
-    }
-    set selectedProductImage(image) {
-        this._selectedProductImage = image;
-    }
-    set originalImage(image) {
-        this._originalImage = image;
-    }
-    get originalImage() {
-        return this._originalImage;
     }
     ;
     static new(id, title, description, price, image, toAppendTo) {

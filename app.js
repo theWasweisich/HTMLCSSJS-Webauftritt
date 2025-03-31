@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkAuthMiddleware = void 0;
+exports.checkAuthMiddleware = checkAuthMiddleware;
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_session_1 = __importDefault(require("express-session"));
@@ -69,7 +69,6 @@ function checkAuthMiddleware(req, res, next) {
         ;
     });
 }
-exports.checkAuthMiddleware = checkAuthMiddleware;
 ;
 app.use((req, res, next) => {
     if (!feature__flags) {

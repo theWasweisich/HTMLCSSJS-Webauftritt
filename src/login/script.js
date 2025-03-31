@@ -9,14 +9,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class LoginFormHandler {
+    get inErrorState() {
+        return this._inErrorState;
+    }
+    set inErrorState(value) {
+        this._inErrorState = value;
+        if (this._inErrorState) {
+            this.outputElem.textContent = 'Benutzername oder Passwort oder beides sind falsch!';
+            this.angryElem.hidden = false;
+        }
+        else {
+            this.outputElem.textContent = '';
+            this.angryElem.hidden = true;
+        }
+    }
     constructor() {
         this.loginFormRoot = document.getElementById("loginForm");
         this.usernameInp = document.getElementById("username-inp");
         this.passwordInp = document.getElementById("password-inp");
+        this.outputElem = document.getElementById("loginFormOutput");
+        this.angryElem = document.getElementById('angry');
+        this._inErrorState = false;
         this.setup();
     }
     setup() {
         this.loginFormRoot.addEventListener("submit", ev => { this.handleSubmitEvent(ev); });
+        this.usernameInp.addEventListener('input', (ev) => { this.keyDownEventHandler(ev); });
+        this.passwordInp.addEventListener('input', (ev) => { this.keyDownEventHandler(ev); });
     }
     handleSubmitEvent(ev) {
         ev.preventDefault();
@@ -29,6 +48,11 @@ class LoginFormHandler {
         this.sendToServer(username, password);
     }
     ;
+    keyDownEventHandler(ev) {
+        if (this.inErrorState) {
+            this.inErrorState = false;
+        }
+    }
     sendToServer(username, password) {
         return __awaiter(this, void 0, void 0, function* () {
             let reqbody = JSON.stringify({
@@ -43,7 +67,9 @@ class LoginFormHandler {
                 }
             });
             if (!res.ok) {
-                console.error(yield res.text());
+                this.loginFormRoot.reset();
+                this.inErrorState = true;
+                this.usernameInp.focus();
                 return;
             }
             ;

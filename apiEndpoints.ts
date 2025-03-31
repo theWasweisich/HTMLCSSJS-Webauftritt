@@ -35,24 +35,30 @@ apiRouter.post('/login', async (req, res, next) => {
     const body = req.body;
     const handler = new DataBaseHandling();
     let err: HTTPError;
+    let username = body["username"]
+    let password = body["password"]
+
+    let isUserAuthenticated = false;
 
     try {
-        if (await handler.isUserValid(body["username"], body["password"])) {
-            let token = handler.generateNewAuthToken();
-
-            res.cookie("authToken", token, { httpOnly: true });
-
-            res.redirect("/admin/");
-            return;
-        }
+        isUserAuthenticated = await handler.isUserValid(username, password);
     } catch (error) {
+        console.error(error);
         err = new HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
         next(err);
     }
 
+    if (isUserAuthenticated) {
+        let token = handler.generateNewAuthToken();
+
+        res.cookie("authToken", token, { httpOnly: true });
+
+        res.redirect("/admin/");
+        return;
+    }
+
     req.session.token = undefined;
-    err = new HTTPError(401, "Invalid");
-    next(err);
+    res.status(401).end("Jetzt probieren wir das aber nochmal, was?");
 });
 
 apiRouter.get("/cookies", (req, res) => {

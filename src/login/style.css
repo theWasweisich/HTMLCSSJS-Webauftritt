@@ -30,10 +30,16 @@
         display: inline;
     }
 
+    
     button {
         display: block;
-        margin-block-start: 1.5em;
+        margin-block-start: 0.5em;
     }
+}
+output {
+    height: 1lh;
+    color: red;
+    word-break: break-all;
 }
 
 #login-section {
