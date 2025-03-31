@@ -79,7 +79,7 @@ class singleContactMessage {
             let timeHour = this.timestamp.getHours();
             let timeMinute = this.timestamp.getMinutes();
             function timePadding(value) {
-                return value < 10 ? `${value}` : String(value);
+                return value < 10 ? `0${value}` : String(value);
             }
             let timeString = `${timePadding(timeDay)}.${timePadding(timeMonth)}.${timePadding(timeYear)} um ${timePadding(timeHour)}:${timePadding(timeMinute)}`;
             if (elem.dataset.field === "name") {

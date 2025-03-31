@@ -92,7 +92,7 @@ class singleContactMessage {
             let timeMinute = this.timestamp.getMinutes();
 
             function timePadding(value: number): string {
-                return value < 10 ? `${value}` : String(value);
+                return value < 10 ? `0${value}` : String(value);
             }
 
             let timeString = `${timePadding(timeDay)}.${timePadding(timeMonth)}.${timePadding(timeYear)} um ${timePadding(timeHour)}:${timePadding(timeMinute)}`;
