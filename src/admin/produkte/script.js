@@ -8,8 +8,141 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+;
 class StatWithElem {
 }
+class NewProductDialog {
+    constructor() {
+        this.newValues = {};
+    }
+    setup() {
+        const openBtn = NewProductDialog.formElems.openBtn;
+        const submitBtn = NewProductDialog.formElems.submitBtn;
+        const abortBtn = NewProductDialog.formElems.abortBtn;
+        const dialogElem = NewProductDialog.dialogElem;
+        const form = dialogElem.querySelector("form");
+        submitBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            this.submitHandler().then((value) => {
+                NewProductDialog.dialogElem.close(`Value: ${value}`);
+            });
+        });
+        abortBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            NewProductDialog.dialogElem.close("abort");
+        });
+        openBtn.addEventListener("click", () => {
+            document.body.classList.add("modalOpen");
+            NewProductDialog.dialogElem.showModal();
+        });
+        dialogElem.addEventListener("close", (ev) => {
+            let value = NewProductDialog.dialogElem.returnValue;
+            document.body.classList.remove("modalOpen");
+        });
+        NewProductDialog.formElems.imageInp.addEventListener("input", (ev) => { this.imageInputHandler(); });
+        return true;
+    }
+    ;
+    imageInputHandler() {
+        const inp = NewProductDialog.formElems.imageInp;
+        const altInp = NewProductDialog.formElems.imageAltInp;
+        const previewImgElem = NewProductDialog.dialogElem.querySelector(".img-input-wrapper img");
+        let files = inp.files;
+        if (files === null) {
+            return;
+        }
+        ;
+        if ((files === null || files === void 0 ? void 0 : files.length) > 0) {
+            let image = files.item(0);
+            if (image === null) {
+                return;
+            }
+            ;
+            this.newValues.image = image;
+            if (altInp.value === "") {
+                altInp.placeholder = image.name;
+            }
+            ;
+            let localUrl = URL.createObjectURL(image);
+            previewImgElem.src = localUrl;
+            previewImgElem.alt = image.name;
+            previewImgElem.classList.add("show");
+        }
+        ;
+    }
+    submitHandler() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const titleInp = NewProductDialog.formElems.titleInp;
+            const descriptionInp = NewProductDialog.formElems.descriptionInp;
+            const priceInp = NewProductDialog.formElems.priceInp;
+            const altInp = NewProductDialog.formElems.imageAltInp;
+            this.newValues.title = titleInp.value;
+            this.newValues.description = descriptionInp.value;
+            this.newValues.price = Number(priceInp.value);
+            this.newValues.imageAlt = altInp.value;
+            if (this.newValues.title.length <= 0 ||
+                this.newValues.description.length <= 0 ||
+                Number.isNaN(this.newValues.price) ||
+                this.newValues.imageAlt.length <= 0) {
+                return false;
+            }
+            ;
+            if (!this.newValues.image) {
+                console.error("Image not given!");
+            }
+            ;
+            let res = yield this.uploadAll();
+            return res;
+        });
+    }
+    ;
+    uploadAll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const formdata = new FormData();
+            if (!this.newValues.title) {
+                console.error("Titel!");
+                return false;
+            }
+            if (!this.newValues.description) {
+                console.error("Beschreibung!");
+                return false;
+            }
+            if (!this.newValues.price) {
+                console.error("Preis!");
+                return false;
+            }
+            if (!this.newValues.image) {
+                console.error("Bild!");
+                return false;
+            }
+            if (!this.newValues.imageAlt) {
+                console.error("Alt!");
+                return false;
+            }
+            formdata.append("title", this.newValues.title);
+            formdata.append("description", this.newValues.description);
+            formdata.append("price", this.newValues.price.toString());
+            formdata.append("image", this.newValues.image);
+            formdata.append("alt", this.newValues.imageAlt);
+            const reqRes = yield fetch("/api/admin/products/new", {
+                body: formdata,
+                method: 'POST'
+            });
+            return reqRes.ok;
+        });
+    }
+}
+NewProductDialog.dialogElem = document.getElementById("newProduct");
+NewProductDialog.formElems = {
+    openBtn: document.getElementById("openNewProductBtn"),
+    submitBtn: document.getElementById("addProductConfirmBtn"),
+    abortBtn: document.getElementById("addProductAbortBtn"),
+    titleInp: document.getElementById("new-title-inp"),
+    descriptionInp: document.getElementById("new-description-inp"),
+    priceInp: document.getElementById("new-price-inp"),
+    imageInp: document.getElementById("new-image-inp"),
+    imageAltInp: document.getElementById("new-image-alt-inp")
+};
 class UnitSelectionElement {
     constructor() {
         this.element = document.createElement("select");
@@ -54,7 +187,7 @@ class ProductDisplay {
         this.setup();
     }
     ;
-    static new(id, title, description, price, image, toAppendTo) {
+    static create(id, title, description, price, image, toAppendTo) {
         return __awaiter(this, void 0, void 0, function* () {
             let product = new ProductDisplay(id, title, description, price, image);
             product.createElement(toAppendTo);
@@ -83,7 +216,6 @@ class ProductDisplay {
         }
         ;
         newStatBtn.addEventListener("click", () => {
-            console.log("Adding new Stat");
             this.statAddBtnListener();
         });
         this.generateStatElems();
@@ -103,8 +235,14 @@ class ProductDisplay {
         this.inputElems.imageInput.addEventListener("change", (ev) => { this.imageInputHandler(ev); });
         let imgLabelElem = clone.querySelector(".file-picker-label");
         imgLabelElem.htmlFor = this.inputElems.imageInput.id;
+        let imgAltElem = clone.querySelector('.file-picker-label input');
+        imgAltElem.id = `image-alt-${this.id}`;
+        imgAltElem.name = `image-alt-${this.id}`;
+        this.inputElems.imageAltInput = imgAltElem;
         this.inputElems.saveBtn = clone.querySelector("button.save-btn");
         this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); });
+        this.inputElems.deleteBtn = clone.querySelector("button.delete-btn");
+        this.inputElems.deleteBtn.addEventListener('click', (ev) => __awaiter(this, void 0, void 0, function* () { this.deleteBtnHandler(ev); }));
         this.setInputDefaults();
     }
     generateStatElems() {
@@ -124,6 +262,9 @@ class ProductDisplay {
             return;
         }
         ;
+        this.inputElems.statsList.querySelector(".stat .nameInput").id += String(this.id);
+        this.inputElems.statsList.querySelector(".stat .valueInput").id += String(this.id);
+        this.inputElems.statsList.querySelector(".stat .unitInput").id += String(this.id);
         this.productStats.forEach(stat => {
             let statRoot = this.generateSingleStatElem(stat);
             this.inputElems.statsList.appendChild(statRoot);
@@ -149,10 +290,12 @@ class ProductDisplay {
         else {
             voidOption.selected = true;
         }
-        nameInput.value = stat.name.toString();
+        // console.log(`Statname: ${stat.name}`);
+        nameInput.value = stat.name;
         nameInput.classList.add("nameInput");
         nameInput.id = `stat-name-${stat.id}`;
-        valueInput.value = stat.value.toString();
+        // console.log(`Statvalue: ${stat.value}`);
+        valueInput.value = String(stat.value);
         valueInput.classList.add("valueInput");
         valueInput.id = `stat-value-${stat.id}`;
         let removeBtn = document.createElement("button");
@@ -174,17 +317,16 @@ class ProductDisplay {
                 }
             }
             let currentStatElement = this.inputElems.statsList.querySelector(`[data-id="${stat.id}"]`);
-            console.log(currentStatElement);
             currentStatElement === null || currentStatElement === void 0 ? void 0 : currentStatElement.remove();
         });
-        statRoot.appendChild(nameInput);
-        statRoot.appendChild(valueInput);
-        statRoot.appendChild(unitSelectionElem.element);
-        statRoot.appendChild(removeBtn);
-        statRoot.dataset.id = stat.id.toString();
         nameInput.disabled = true;
         valueInput.disabled = true;
         unitSelectionElem.element.disabled = true;
+        let appendedNameInput = statRoot.appendChild(nameInput);
+        let appendedValueInput = statRoot.appendChild(valueInput);
+        statRoot.appendChild(unitSelectionElem.element);
+        statRoot.appendChild(removeBtn);
+        statRoot.dataset.id = stat.id.toString();
         return statRoot;
     }
     statAddBtnListener() {
@@ -197,9 +339,9 @@ class ProductDisplay {
             console.error("ProductStats not given!");
             return;
         }
-        let nameInp = document.getElementById("stat-template-name");
-        let valueInp = document.getElementById("stat-template-value");
-        let unitInp = document.getElementById("stat-template-unit");
+        let nameInp = document.getElementById(`stat-template-name-${this.id}`);
+        let valueInp = document.getElementById(`stat-template-value-${this.id}`);
+        let unitInp = document.getElementById(`stat-template-unit-${this.id}`);
         if (!nameInp) {
             throw new Error("nameInp fehlt!");
         }
@@ -283,13 +425,35 @@ class ProductDisplay {
             yield this.updateProduct();
         });
     }
+    deleteBtnHandler(ev) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const confirmMsg = `Möchhten Sie das Produkt "${this.title}" wirklich löschen?`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            ;
+            const deleteEndpoint = `/api/admin/product/${this.id}/delete`;
+            const deleteRes = yield fetch(deleteEndpoint, {
+                method: 'DELETE',
+            });
+            if (deleteRes.ok) {
+                window.location.reload();
+                return true;
+            }
+            else {
+                return false;
+            }
+        });
+    }
     updateImage() {
         if (this.selectedProductImage === undefined) {
             return;
         }
         let img = this.inputElems.image;
+        let imgAlt = this.inputElems.imageAltInput;
         img.src = this.selectedProductImage.path;
         img.alt = this.selectedProductImage.alt;
+        imgAlt.value = this.selectedProductImage.alt;
     }
     ;
     addImageToFormData(image) {
@@ -324,11 +488,6 @@ class ProductDisplay {
         formData.append("description", description);
         formData.append("price", price);
         formData.append("stats", "");
-        console.groupCollapsed(`Prepared FormData1:`);
-        for (const singleData of formData.entries()) {
-            console.log(singleData);
-        }
-        console.groupEnd();
         return formData;
     }
     updateProduct() {
@@ -342,7 +501,8 @@ class ProductDisplay {
                 body: formData
             });
             if (resp.ok) {
-                console.log("Success");
+                window.location.reload();
+                return;
             }
             else {
                 let txt = yield resp.text();
@@ -361,12 +521,11 @@ class ProductDisplay {
                 stat;
             });
             let statsJson = JSON.stringify(this.productStats);
-            console.log(statsJson);
             const formData = new FormData();
             formData.append("stats", statsJson);
             const endpoint = `/api/admin/product/${this.id}/stats`;
             let fetchRes = yield fetch(endpoint, {
-                method: "PUT",
+                method: "POST",
                 body: formData
             });
             if (!fetchRes.ok) {
@@ -388,13 +547,6 @@ class ProductDisplay {
                 formData = this.addImageToFormData();
             }
             ;
-            console.groupCollapsed("Sending Image");
-            console.info("Formdata:");
-            let entries = formData.entries();
-            for (const entry of entries) {
-                console.log(entry);
-            }
-            console.groupEnd();
             let fetchRes = yield fetch(endpoint, {
                 method: "PUT",
                 body: formData
@@ -428,7 +580,7 @@ class ProductManager {
             for (const resp of jsonResp) {
                 let img_path = `/api/product/${resp.id}/image/get`;
                 let image = yield ((yield fetch(img_path)).blob());
-                let product = yield ProductDisplay.new(resp.id, resp.title, resp.description, resp.price, {
+                let product = yield ProductDisplay.create(resp.id, resp.title, resp.description, resp.price, {
                     filename: resp.image_filename,
                     path: img_path,
                     alt: resp.image_alt,
@@ -441,4 +593,7 @@ class ProductManager {
 }
 ProductManager.productTemplate = document.getElementById("product-template");
 var manager;
+var newDialog;
 manager = new ProductManager(document.getElementById("products-output"));
+newDialog = new NewProductDialog();
+console.log(newDialog.setup());

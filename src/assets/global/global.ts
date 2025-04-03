@@ -6,6 +6,7 @@ class NavCommander {
 
     static set navbarState(value: boolean) {
         this._navState = value;
+        if (value === false) { (document.activeElement as HTMLElement).blur(); };
         (NavCommander.navtoggle.querySelector('svg') as SVGElement).classList.toggle('open', this._navState);
         (NavCommander.navtoggle.classList.toggle("open", this._navState));
         (document.querySelector('nav') as HTMLElement).classList.toggle('show', this._navState);
@@ -199,7 +200,8 @@ class consentMgr {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    document.body.querySelectorAll("& > [hidden]").forEach(elem => { elem.removeAttribute("hidden") });
     await PartialsLoader.loadPartials();
     NavCommander.setup();
     consentMgr.ensureConsent();
-})
+});

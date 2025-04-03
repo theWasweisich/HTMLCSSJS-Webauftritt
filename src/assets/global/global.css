@@ -203,6 +203,7 @@ footer {
     color-scheme: dark;
 
     .cookieText {
+        user-select: none;
         padding: 1rem;
         border-radius: .5em;
         max-height: 10.5lh;

@@ -78,7 +78,7 @@ export class DataBaseHandling {
     };
 
     private openDB(): Database.Database {
-        let better_db = new Database(DataBaseHandling.filename);
+        let better_db = new Database(DataBaseHandling.filename, { verbose: undefined });
         better_db.pragma('journal_mode = WAL');
         return better_db;
     };
@@ -218,21 +218,32 @@ export class DataBaseHandling {
         return true;
     }
 
-    public newProduct(
+    public async newProduct(
         name: string,
         description: string,
-        image_url: string,
-        image_alt: string,
+        price: number,
+        image_url?: string,
+        image_alt?: string,
         stats?: {
             name: string,
             type: string,
             value: string | number
         }[]
     ) {
-        const imgId = this.insertNewImage(image_url, image_alt);
-        const productInsertStmt = this.db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
-        
-        let productres = productInsertStmt.run(name, description, imgId);
+        let imgId: number | undefined;
+        let productInsertStmt: Database.Statement;
+        let productres;
+
+        if (image_url && image_alt) {
+            imgId = (await this.insertNewImage(image_url, image_alt)) as number;
+            productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
+            productres = productInsertStmt.run(name, description, price, imgId);
+        } else {
+            imgId = undefined;
+            productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price) VALUES (?, ?, ?)");
+            productres = productInsertStmt.run(name, description, price);
+        }
+
 
         if (productres.changes < 1) { throw new Error("Error during product insertion") };
         let productId = productres.lastInsertRowid;
@@ -295,6 +306,7 @@ export class DataBaseHandling {
     
     private newStat(name: string, type: string | null, value: string | number, productId: number) {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        console.log(`INSERT INTO stats (name, unit, value, product) VALUES (${name}, ${type}, ${value}, ${productId})`);
         statInsertStmt.run(name, type, value, productId);
     }
 
@@ -302,8 +314,13 @@ export class DataBaseHandling {
         const removeStmt = this.db.prepare("DELETE FROM stats WHERE product=?");
         removeStmt.run(productId);
         statsList.forEach(stat => {
-            this.newStat(stat.name, stat.unit, stat.value, productId);
-        })
+            if (stat.unit === null) {
+                this.newStat(stat.name, null, stat.value, productId);
+            } else {
+                this.newStat(stat.name, stat.unit, stat.value, productId);
+            }
+        });
+        return true;
     }
 
     private getStatsOfProduct(productId: number): statsRow[] {
@@ -361,9 +378,18 @@ export class DataBaseHandling {
         }
     }
 
+    public deleteProduct(productId: number): boolean {
+        const deleteStmt = this.db.prepare("DELETE FROM products WHERE id=?");
+
+        const runRes = deleteStmt.run(productId);
+        console.error(runRes);
+        return runRes.changes > 1;
+    }
+
     public async updateProductImage(image_path: string, image_alt: string, productId: number): Promise<number | Error> {
 
         let imgId = await this.insertNewImage(image_path as string, image_alt) as number;
+        console.info(`Inserted new image! Id: ${imgId}`);
 
         const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
 
@@ -406,13 +432,13 @@ export class DataBaseHandling {
             filesThatShouldNotBeDeleted.push(filename);
         });
 
-        console.log("Files that should not be deleted:");
-        console.log(filesThatShouldNotBeDeleted);
-        console.log("⛔");
+        // console.log("Files that should not be deleted:");
+        // console.log(filesThatShouldNotBeDeleted);
+        // console.log("⛔");
 
-        console.log("Files that are in the uploads directory:");
-        console.log(filesInUploadDir);
-        console.log("📂");
+        // console.log("Files that are in the uploads directory:");
+        // console.log(filesInUploadDir);
+        // console.log("📂");
 
         const filesThatShouldAbsolutelyBeDeleted: filename[] = [];
 
@@ -422,9 +448,9 @@ export class DataBaseHandling {
             };
         });
 
-        console.log("These files should absolutely be deleted:");
-        console.log(filesThatShouldAbsolutelyBeDeleted);
-        console.log("✅");
+        // console.log("These files should absolutely be deleted:");
+        // console.log(filesThatShouldAbsolutelyBeDeleted);
+        // console.log("✅");
 
         filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
             fsSync.rmSync(`./uploads/${file}`);

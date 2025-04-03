@@ -7,6 +7,13 @@ import fs from 'node:fs';
 import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
 import { HTTPError, getCookies } from './utils';
 import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
+
+dotenv.config({
+    debug: true
+})
+// console.log(process.env);
+process.env.NODE_ENV = "production";
 
 const app = express();
 
@@ -100,5 +107,5 @@ app.use((err: unknown, req: express.Request, res: express.Response, next: expres
 })
 
 app.listen(port, () => {
-    console.log(`Listening on Port ${port}`);
+    console.log(`Listening on Port http://localhost:${port}`);
 });

@@ -21,6 +21,12 @@ const node_fs_1 = __importDefault(require("node:fs"));
 const dataHandling_1 = require("./dataHandling");
 const utils_1 = require("./utils");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config({
+    debug: true
+});
+// console.log(process.env);
+process.env.NODE_ENV = "production";
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
@@ -96,5 +102,5 @@ app.use((err, req, res, next) => {
     res.status(status).send(message);
 });
 app.listen(port, () => {
-    console.log(`Listening on Port ${port}`);
+    console.log(`Listening on Port http://localhost:${port}`);
 });

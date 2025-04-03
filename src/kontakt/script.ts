@@ -56,37 +56,7 @@ class FormMaster {
         };
 
         this.formRoot.addEventListener('submit', e => {
-            e.preventDefault();
-
-            let lastSubmit = localStorage.getItem("lastSubmit");
-            if (lastSubmit !== null) {
-                const secondsPassed = (Date.now() - Number(lastSubmit)) / 1000;
-                const minutesPassed = secondsPassed / 60;
-                if (minutesPassed < 15) {
-                    FormMaster.triggerResponse(responseType.NEED_TO_WAIT);
-                    return;
-                };
-            };
-
-            let validity = this.validator();
-            let isValid = this.formRoot.reportValidity();
-
-            if (isValid && validity === validationResult.OK) {
-                this.sendData().then((res) => {
-                    if (res.ok) {
-                        FormMaster.triggerResponse(responseType.SEND_SUCCESS);
-                    } else {
-                        FormMaster.triggerResponse(responseType.SEND_FAILED);
-                    }
-                    FormMaster.lastSubmitted = Date.now();
-                    this.formRoot.reset();
-                });
-            } else if (isValid && validity === validationResult.SILENT_FAIL) {
-                // Rückerstattungen machen wir nicht, aber wir tun so, als ob alles bestens wäre :)
-                console.log("🤫 Das ignorieren wir heimlich");
-                this.formRoot.reset();
-                FormMaster.triggerResponse(responseType.SEND_SUCCESS);
-            };
+            this.submitHandler(e);
         });
 
         this.formRoot.addEventListener('input', e => {
@@ -94,6 +64,40 @@ class FormMaster {
             this.validator(e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement);
             this.formRoot.reportValidity();
         });
+    };
+
+    private submitHandler(ev: Event) {
+        ev.preventDefault();
+
+        let lastSubmit = localStorage.getItem("lastSubmit");
+        if (lastSubmit !== null) {
+            const secondsPassed = (Date.now() - Number(lastSubmit)) / 1000;
+            const minutesPassed = secondsPassed / 60;
+            if (minutesPassed < 15) {
+                FormMaster.triggerResponse(responseType.NEED_TO_WAIT);
+                return;
+            };
+        };
+
+        let validity = this.validator();
+        let isValid = this.formRoot.reportValidity();
+
+        if (isValid && validity === validationResult.OK) {
+            this.sendData().then((res) => {
+                if (res.ok) {
+                    FormMaster.triggerResponse(responseType.SEND_SUCCESS);
+                } else {
+                    FormMaster.triggerResponse(responseType.SEND_FAILED);
+                }
+                FormMaster.lastSubmitted = Date.now();
+                this.formRoot.reset();
+            });
+        } else if (isValid && validity === validationResult.SILENT_FAIL) {
+            // Rückerstattungen machen wir nicht, aber wir tun so, als ob alles bestens wäre :)
+            console.log("🤫 Das ignorieren wir heimlich");
+            this.formRoot.reset();
+            FormMaster.triggerResponse(responseType.SEND_SUCCESS);
+        };
     }
 
     static triggerResponse(type: responseType) {
@@ -191,20 +195,25 @@ class FormMaster {
 
     private async sendData() {
         var data = {
-            "name": this.elements.nameInp.value,
-            "prename": this.elements.prenameInp.value,
-            "email": this.elements.emailInp.value,
-            "topic": this.elements.topicSel.value,
-            "shortMsg": this.elements.shortInp.value,
-            "longMsg": this.elements.longInp.value
+            name: this.elements.nameInp.value,
+            prename: this.elements.prenameInp.value,
+            email: this.elements.emailInp.value,
+            topic: this.elements.topicSel.value,
+            shortMsg: this.elements.shortInp.value,
+            longMsg: this.elements.longInp.value
         };
+
+        var formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("prename", data.prename);
+        formData.append("email", data.email);
+        formData.append("topic", data.topic);
+        formData.append("shortMsg", data.shortMsg);
+        formData.append("longMsg", data.longMsg);
 
         let response = await fetch("/api/contact/new", {
             "method": "POST",
-            "headers": [
-                ["Content-Type", "application/json"]
-            ],
-            "body": JSON.stringify(data)
+            "body": formData,
         });
 
         return response;

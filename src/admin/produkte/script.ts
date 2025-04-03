@@ -22,9 +22,144 @@ type ProductStat = {
     value: string | number
 }
 
+interface newProductValues {
+    title?: string,
+    description?: string,
+    price?: number,
+    image?: File,
+    imageAlt?: string
+};
+
 abstract class StatWithElem {
     public static elem: HTMLElement;
     public static stat: ProductStat;
+}
+
+class NewProductDialog {
+    public static dialogElem: HTMLDialogElement = document.getElementById("newProduct") as HTMLDialogElement;
+
+    public static formElems = {
+        openBtn: document.getElementById("openNewProductBtn") as HTMLButtonElement,
+        submitBtn: document.getElementById("addProductConfirmBtn") as HTMLButtonElement,
+        abortBtn: document.getElementById("addProductAbortBtn") as HTMLButtonElement,
+
+        titleInp: document.getElementById("new-title-inp") as HTMLInputElement,
+        descriptionInp: document.getElementById("new-description-inp") as HTMLTextAreaElement,
+        priceInp: document.getElementById("new-price-inp") as HTMLInputElement,
+
+        imageInp: document.getElementById("new-image-inp") as HTMLInputElement,
+        imageAltInp: document.getElementById("new-image-alt-inp") as HTMLInputElement
+    }
+
+    public newValues: newProductValues = {};
+
+    constructor() {
+
+    }
+
+    public setup() {
+        const openBtn = NewProductDialog.formElems.openBtn;
+        const submitBtn = NewProductDialog.formElems.submitBtn;
+        const abortBtn = NewProductDialog.formElems.abortBtn;
+        const dialogElem = NewProductDialog.dialogElem;
+        const form = dialogElem.querySelector("form") as HTMLFormElement;
+        
+        submitBtn.addEventListener("click", (ev: Event) => {
+            ev.preventDefault();
+            this.submitHandler().then((value) => {
+                NewProductDialog.dialogElem.close(`Value: ${value}`);
+            })
+        });
+        
+        abortBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            NewProductDialog.dialogElem.close("abort");
+        })
+        
+        openBtn.addEventListener("click", () => {
+            document.body.classList.add("modalOpen");
+            NewProductDialog.dialogElem.showModal();
+        });
+        
+        dialogElem.addEventListener("close", (ev: Event) => {
+            let value = NewProductDialog.dialogElem.returnValue;
+            document.body.classList.remove("modalOpen");
+        });
+
+        NewProductDialog.formElems.imageInp.addEventListener("input", (ev) => { this.imageInputHandler(); });
+        
+        return true;
+    };
+
+    public imageInputHandler() {
+            const inp = NewProductDialog.formElems.imageInp;
+            const altInp = NewProductDialog.formElems.imageAltInp;
+            const previewImgElem = NewProductDialog.dialogElem.querySelector(".img-input-wrapper img") as HTMLImageElement;
+
+            let files = inp.files;
+            if (files === null) { return };
+            if (files?.length > 0) {
+                let image = (files as FileList).item(0);
+                if (image === null) { return; };
+                this.newValues.image = image as File;
+                if (altInp.value === "") { altInp.placeholder = image.name };
+                let localUrl = URL.createObjectURL(image);
+                previewImgElem.src = localUrl;
+                previewImgElem.alt = image.name;
+                previewImgElem.classList.add("show");
+            };
+    }
+
+    private async submitHandler(): Promise<boolean> {
+        const titleInp = NewProductDialog.formElems.titleInp;
+        const descriptionInp = NewProductDialog.formElems.descriptionInp;
+        const priceInp = NewProductDialog.formElems.priceInp;
+        const altInp = NewProductDialog.formElems.imageAltInp;
+
+        
+        this.newValues.title = titleInp.value;
+        this.newValues.description = descriptionInp.value;
+        this.newValues.price = Number(priceInp.value);
+        this.newValues.imageAlt = altInp.value;
+
+        if (this.newValues.title.length <= 0 ||
+            this.newValues.description.length <= 0 ||
+            Number.isNaN(this.newValues.price) ||
+            this.newValues.imageAlt.length <= 0
+        ) {
+            return false;
+        };
+        if (!this.newValues.image) {
+            console.error("Image not given!");
+        };
+
+        let res = await this.uploadAll();
+
+        return res;
+    };
+
+    private async uploadAll(): Promise<boolean> {
+        const formdata = new FormData();
+
+        if (!this.newValues.title) { console.error("Titel!"); return false }
+        if (!this.newValues.description) { console.error("Beschreibung!"); return false }
+        if (!this.newValues.price) { console.error("Preis!"); return false }
+        if (!this.newValues.image) { console.error("Bild!"); return false }
+        if (!this.newValues.imageAlt) { console.error("Alt!"); return false }
+
+        formdata.append("title", this.newValues.title);
+        formdata.append("description", this.newValues.description);
+        formdata.append("price", this.newValues.price.toString());
+        formdata.append("image", this.newValues.image);
+        formdata.append("alt", this.newValues.imageAlt);
+
+        const reqRes = await fetch("/api/admin/products/new", {
+            body: formdata,
+            method: 'POST'
+        });
+
+        return reqRes.ok;
+    }
 }
 
 class UnitSelectionElement {
@@ -50,8 +185,10 @@ class ProductDisplay {
         price?: HTMLInputElement,
         image?: HTMLImageElement,
         imageInput?: HTMLInputElement,
+        imageAltInput?: HTMLInputElement,
         statsList?: HTMLElement,
         saveBtn?: HTMLButtonElement,
+        deleteBtn?: HTMLButtonElement,
     } = {};
 
     private _selectedProductImage: ProductImage;
@@ -103,7 +240,7 @@ class ProductDisplay {
         this.setup()
     };
 
-    public static async new(id: number, title: string, description: string, price: number, image: ProductImage, toAppendTo: HTMLElement) {
+    public static async create(id: number, title: string, description: string, price: number, image: ProductImage, toAppendTo: HTMLElement) {
         let product = new ProductDisplay(id, title, description, price, image);
         product.createElement(toAppendTo);
         return product;
@@ -124,7 +261,6 @@ class ProductDisplay {
         if (newStatBtn === null) { throw new Error("New Stat Button not found!") };
 
         newStatBtn.addEventListener("click", () => {
-            console.log("Adding new Stat");
             this.statAddBtnListener();
         });
 
@@ -150,9 +286,18 @@ class ProductDisplay {
         let imgLabelElem = clone.querySelector(".file-picker-label") as HTMLLabelElement;
         imgLabelElem.htmlFor = this.inputElems.imageInput.id;
 
+        let imgAltElem = clone.querySelector('.file-picker-label input') as HTMLInputElement;
+        imgAltElem.id = `image-alt-${this.id}`;
+        imgAltElem.name = `image-alt-${this.id}`;
+        this.inputElems.imageAltInput = imgAltElem;
+
         this.inputElems.saveBtn = clone.querySelector("button.save-btn") as HTMLButtonElement;
         this.inputElems.saveBtn.addEventListener('click', (ev) => { this.saveBtnHandler(ev); })
 
+        this.inputElems.deleteBtn = clone.querySelector("button.delete-btn") as HTMLButtonElement;
+        this.inputElems.deleteBtn.addEventListener('click', async (ev) => { this.deleteBtnHandler(ev); })
+
+        
         this.setInputDefaults();
     }
 
@@ -162,6 +307,9 @@ class ProductDisplay {
         this.inputElems.statsList = this.rootElement.querySelector(".stats-list") as HTMLElement;
         if (!(this.inputElems.statsList instanceof HTMLElement)) { console.error("Please set the stats root element"); return; };
         
+        this.inputElems.statsList!.querySelector(".stat .nameInput")!.id += String(this.id);
+        this.inputElems.statsList!.querySelector(".stat .valueInput")!.id += String(this.id);
+        this.inputElems.statsList!.querySelector(".stat .unitInput")!.id += String(this.id);
         this.productStats.forEach(stat => {
             let statRoot = this.generateSingleStatElem(stat);
 
@@ -192,13 +340,16 @@ class ProductDisplay {
             voidOption.selected = true;
         }
 
-        nameInput.value = stat.name.toString();
+        // console.log(`Statname: ${stat.name}`);
+        nameInput.value = stat.name;
         nameInput.classList.add("nameInput");
         nameInput.id = `stat-name-${stat.id}`
-        valueInput.value = stat.value.toString();
+        
+        // console.log(`Statvalue: ${stat.value}`);
+        valueInput.value = String(stat.value);
         valueInput.classList.add("valueInput");
         valueInput.id = `stat-value-${stat.id}`
-        
+
         let removeBtn = document.createElement("button");
         removeBtn.classList.add("removeBtn");
         removeBtn.textContent = "-"
@@ -215,20 +366,20 @@ class ProductDisplay {
             }
 
             let currentStatElement = this.inputElems.statsList.querySelector(`[data-id="${stat.id}"]`);
-            console.log(currentStatElement)
             currentStatElement?.remove();
         });
 
-        statRoot.appendChild(nameInput);
-        statRoot.appendChild(valueInput);
+        nameInput.disabled = true;
+        valueInput.disabled = true;
+        unitSelectionElem.element.disabled = true;
+
+        let appendedNameInput = statRoot.appendChild(nameInput);
+        let appendedValueInput = statRoot.appendChild(valueInput);
         statRoot.appendChild(unitSelectionElem.element);
         statRoot.appendChild(removeBtn);
 
         statRoot.dataset.id = stat.id.toString();
 
-        nameInput.disabled = true;
-        valueInput.disabled = true;
-        unitSelectionElem.element.disabled = true;
 
         return statRoot;
     }
@@ -245,9 +396,9 @@ class ProductDisplay {
             return
         }
 
-        let nameInp = document.getElementById("stat-template-name") as HTMLInputElement | undefined;
-        let valueInp = document.getElementById("stat-template-value") as HTMLInputElement | undefined;
-        let unitInp = document.getElementById("stat-template-unit") as HTMLSelectElement | undefined;
+        let nameInp = document.getElementById(`stat-template-name-${this.id}`) as HTMLInputElement | undefined;
+        let valueInp = document.getElementById(`stat-template-value-${this.id}`) as HTMLInputElement | undefined;
+        let unitInp = document.getElementById(`stat-template-unit-${this.id}`) as HTMLSelectElement | undefined;
 
         if (!nameInp) { throw new Error("nameInp fehlt!") };
         if (!valueInp) { throw new Error("ValueInp fehlt!") };
@@ -321,11 +472,31 @@ class ProductDisplay {
         await this.updateProduct();
     }
 
+    protected async deleteBtnHandler(ev: Event) {
+        const confirmMsg = `Möchhten Sie das Produkt "${this.title}" wirklich löschen?`;
+        if (!confirm(confirmMsg)) { return; };
+        
+        const deleteEndpoint = `/api/admin/product/${this.id}/delete`;
+
+        const deleteRes = await fetch(deleteEndpoint, {
+            method: 'DELETE',
+        });
+
+        if (deleteRes.ok) {
+            window.location.reload();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private updateImage() {
         if (this.selectedProductImage === undefined) { return; }
         let img = this.inputElems.image as HTMLImageElement;
+        let imgAlt = this.inputElems.imageAltInput as HTMLInputElement;
         img.src = this.selectedProductImage.path;
         img.alt = this.selectedProductImage.alt;
+        imgAlt.value = this.selectedProductImage.alt;
     };
 
     /**
@@ -374,12 +545,6 @@ class ProductDisplay {
         formData.append("price", price);
         formData.append("stats", "");
 
-        console.groupCollapsed(`Prepared FormData1:`);
-        for (const singleData of formData.entries()) {
-            console.log(singleData);
-        }
-        console.groupEnd();
-
         return formData;
     }
 
@@ -397,7 +562,8 @@ class ProductDisplay {
         });
 
         if (resp.ok) {
-            console.log("Success");
+            window.location.reload();
+            return;
         } else {
             let txt = await resp.text();
             console.error("Error!");
@@ -414,15 +580,13 @@ class ProductDisplay {
 
         let statsJson: string = JSON.stringify(this.productStats);
 
-        console.log(statsJson)
-
         const formData = new FormData();
         formData.append("stats", statsJson);
 
         const endpoint = `/api/admin/product/${this.id}/stats`;
 
         let fetchRes = await fetch(endpoint, {
-            method: "PUT",
+            method: "POST",
             body: formData
         });
 
@@ -443,14 +607,6 @@ class ProductDisplay {
         } else {
             formData = this.addImageToFormData();
         };
-
-        console.groupCollapsed("Sending Image");
-        console.info("Formdata:");
-        let entries = formData.entries();
-        for (const entry of entries) {
-            console.log(entry);
-        }
-        console.groupEnd();
 
         let fetchRes = await fetch(endpoint, {
             method: "PUT",
@@ -489,7 +645,7 @@ class ProductManager {
         for (const resp of jsonResp) {
             let img_path: string = `/api/product/${resp.id}/image/get`;
             let image = await ((await fetch(img_path)).blob()) as File;
-            let product = await ProductDisplay.new(
+            let product = await ProductDisplay.create(
                 resp.id,
                 resp.title,
                 resp.description,
@@ -508,5 +664,8 @@ class ProductManager {
 }
 
 var manager: ProductManager;
+var newDialog: NewProductDialog;
 
 manager = new ProductManager(document.getElementById("products-output") as HTMLElement);
+newDialog = new NewProductDialog();
+console.log(newDialog.setup());

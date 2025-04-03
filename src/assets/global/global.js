@@ -12,6 +12,10 @@ var _a;
 class NavCommander {
     static set navbarState(value) {
         this._navState = value;
+        if (value === false) {
+            document.activeElement.blur();
+        }
+        ;
         NavCommander.navtoggle.querySelector('svg').classList.toggle('open', this._navState);
         (NavCommander.navtoggle.classList.toggle("open", this._navState));
         document.querySelector('nav').classList.toggle('show', this._navState);
@@ -190,6 +194,7 @@ consentMgr.storageName = {
 consentMgr.validForHrs = 2;
 consentMgr.consentValidForMS = _a.validForHrs * 60 * 60 * 1000;
 document.addEventListener('DOMContentLoaded', () => __awaiter(void 0, void 0, void 0, function* () {
+    document.body.querySelectorAll("& > [hidden]").forEach(elem => { elem.removeAttribute("hidden"); });
     yield PartialsLoader.loadPartials();
     NavCommander.setup();
     consentMgr.ensureConsent();

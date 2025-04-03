@@ -72,7 +72,7 @@ class DataBaseHandling {
     }
     ;
     openDB() {
-        let better_db = new better_sqlite3_1.default(DataBaseHandling.filename);
+        let better_db = new better_sqlite3_1.default(DataBaseHandling.filename, { verbose: undefined });
         better_db.pragma('journal_mode = WAL');
         return better_db;
     }
@@ -199,22 +199,34 @@ class DataBaseHandling {
         }
         return true;
     }
-    newProduct(name, description, image_url, image_alt, stats) {
-        const imgId = this.insertNewImage(image_url, image_alt);
-        const productInsertStmt = this.db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
-        let productres = productInsertStmt.run(name, description, imgId);
-        if (productres.changes < 1) {
-            throw new Error("Error during product insertion");
-        }
-        ;
-        let productId = productres.lastInsertRowid;
-        if (!stats) {
+    newProduct(name, description, price, image_url, image_alt, stats) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let imgId;
+            let productInsertStmt;
+            let productres;
+            if (image_url && image_alt) {
+                imgId = (yield this.insertNewImage(image_url, image_alt));
+                productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
+                productres = productInsertStmt.run(name, description, price, imgId);
+            }
+            else {
+                imgId = undefined;
+                productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price) VALUES (?, ?, ?)");
+                productres = productInsertStmt.run(name, description, price);
+            }
+            if (productres.changes < 1) {
+                throw new Error("Error during product insertion");
+            }
+            ;
+            let productId = productres.lastInsertRowid;
+            if (!stats) {
+                return productId;
+            }
+            stats.forEach((stat) => {
+                this.newStat(stat.name, stat.type, stat.value, Number(productId));
+            });
             return productId;
-        }
-        stats.forEach((stat) => {
-            this.newStat(stat.name, stat.type, stat.value, Number(productId));
         });
-        return productId;
     }
     getAllProducts() {
         const productStmt = this.db.prepare("SELECT id, name, description, price, image FROM products;");
@@ -261,14 +273,21 @@ class DataBaseHandling {
     }
     newStat(name, type, value, productId) {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
+        console.log(`INSERT INTO stats (name, unit, value, product) VALUES (${name}, ${type}, ${value}, ${productId})`);
         statInsertStmt.run(name, type, value, productId);
     }
     replaceStats(statsList, productId) {
         const removeStmt = this.db.prepare("DELETE FROM stats WHERE product=?");
         removeStmt.run(productId);
         statsList.forEach(stat => {
-            this.newStat(stat.name, stat.unit, stat.value, productId);
+            if (stat.unit === null) {
+                this.newStat(stat.name, null, stat.value, productId);
+            }
+            else {
+                this.newStat(stat.name, stat.unit, stat.value, productId);
+            }
         });
+        return true;
     }
     getStatsOfProduct(productId) {
         const getStatsStmt = this.db.prepare("SELECT name, unit, value FROM stats WHERE product=?");
@@ -315,9 +334,16 @@ class DataBaseHandling {
             }
         });
     }
+    deleteProduct(productId) {
+        const deleteStmt = this.db.prepare("DELETE FROM products WHERE id=?");
+        const runRes = deleteStmt.run(productId);
+        console.error(runRes);
+        return runRes.changes > 1;
+    }
     updateProductImage(image_path, image_alt, productId) {
         return __awaiter(this, void 0, void 0, function* () {
             let imgId = yield this.insertNewImage(image_path, image_alt);
+            console.info(`Inserted new image! Id: ${imgId}`);
             const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
             imageToProductStmt.run(imgId, productId);
             return imgId;
@@ -345,12 +371,12 @@ class DataBaseHandling {
                 filename = filename.substring(10);
                 filesThatShouldNotBeDeleted.push(filename);
             });
-            console.log("Files that should not be deleted:");
-            console.log(filesThatShouldNotBeDeleted);
-            console.log("⛔");
-            console.log("Files that are in the uploads directory:");
-            console.log(filesInUploadDir);
-            console.log("📂");
+            // console.log("Files that should not be deleted:");
+            // console.log(filesThatShouldNotBeDeleted);
+            // console.log("⛔");
+            // console.log("Files that are in the uploads directory:");
+            // console.log(filesInUploadDir);
+            // console.log("📂");
             const filesThatShouldAbsolutelyBeDeleted = [];
             filesInUploadDir.forEach(file => {
                 if (!filesThatShouldNotBeDeleted.includes(file)) {
@@ -358,9 +384,9 @@ class DataBaseHandling {
                 }
                 ;
             });
-            console.log("These files should absolutely be deleted:");
-            console.log(filesThatShouldAbsolutelyBeDeleted);
-            console.log("✅");
+            // console.log("These files should absolutely be deleted:");
+            // console.log(filesThatShouldAbsolutelyBeDeleted);
+            // console.log("✅");
             filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
                 fsSync.rmSync(`./uploads/${file}`);
             });

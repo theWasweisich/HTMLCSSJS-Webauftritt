@@ -13,6 +13,11 @@
     [data-field="price"] {
         text-align: right;
     }
+
+    [data-field="description"] {
+        min-width: 20lh;
+        min-height: 5lvh;
+    }
     
     [data-field="image-input"] {
         position: fixed;
@@ -33,10 +38,59 @@
     }
 }
 
+.delete-btn {
+    display: block;
+    float: right;
+    min-width: 2em;
+    aspect-ratio: 1;
+    img {
+        width: fit-content;
+        width: fit-content;
+        height: fit-content;
+    }
+}
+
 .stats-list {
 
     .heading, .stat {
         display: flex;
         flex-direction: row;
+    }
+}
+
+body.modalOpen {
+    overflow: hidden;
+}
+
+#newProduct {
+    padding: 3em;
+    label {
+        display: block;
+    }
+
+    .controlBtns {
+        margin-top: 1em;
+    }
+
+    .input-wrapper {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        row-gap: 1.2em;
+        column-gap: .5em;
+    }
+
+    #new-description-inp {
+        min-height: 5lh;
+    }
+
+    img {
+        width: 13.125em;
+        aspect-ratio: 1;
+        object-fit: contain;
+        visibility: hidden;
+
+        &.show {
+            visibility: visible;
+        }
     }
 }

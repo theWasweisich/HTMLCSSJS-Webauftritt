@@ -24,9 +24,9 @@ main {
             padding-top: 0.625rem;
         }
 
-        /* >* {
-            width: 60%;
-        } */
+        >* {
+            font-family: Typewriter;
+        }
 
         input[type="submit"] {
             margin-top: 0.625rem;
