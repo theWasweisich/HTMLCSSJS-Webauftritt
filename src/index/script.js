@@ -98,4 +98,4 @@ class RatingHandler {
 }
 RatingHandler.section = document.getElementById('rating');
 KundenStimmenHandler.setup("10px", .75);
-RatingHandler.create(200);
+RatingHandler.create(100);

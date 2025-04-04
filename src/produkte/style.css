@@ -1,7 +1,5 @@
 
 .cards-grid {
-    margin: 2rem;
-    margin-inline: 5em;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(25em, 1fr));
     grid-template-rows: masonry; /* Wenn Support? 😕 */
@@ -126,5 +124,12 @@
 
     100% {
         transform: translateX(-170%);
+    }
+}
+
+@media only screen and (min-width: 37.5rem) {
+    .cards-grid {
+        margin: 2em;
+        margin-inline: 5em;
     }
 }

@@ -112,7 +112,7 @@ main>.content {
 
 .kundenstimme::before {
     position: absolute;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Helvetica, sans-serif;
     content: "\201C";
     top: -0.2em;
     rotate: -5deg;
