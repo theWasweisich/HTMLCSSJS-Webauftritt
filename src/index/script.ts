@@ -76,13 +76,10 @@ class RatingHandler {
     };
 
     private observerCallback: IntersectionObserverCallback = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
-        console.info("Observer callback!");
         
         if (entries[0].isIntersecting && this.ratingStars[0].classList.contains('hidden')) {
-            console.log("Showing stars...");
             this.showAllStars(110);
         } else if (!entries[0].isIntersecting && !this.ratingStars[0].classList.contains("hidden")) {
-            console.log("Hiding stars...");
             this.ratingStars.forEach(star => {
                 star.classList.add('hidden');
             })

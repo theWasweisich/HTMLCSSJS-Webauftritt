@@ -17,6 +17,7 @@
 
 * {
     box-sizing: border-box;
+    interpolate-size: allow-keywords;
 }
 
 html,
@@ -37,119 +38,100 @@ body {
 }
 
 #navtoggle {
+    --nav-btn-clr: #333;
+
     position: fixed;
-    z-index: 20;
+    z-index: 200;
+    padding: 0;
     display: flex;
     place-items: center;
-    width: 2rem;
-    margin-left: 0;
+    width: 2.5rem;
     aspect-ratio: 1;
     background-color: var(--header-color);
     border-bottom-right-radius: 0.313rem;
+    border: none;
 
-    transition: margin-left var(--nav-duration_open);
+    transition: all var(--nav-duration_open);
 
 }
 
-#navtoggle.open {
-    margin-left: var(--navbar-width);
+#navtoggle {
     --_duration: var(--nav-duration_open);
     --_half-duration: calc(var(--_duration) / 2);
 }
 
-#navtoggle > .burger > path {
-
-    stroke: var(--clr-theme-6);
+#navtoggle > .burger {
     fill: transparent;
+
+    fill: var(--nav-btn-clr);
 
     opacity: 1;
     translate: 0;
-
-    transition: rotate var(--_half-duration) linear;
 }
 
-
-#navtoggle.open > .burger >  path {
-    
-    transition: translate var(--_half-duration) linear 0s,
-                opacity 0s linear var(--_half-duration),
-                rotate var(--_half-duration) linear var(--_half-duration),
-                transition 0s linear var(--_duration)
-    ;
-
-    transform-origin: center center;
-    /* stroke: green; */
-
-    &:nth-child(1) { /* Nicht Involviert */
-        translate: 0 5px;
-        opacity: 0;
-    }
-    &:nth-child(2) { /* Involviert */
-        rotate: 45deg;
-    }
-    &:nth-child(3) { /* Involviert */
-        rotate: -45deg;
-    }
-    &:nth-child(4) { /* Nicht Involviert */
-        translate: 0 -5px;
-        opacity: 0;
-        }
+#navtoggle .line {
+    transition: all var(--_half-duration) linear;
+    transform-origin: center;
+}
+#navtoggle[aria-expanded="true"] :is(.top, .bottom) {
+    y: 45;
+}
+#navtoggle[aria-expanded="true"] .top {
+    rotate: 45deg;
+}
+#navtoggle[aria-expanded="true"] .middle {
+    opacity: 0;
+}
+#navtoggle[aria-expanded="true"] .bottom {
+    rotate: -45deg;
 }
 
 nav {
     position: fixed;
     left: 0;
     top: 0;
-    overflow-x: hidden;
-
-    height: 100%;
-    width: 0;
-    transition: all var(--nav-duration_open) ease;
-
-    display: flex;
-    flex-direction: column;
-
     z-index: 100;
 
-    background-color: var(--header-color);
+    ul {
+        transition: all var(--nav-duration_open);
+        overflow-y: hidden;
+        background-color: var(--header-color);
+        height: 0;
+        margin-top: 2.5rem;
 
-    border-bottom-right-radius: 0.625rem;
-
-    .closebtn {
-        text-align: right;
+        border-top-right-radius: .4em;
+        border-bottom-right-radius: .4em;
     }
-
-    a:nth-last-child(2) {
-        margin-bottom: auto;
-    }
-
-    a,
-    .closebtn {
+    
+    ul, a {
+        padding-inline-start: 0;
         display: block;
-        color: var(--clr-theme-6);
-        background-color: var(--navlink-color);
+    }
+
+    a {
+        --_bg-clr: var(--header-color);
         padding: .6rem;
+        color: white;
         text-decoration: none;
-        text-align: end;
+        background-color: var(--_bg-clr);
+        border: none;
         outline: none;
 
-        transition: background-color .5s;
-
         &.active {
-            background-color: color-mix(in srgb, var(--navlink-color) 75%, blue 25%);
+            --_bg-clr: #0b2d76;
         }
 
-        &:hover, &:focus-within {
-            background-color: color(from var(--navlink-color) srgb calc(r * 1.5) calc(g * 1.5) calc(b * 1.5));
+        &:is(:hover, :focus) {
+            --_bg-clr: #353;
+        }
+        &:is(:hover, :focus).active {
+            --_bg-clr: #335;
         }
     }
 
-
-    &.show {
-        width: var(--navbar-width);
-        z-index: 10;
+    &:is(.open) ul {
+        height: auto;
     }
-
 }
 
 main {
@@ -185,6 +167,7 @@ footer {
             margin-right: 2em;
             display: flex;
             flex-direction: row;
+            flex-wrap: wrap;
             gap: 1rem;
         }
     }

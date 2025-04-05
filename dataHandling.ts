@@ -279,15 +279,17 @@ export class DataBaseHandling {
         return products;
     };
 
-    public getProductImagePath(id: number): string | null {
+    public getProductImagePathAndAlt(id: number): {filename: string, alt: string} | null {
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
-        const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
+        const getImgPathStmt = this.db.prepare("SELECT filename, alt FROM images WHERE id=?");
 
         try {
             let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
-            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
+            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string, alt: string };
             let imgFileName = imgFileNameRow.filename;
-            return imgFileName;
+            let imgAlt = imgFileNameRow.alt;
+            console.error("Image Alt:", imgAlt);
+            return {filename: imgFileName, alt: imgAlt};
         } catch (e) {
             return null;
         }
@@ -411,6 +413,7 @@ export class DataBaseHandling {
         type imagesRow = { id: number, filename: string };
 
         type filename = string;
+        type image = {filename: string, id: number};
 
         fsSync.readdirSync("./uploads/").forEach((file) => {
             filesInUploadDir.push(file);
@@ -418,27 +421,54 @@ export class DataBaseHandling {
 
         const productImgs = stmts.selectProductImageIds.all() as productsRow[];
 
-        const imgs: { [imageId: number]: filename } = {};
+        const imgs: { [imageId: number]: image } = {};
 
-        (stmts.selectImgs.all() as imagesRow[]).forEach((img => {
-            imgs[img.id] = img.filename
+        const selectedImgs = stmts.selectImgs.all() as imagesRow[];
+
+        selectedImgs.forEach((img => {
+            imgs[img.id] = {filename: img.filename, id: img.id};
         }));
 
+        const imagesThatAreSafe: image[] = [];
         const filesThatShouldNotBeDeleted: filename[] = [];
 
         productImgs.forEach((row) => {
-            let filename = imgs[row.image];
+            imagesThatAreSafe.push(imgs[row.image]);
+            let filename = imgs[row.image].filename;
             filename = filename.substring(10);
             filesThatShouldNotBeDeleted.push(filename);
         });
 
-        // console.log("Files that should not be deleted:");
-        // console.log(filesThatShouldNotBeDeleted);
-        // console.log("⛔");
+        const imagesThatShouldBeDeleted: image[] = [];
 
-        // console.log("Files that are in the uploads directory:");
-        // console.log(filesInUploadDir);
-        // console.log("📂");
+        
+        console.log("✅ Images that can stay in db");
+        imagesThatAreSafe.forEach((img) => {
+            console.log(img.id, img.filename);
+        })
+
+        selectedImgs.forEach((img) => {
+            let deleteThisOne: boolean = false;
+            for (const image of imagesThatAreSafe) {
+                if (image.id !== img.id) {
+                    deleteThisOne = true;
+                    console.log("😱 Das bitte nicht löschen...", img.id);
+                    break;
+                };
+            };
+            if (deleteThisOne) {
+                try {
+                    stmts.deleteImage.run(img.id);
+                } catch (error) {
+                    if (error instanceof Database.SqliteError) {
+                        console.log("😥 Zum Glück durfte das bleiben...");
+                        console.log(img.id);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        });
 
         const filesThatShouldAbsolutelyBeDeleted: filename[] = [];
 
@@ -447,10 +477,6 @@ export class DataBaseHandling {
                 filesThatShouldAbsolutelyBeDeleted.push(file);
             };
         });
-
-        // console.log("These files should absolutely be deleted:");
-        // console.log(filesThatShouldAbsolutelyBeDeleted);
-        // console.log("✅");
 
         filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
             fsSync.rmSync(`./uploads/${file}`);

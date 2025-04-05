@@ -12,27 +12,45 @@ var _a;
 class NavCommander {
     static set navbarState(value) {
         this._navState = value;
-        if (value === false) {
+        if (!value) {
             document.activeElement.blur();
         }
         ;
-        NavCommander.navtoggle.querySelector('svg').classList.toggle('open', this._navState);
-        (NavCommander.navtoggle.classList.toggle("open", this._navState));
-        document.querySelector('nav').classList.toggle('show', this._navState);
+        // this.navbar.classList.toggle('show', this._navState);
+        if (this._navState) {
+            this.navtoggle.setAttribute("aria-expanded", "true");
+            this.changeLinksFocusability(true);
+            this.navbar.classList.add("open");
+        }
+        else {
+            this.navtoggle.setAttribute("aria-expanded", "false");
+            this.changeLinksFocusability(false);
+            this.navbar.classList.remove("open", "opened");
+        }
+        ;
+    }
+    ;
+    static changeLinksFocusability(focusable) {
+        let childs = this.navList.querySelectorAll("a");
+        // console.log("🛠️ Changing focusability", childs);
+        childs.forEach((elem) => {
+            if (focusable) {
+                elem.removeAttribute("tabindex");
+            }
+            else {
+                elem.setAttribute("tabindex", "-1");
+            }
+        });
     }
     static get navbarState() {
         return this._navState;
     }
     static setup() {
         NavCommander.navtoggle = document.getElementById('navtoggle');
-        NavCommander.navbar = document.querySelector('#nav-wrap > nav');
-        const navCloser = document.querySelector('nav .closebtn');
-        navCloser.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            NavCommander.navbarState = false;
-        });
+        NavCommander.navbar = document.querySelector('#primary-nav-bar');
+        NavCommander.navList = this.navbar.querySelector("ul");
         NavCommander.navtoggle.addEventListener('click', () => {
-            NavCommander.navbarState = true;
+            NavCommander.navbarState = this.navbarState ? false : true;
         });
         window.addEventListener('mousedown', this.mouseDownHandler);
         window.addEventListener('keydown', this.keyDownHandler);

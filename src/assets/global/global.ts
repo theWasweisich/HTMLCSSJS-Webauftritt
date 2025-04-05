@@ -1,15 +1,38 @@
 
 class NavCommander {
-    static navtoggle: HTMLElement;
+    static navtoggle: HTMLButtonElement;
     static navbar: HTMLElement;
+    static navList: HTMLUListElement;
     private static _navState: boolean;
 
     static set navbarState(value: boolean) {
         this._navState = value;
-        if (value === false) { (document.activeElement as HTMLElement).blur(); };
-        (NavCommander.navtoggle.querySelector('svg') as SVGElement).classList.toggle('open', this._navState);
-        (NavCommander.navtoggle.classList.toggle("open", this._navState));
-        (document.querySelector('nav') as HTMLElement).classList.toggle('show', this._navState);
+        if (!value) { (document.activeElement as HTMLElement).blur(); };
+        // this.navbar.classList.toggle('show', this._navState);
+
+        if (this._navState) {
+            this.navtoggle.setAttribute("aria-expanded", "true");
+
+            this.changeLinksFocusability(true);
+            this.navbar.classList.add("open");
+        } else {
+            this.navtoggle.setAttribute("aria-expanded", "false");
+            this.changeLinksFocusability(false);
+
+            this.navbar.classList.remove("open", "opened");
+        };
+    };
+
+    private static changeLinksFocusability(focusable: boolean) {
+        let childs = this.navList.querySelectorAll("a");
+        // console.log("🛠️ Changing focusability", childs);
+        childs.forEach((elem) => {
+            if (focusable) {
+                elem.removeAttribute("tabindex");
+            } else {
+                elem.setAttribute("tabindex", "-1");
+            }
+        })
     }
 
     static get navbarState() {
@@ -17,19 +40,13 @@ class NavCommander {
     }
 
     static setup() {
-        NavCommander.navtoggle = document.getElementById('navtoggle') as HTMLElement;
-        NavCommander.navbar = document.querySelector('#nav-wrap > nav') as HTMLElement;
+        NavCommander.navtoggle = document.getElementById('navtoggle') as HTMLButtonElement;
+        NavCommander.navbar = document.querySelector('#primary-nav-bar') as HTMLElement;
+        NavCommander.navList = this.navbar.querySelector("ul") as HTMLUListElement;
 
-        const navCloser: HTMLSpanElement = document.querySelector('nav .closebtn') as HTMLSpanElement;
-
-
-        navCloser.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            NavCommander.navbarState = false;
-        })
 
         NavCommander.navtoggle.addEventListener('click', () => {
-            NavCommander.navbarState = true;
+            NavCommander.navbarState = this.navbarState ? false : true;
         });
 
         window.addEventListener('mousedown', this.mouseDownHandler);

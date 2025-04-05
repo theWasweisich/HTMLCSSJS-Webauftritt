@@ -45,3 +45,15 @@ output {
 #login-section {
     margin-bottom: 2em;
 }
+
+input:not(#stayloggedin-inp) {
+    padding: .5em;
+    margin: .5em;
+    border: 0;
+    box-shadow: 0 0 .6em black;
+    background-color: transparent;
+    outline: 0;
+}
+input:not(#stayloggedin-inp):is(:hover, :focus) {
+    background-color: #ccc;
+}

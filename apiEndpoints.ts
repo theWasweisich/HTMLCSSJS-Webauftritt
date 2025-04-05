@@ -144,11 +144,12 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const handler = new DataBaseHandling();
 
     try {
-        var imagePath = handler.getProductImagePath(Number(productId));
+        var image = handler.getProductImagePathAndAlt(Number(productId));
 
-        if (imagePath !== null) {
-            imagePath = path.join(__dirname, imagePath);
-            res.sendFile(imagePath);
+        if (image !== null) {
+            image.filename = path.join(__dirname, image.filename);
+            res.setHeader("x-image-alt", image.alt);
+            res.sendFile(image.filename);
         } else {
             res.sendStatus(404);
         }
@@ -386,6 +387,15 @@ apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: expr
 
         res.sendStatus(201);
     })
+});
+
+apiRouter.get("/admin/images/purge", async (req: express.Request, res: express.Response) => {
+    const handler = new DataBaseHandling();
+    if (await handler.cleanImageLeftovers()) {
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(500);
+    }
 })
 
 

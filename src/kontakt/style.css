@@ -18,14 +18,11 @@ main {
     }
 
     form {
+        font-size: large;
         padding-block: 1.5em;
 
         label:not(:first-child) {
             padding-top: 0.625rem;
-        }
-
-        >* {
-            font-family: Typewriter;
         }
 
         input[type="submit"] {
@@ -44,6 +41,22 @@ main {
             &:user-invalid {
                 outline-color: red;
             }
+        }
+
+        label {
+            text-shadow: black 0 0 1em;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: .6em;
+            border: 0;
+            box-shadow: 0 0 1em white;
+        }
+
+        input::placeholder {
+            color: color-mix(in srgb, var(--clr-text-1) 60%, transparent);
         }
 
         textarea {

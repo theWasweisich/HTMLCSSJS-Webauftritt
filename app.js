@@ -54,6 +54,10 @@ app.use((0, express_session_1.default)({
 app.use((0, cookie_parser_1.default)());
 function checkAuthMiddleware(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
+        if (!req.url.includes("admin")) {
+            next();
+            return;
+        }
         const db = new dataHandling_1.DataBaseHandling();
         var result;
         if (!req.cookies.authToken) {
@@ -83,6 +87,7 @@ app.use((req, res, next) => {
     }
     next();
 });
+app.use(checkAuthMiddleware);
 app.get('/', (_req, res) => {
     console.log(_req.cookies);
     res.redirect("/index/");

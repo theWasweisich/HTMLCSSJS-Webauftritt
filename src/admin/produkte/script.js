@@ -187,6 +187,20 @@ class ProductDisplay {
         this.setup();
     }
     ;
+    checkProductEdited() {
+        var _a, _b, _c, _d;
+        let somethingHasBeenEdited = false;
+        if (((_a = this.inputElems.title) === null || _a === void 0 ? void 0 : _a.value) !== this.originalTitle) {
+            somethingHasBeenEdited = true;
+        }
+        else if (((_b = this.inputElems.description) === null || _b === void 0 ? void 0 : _b.value) !== this.originalDescription) {
+            somethingHasBeenEdited = true;
+        }
+        else if (Number((_c = this.inputElems.price) === null || _c === void 0 ? void 0 : _c.value) !== this.originalPrice) {
+            somethingHasBeenEdited = true;
+        }
+        (_d = this.rootElement) === null || _d === void 0 ? void 0 : _d.classList.toggle("edited", somethingHasBeenEdited);
+    }
     static create(id, title, description, price, image, toAppendTo) {
         return __awaiter(this, void 0, void 0, function* () {
             let product = new ProductDisplay(id, title, description, price, image);
@@ -382,6 +396,8 @@ class ProductDisplay {
     setInputDefaults() {
         if (this.inputElems.title) {
             this.inputElems.title.placeholder = this.originalTitle;
+            this.inputElems.title.addEventListener('input', () => {
+            });
         }
         if (this.inputElems.description) {
             this.inputElems.description.placeholder = this.originalDescription;
@@ -389,6 +405,7 @@ class ProductDisplay {
         if (this.inputElems.price) {
             this.inputElems.price.placeholder = this.originalPrice.toString();
         }
+        ;
     }
     setDataField(root, field, data) {
         let fieldelem = root.querySelector(`[data-field="${field}"]`);

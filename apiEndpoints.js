@@ -163,10 +163,11 @@ apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
     const handler = new dataHandling_1.DataBaseHandling();
     try {
-        var imagePath = handler.getProductImagePath(Number(productId));
-        if (imagePath !== null) {
-            imagePath = node_path_1.default.join(__dirname, imagePath);
-            res.sendFile(imagePath);
+        var image = handler.getProductImagePathAndAlt(Number(productId));
+        if (image !== null) {
+            image.filename = node_path_1.default.join(__dirname, image.filename);
+            res.setHeader("x-image-alt", image.alt);
+            res.sendFile(image.filename);
         }
         else {
             res.sendStatus(404);
@@ -386,6 +387,15 @@ apiRouter.put("/admin/product/:id/image", (req, res, next) => __awaiter(void 0, 
         });
         res.sendStatus(201);
     }));
+}));
+apiRouter.get("/admin/images/purge", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const handler = new dataHandling_1.DataBaseHandling();
+    if (yield handler.cleanImageLeftovers()) {
+        res.sendStatus(200);
+    }
+    else {
+        res.sendStatus(500);
+    }
 }));
 function handleImageUpload(image, alt, productId) {
     return __awaiter(this, void 0, void 0, function* () {

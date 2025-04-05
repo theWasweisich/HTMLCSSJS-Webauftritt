@@ -46,13 +46,10 @@ class RatingHandler {
         this.ratingStars = [];
         this.ratingContainer = document.getElementsByClassName('rating-wrapper')[0];
         this.observerCallback = (entries, observer) => {
-            console.info("Observer callback!");
             if (entries[0].isIntersecting && this.ratingStars[0].classList.contains('hidden')) {
-                console.log("Showing stars...");
                 this.showAllStars(110);
             }
             else if (!entries[0].isIntersecting && !this.ratingStars[0].classList.contains("hidden")) {
-                console.log("Hiding stars...");
                 this.ratingStars.forEach(star => {
                     star.classList.add('hidden');
                 });

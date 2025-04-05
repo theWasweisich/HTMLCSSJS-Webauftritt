@@ -55,6 +55,7 @@ app.use(session({
 app.use(cookieParser());
 
 export async function checkAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (!req.url.includes("admin")) { next(); return; }
     const db = new DataBaseHandling();
 
     var result;
@@ -82,6 +83,8 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
     next();
 });
 
+app.use(checkAuthMiddleware);
+
 app.get('/', (_req, res) => {
     console.log(_req.cookies);
     res.redirect("/index/");
@@ -104,7 +107,7 @@ app.use((err: unknown, req: express.Request, res: express.Response, next: expres
     const message = err instanceof HTTPError ? err.message : "Server error";
 
     res.status(status).send(message);
-})
+});
 
 app.listen(port, () => {
     console.log(`Listening on Port http://localhost:${port}`);

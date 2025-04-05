@@ -5,18 +5,15 @@
     border-radius: 1em;
     overflow: hidden;
     background-color: purple;
+    position: relative;
 
     img {
         display: block;
     }
 
+    
     [data-field="price"] {
         text-align: right;
-    }
-
-    [data-field="description"] {
-        min-width: 20lh;
-        min-height: 5lvh;
     }
     
     [data-field="image-input"] {
@@ -26,6 +23,14 @@
         visibility: hidden;
     }
     
+    input, textarea {
+        min-width: 50%;
+    }
+
+    textarea {
+        min-height: 5rem;
+    }
+
     .file-picker-label {
         max-width: 31.25em;
         display: block;
@@ -35,6 +40,21 @@
             flex-direction: column;
             gap: .5em;
         }
+    }
+    
+    &::after {
+        content: '';
+        width: .5em;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: red;
+        opacity: 0;
+    }
+
+    &.edited::after {
+        opacity: 1;
     }
 }
 

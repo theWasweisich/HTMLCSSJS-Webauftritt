@@ -240,12 +240,26 @@ class ProductDisplay {
         this.setup()
     };
 
+    private checkProductEdited() {
+        let somethingHasBeenEdited = false;
+
+        if (this.inputElems.title?.value !== this.originalTitle) {
+            somethingHasBeenEdited = true;
+        } else if (this.inputElems.description?.value !== this.originalDescription) {
+            somethingHasBeenEdited = true;
+        } else if (Number(this.inputElems.price?.value) !== this.originalPrice) {
+            somethingHasBeenEdited = true;
+        }
+
+        this.rootElement?.classList.toggle("edited", somethingHasBeenEdited);
+    }
+
     public static async create(id: number, title: string, description: string, price: number, image: ProductImage, toAppendTo: HTMLElement) {
         let product = new ProductDisplay(id, title, description, price, image);
         product.createElement(toAppendTo);
         return product;
     }
-    
+
     private async setup() {
         await this.loadProductStats();
         this.setupDone = true;
@@ -434,13 +448,15 @@ class ProductDisplay {
     protected setInputDefaults() {
         if (this.inputElems.title) {
             this.inputElems.title.placeholder = this.originalTitle;
+            this.inputElems.title.addEventListener('input', () => {
+            })
         }
         if (this.inputElems.description) {
             this.inputElems.description.placeholder = this.originalDescription;
         }
         if (this.inputElems.price) {
             this.inputElems.price.placeholder = this.originalPrice.toString();
-        }
+        };
     }
 
     protected setDataField(root: HTMLElement, field: string, data?: string) {
