@@ -14,10 +14,14 @@ export interface FeatureFlags {
 }
 
 import fs from "node:fs/promises";
+import * as fsSync from "node:fs";
 import Database from "better-sqlite3";
 import bcrypt from 'bcrypt';
 import { v4 as uuidV4 } from "uuid";
-import fileUpload from "express-fileupload";
+import fileUpload, { UploadedFile } from "express-fileupload";
+import { COLORS } from "./utils";
+import path from "node:path";
+import formidable from "formidable";
 
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
@@ -28,6 +32,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
 export function isAuthTokenValid(token: string) {
     return true;
 }
+
 type ContactMessageData = {
     id?: number,
     timestamp: Date,
@@ -52,11 +57,10 @@ type productResponse = {
     title: string,
     description: string,
     price: number,
-    img_alt: string,
-    stats: {name: string, unit: string, value: string}[],
+    stats: statsRow[],
 }
 
-type statsRow = { name: string, unit: string, value: string };
+type statsRow = { name: string, unit: string | null, value: string | number };
 
 
 /**
@@ -74,7 +78,7 @@ export class DataBaseHandling {
     };
 
     private openDB(): Database.Database {
-        let better_db = new Database(DataBaseHandling.filename, { verbose: console.debug });
+        let better_db = new Database(DataBaseHandling.filename, { verbose: undefined });
         better_db.pragma('journal_mode = WAL');
         return better_db;
     };
@@ -116,13 +120,52 @@ export class DataBaseHandling {
         return false;
     };
 
-    public async isAuthTokenKnown(token: string): Promise<boolean> {
-        const selectStmt = this.db.prepare("SELECT id FROM authTokens WHERE token=?");
+    public isAuthTokenValid(token: string): boolean {
+        const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens WHERE token=?");
 
-        const answ = selectStmt.get(token) as {id: number};
+        const answ = selectStmt.get(token) as {id: number, insertDate: string};
 
-        return answ !== undefined;
+        let inserted = new Date(answ.insertDate);
+
+        let authTokenValid = answ.id !== undefined && !this.isTokenExpired(inserted);
+
+        this.purgeAuthTokens();
+
+
+        return authTokenValid;
     };
+
+    private isTokenExpired(insertDate: Date) {
+        let insertedSince = Date.now() - insertDate.getTime();
+        let isMoreThanADayOld = insertedSince > 86400000;
+        return isMoreThanADayOld;
+    }
+
+    private async purgeAuthTokens() {
+
+        const selectStmt = this.db.prepare("SELECT id, insertDate FROM authTokens;");
+        const deleteStmt = this.db.prepare("DELETE FROM authTokens WHERE id=?");
+        type resultRow = { id: number, insertDate: string | number };
+
+        let rowIdsToDelete: number[] = [];
+
+        (selectStmt.all() as resultRow[]).forEach((resVal) => {
+            let tokenDate = new Date(resVal.insertDate);
+            if (this.isTokenExpired(tokenDate)) {
+                rowIdsToDelete.push(resVal.id);
+            }
+        });
+
+        let numOfRowsToDelete = rowIdsToDelete.length;
+
+        if (numOfRowsToDelete < 1) { return }
+
+        console.warn(`Deleting ${numOfRowsToDelete} authTokens, because they are more than a day old!`);
+
+        rowIdsToDelete.forEach((rowId: number) => {
+            deleteStmt.run(rowId.toFixed());
+        });
+    }
 
     public generateNewAuthToken(): string {
         const newToken = encodeURIComponent(uuidV4());
@@ -158,7 +201,6 @@ export class DataBaseHandling {
         topic: string,
         shortMsg: string,
         longMsg: string) {
-        // console.log(name, prename, email, topic, shortMsg, longMsg);
         const stmt = this.db.prepare("INSERT INTO contactMessages (timestamp, name, prename, email, topic, shortMsg, longMsg) VALUES (?, ?, ?, ?, ?, ?, ?)");
         const timestamp = new Date().toISOString();
 
@@ -176,21 +218,32 @@ export class DataBaseHandling {
         return true;
     }
 
-    public newProduct(
+    public async newProduct(
         name: string,
         description: string,
-        image_url: string,
-        image_alt: string,
+        price: number,
+        image_url?: string,
+        image_alt?: string,
         stats?: {
             name: string,
             type: string,
             value: string | number
         }[]
     ) {
-        const imgId = this.insertNewImage(image_url, image_alt);
-        const productInsertStmt = this.db.prepare("INSERT INTO products (name, description, image) VALUES (?, ?, ?)");
-        
-        let productres = productInsertStmt.run(name, description, imgId);
+        let imgId: number | undefined;
+        let productInsertStmt: Database.Statement;
+        let productres;
+
+        if (image_url && image_alt) {
+            imgId = (await this.insertNewImage(image_url, image_alt)) as number;
+            productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)");
+            productres = productInsertStmt.run(name, description, price, imgId);
+        } else {
+            imgId = undefined;
+            productInsertStmt = this.db.prepare("INSERT INTO products (name, description, price) VALUES (?, ?, ?)");
+            productres = productInsertStmt.run(name, description, price);
+        }
+
 
         if (productres.changes < 1) { throw new Error("Error during product insertion") };
         let productId = productres.lastInsertRowid;
@@ -198,7 +251,7 @@ export class DataBaseHandling {
         if (!stats) { return productId }
 
         stats.forEach((stat) => {
-            this.newStat(stat.name, stat.type, stat.value);
+            this.newStat(stat.name, stat.type, stat.value, Number(productId));
         });
         return productId;
     }
@@ -211,36 +264,65 @@ export class DataBaseHandling {
         let dbRes = productStmt.all();
         dbRes.forEach((value, index, array) => {
             let row = value as productRow;
-            let imgRes = imgAltStmt.get(row.image) as { alt: string };
+            if (typeof row.image === "number") {
+                let imgRes = imgAltStmt.get(row.image) as { alt: string };
+            }
             let stats = this.getStatsOfProduct(row.id);
             products.push({
                 id: row.id,
                 title: row.name,
                 description: row.description,
                 price: row.price,
-                img_alt: imgRes.alt,
                 stats: stats
             });
         });
         return products;
     };
 
-    public getProductImagePath(id: number) {
-        console.log("Trying to get image for id " + String(id));
+    public getProductImagePathAndAlt(id: number): {filename: string, alt: string} | null {
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
-        const getImgPathStmt = this.db.prepare("SELECT filename FROM images WHERE id=?");
-        let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;
-        
-        console.log(`The image id is ${imgId}`);
-        let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string };
-        let imgFileName = imgFileNameRow.filename;
+        const getImgPathStmt = this.db.prepare("SELECT filename, alt FROM images WHERE id=?");
 
-        return imgFileName;
+        try {
+            let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
+            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string, alt: string };
+            let imgFileName = imgFileNameRow.filename;
+            let imgAlt = imgFileNameRow.alt;
+            console.error("Image Alt:", imgAlt);
+            return {filename: imgFileName, alt: imgAlt};
+        } catch (e) {
+            return null;
+        }
+    }
+
+    public getProductStats(id: number) {
+        const getStatsStmt = this.db.prepare("SELECT id, name, unit, value FROM stats WHERE product=?");
+        let stats: statsRow[] = [];
+
+        (getStatsStmt.all(id) as statsRow[]).forEach((row) => {
+            stats.push(row);
+        });
+
+        return stats;
     }
     
-    private newStat(name: string, type: string, value: string | number) {
+    private newStat(name: string, type: string | null, value: string | number, productId: number) {
         const statInsertStmt = this.db.prepare("INSERT INTO stats (name, unit, value, product) VALUES (?, ?, ?, ?)");
-        statInsertStmt.run(name, type, value);
+        console.log(`INSERT INTO stats (name, unit, value, product) VALUES (${name}, ${type}, ${value}, ${productId})`);
+        statInsertStmt.run(name, type, value, productId);
+    }
+
+    public replaceStats(statsList: {name: string, unit: string | null, value: string | number}[], productId: number) {
+        const removeStmt = this.db.prepare("DELETE FROM stats WHERE product=?");
+        removeStmt.run(productId);
+        statsList.forEach(stat => {
+            if (stat.unit === null) {
+                this.newStat(stat.name, null, stat.value, productId);
+            } else {
+                this.newStat(stat.name, stat.unit, stat.value, productId);
+            }
+        });
+        return true;
     }
 
     private getStatsOfProduct(productId: number): statsRow[] {
@@ -259,11 +341,10 @@ export class DataBaseHandling {
         return statsOfProduct;
     };
 
-    private async insertNewImage(filename: string, alt: string): Promise<number | bigint> {
+    private async insertNewImage(filenamee: string, alt: string): Promise<number | bigint> {
         const insertStmt = this.db.prepare("INSERT INTO images (filename, alt) VALUES (?, ?)");
-        let runres = insertStmt.run(filename, alt);
+        let runres = insertStmt.run(filenamee, alt);
         let id = runres.lastInsertRowid;
-
         return id;
     }
     public async updateProduct(
@@ -272,116 +353,136 @@ export class DataBaseHandling {
         title: string,
         description: string,
         price: number,
-        image: fileUpload.UploadedFile,
-        image_alt: string,
     ): Promise<boolean> {
 
-        console.log(`Id: ${id}`);
-        console.log(`Title: ${title}`);
-        console.log(`Description: ${description}`);
-        console.log(`Price: ${price}`);
-        console.log(`Image: ${image}`);
-        console.log(`Image Alt: ${image_alt}`);
 
         type productsRow = { name: string, description: string, price: number, image: number };
 
-
-        let imgId;
-
-        const constructedPath = `./uploads/${image.name}`;
-        image.mv(constructedPath, (err) => {
-            if (err) { console.error("Something went wrong with moving the image"); return }
-            console.log("Image moved successfully to " + constructedPath);
-        })
-        imgId = await this.insertNewImage(constructedPath, image_alt) as number;
-
-
-        let dataToInsert: string[] = [];
-        let propertiesToInsert: any[] = [];
-        let filepath;
-        const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=?, image=? WHERE id=?");
+        const updateStmt = this.db.prepare("UPDATE products SET name=?, description=?, price=? WHERE id=?");
         const selectStmt = this.db.prepare("SELECT name, description, price, image FROM products WHERE id = ?");
 
-
-
         let originalData = selectStmt.get(id) as productsRow;
-        console.log(originalData);
-        let newRow: productsRow = {
+        let newRow: Partial<productsRow> = {
             name: title,
             description: description,
             price: price,
-            image: imgId
         }
 
-        let res = updateStmt.run(newRow.name, newRow.description, newRow.price, newRow.image, id);
-        console.log(`Changes: ${res.changes}`);
-        let success = res.changes > 0;
-
-        return success
-    }
-
-    protected async handleImageUpdate(newImg: fileUpload.UploadedFile): Promise<boolean | string> {
-        let generatedFileName;
-        let tmp;
-        let fileExtension;
-        let generatedFileNameWithExtension;
-        let uploadPath;
-        let generatedPath;
-
-        generatedFileName = uuidV4();
-        tmp = newImg.name.split('.').pop();
-        if (!tmp) { return false; }
-        fileExtension = tmp;
-        generatedFileNameWithExtension = generatedFileName + "." + fileExtension;
-        uploadPath = __dirname + '/uploads/' + newImg.name;
-
-        generatedPath = __dirname + "/uploads/" + generatedFileNameWithExtension;
-
-        let toReturn: string | boolean = false;
-
-        newImg.mv(generatedPath, function(err: any) {
-            if (err) {
-                console.warn(err);
+        try {
+            let res = updateStmt.run(newRow.name, newRow.description, newRow.price, id);
+            let success = res.changes > 0;
+            return success
+        } catch (error) {
+            if (error instanceof Database.SqliteError) {
+                console.error(COLORS.FgRed + COLORS.Bold + error.code + COLORS.Reset);
             }
-            toReturn = generatedPath;
-        });
-
-        return toReturn;
+            return false;
+        }
     }
 
-    protected cleanImageLeftovers(): boolean {
-        const selectImgsStmt = this.db.prepare("SELECT id FROM images;");
-        const selectProductImageIdsStmt = this.db.prepare("SELECT image FROM products;");
-        const imageDeleteStmt = this.db.prepare("DELETE FROM images WHERE id=?");
+    public deleteProduct(productId: number): boolean {
+        const deleteStmt = this.db.prepare("DELETE FROM products WHERE id=?");
 
-        const imgsids = selectImgsStmt.all() as {id: number}[];
-        const productImgsIds = selectProductImageIdsStmt.all() as {id: number}[];
-        var cleanUpSuccessfull: boolean = true;
+        const runRes = deleteStmt.run(productId);
+        console.error(runRes);
+        return runRes.changes > 1;
+    }
 
-        let usedIds: number[] = [];
-        let IdsToDelete: number[] = [];
+    public async updateProductImage(image_path: string, image_alt: string, productId: number): Promise<number | Error> {
 
-        productImgsIds.forEach((row => {
-            usedIds.push(row.id);
+        let imgId = await this.insertNewImage(image_path as string, image_alt) as number;
+        console.info(`Inserted new image! Id: ${imgId}`);
+
+        const imageToProductStmt = this.db.prepare("UPDATE products SET image = ? WHERE id = ?");
+
+        imageToProductStmt.run(imgId, productId);
+
+        return imgId;
+    }
+
+    public async cleanImageLeftovers(): Promise<boolean> {
+        const filesInUploadDir: string[] = [];
+
+        const stmts = {
+            deleteImage: this.db.prepare("DELETE FROM images WHERE id=?"),
+            selectProductImageIds: this.db.prepare("SELECT image FROM products;"),
+            selectImgs: this.db.prepare("SELECT id, filename FROM images;"),
+        }
+
+        type productsRow = { image: number };
+        type imagesRow = { id: number, filename: string };
+
+        type filename = string;
+        type image = {filename: string, id: number};
+
+        fsSync.readdirSync("./uploads/").forEach((file) => {
+            filesInUploadDir.push(file);
+        })
+
+        const productImgs = stmts.selectProductImageIds.all() as productsRow[];
+
+        const imgs: { [imageId: number]: image } = {};
+
+        const selectedImgs = stmts.selectImgs.all() as imagesRow[];
+
+        selectedImgs.forEach((img => {
+            imgs[img.id] = {filename: img.filename, id: img.id};
         }));
 
-        imgsids.forEach(row => {
-            if (!usedIds.includes(row.id)) {
-                IdsToDelete.push(row.id);
+        const imagesThatAreSafe: image[] = [];
+        const filesThatShouldNotBeDeleted: filename[] = [];
+
+        productImgs.forEach((row) => {
+            imagesThatAreSafe.push(imgs[row.image]);
+            let filename = imgs[row.image].filename;
+            filename = filename.substring(10);
+            filesThatShouldNotBeDeleted.push(filename);
+        });
+
+        const imagesThatShouldBeDeleted: image[] = [];
+
+        
+        console.log("✅ Images that can stay in db");
+        imagesThatAreSafe.forEach((img) => {
+            console.log(img.id, img.filename);
+        })
+
+        selectedImgs.forEach((img) => {
+            let deleteThisOne: boolean = false;
+            for (const image of imagesThatAreSafe) {
+                if (image.id !== img.id) {
+                    deleteThisOne = true;
+                    console.log("😱 Das bitte nicht löschen...", img.id);
+                    break;
+                };
+            };
+            if (deleteThisOne) {
+                try {
+                    stmts.deleteImage.run(img.id);
+                } catch (error) {
+                    if (error instanceof Database.SqliteError) {
+                        console.log("😥 Zum Glück durfte das bleiben...");
+                        console.log(img.id);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        });
+
+        const filesThatShouldAbsolutelyBeDeleted: filename[] = [];
+
+        filesInUploadDir.forEach(file => {
+            if (!filesThatShouldNotBeDeleted.includes(file)) {
+                filesThatShouldAbsolutelyBeDeleted.push(file);
             };
         });
 
-        IdsToDelete.forEach(toDeleteId => {
-            
-            try {
-                if (imageDeleteStmt.run(toDeleteId.toFixed(0)).changes < 0) {
-                    cleanUpSuccessfull = false;
-                }
-            } catch (error) {
-                cleanUpSuccessfull = false
-                console.error(error);
-            }
+        filesThatShouldAbsolutelyBeDeleted.forEach((file) => {
+            fsSync.rmSync(`./uploads/${file}`);
         });
+
+        var cleanUpSuccessfull: boolean = true;
 
         return cleanUpSuccessfull;
     }

@@ -1,16 +1,25 @@
 import express from "express";
 import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling";
-import fileUpload, { UploadedFile } from "express-fileupload";
-import { v4 as uuidV4 } from "uuid";
+import * as formidable from "formidable";
+import { checkAuthMiddleware } from "./app";
 import path from "node:path";
+import { HTTPError } from "./utils";
+
 const apiRouter = express.Router();
 
-export default apiRouter;
+const formidableConfig: formidable.Options = {
+    multiples: false,
+    uploadDir: './uploads',
+    maxFiles: 1,
+    maxFileSize: 500 * 1024 * 1024,
+    keepExtensions: true,
+    filter: (part) => {
+        return true;
+    },
+    allowEmptyFiles: false,
+}
 
-apiRouter.use(fileUpload({
-    useTempFiles: true,
-    debug: true,
-}));
+export default apiRouter;
 
 let feature__flags: FeatureFlags | undefined; 
 
@@ -21,35 +30,77 @@ getFeatureFlags().then((flags) => {
 
 apiRouter.post('/contact/new', async (req, res) => {
     const body = req.body;
-    // console.log(body, typeof body);
-    console.log("New Contact Message received!");
-
     const handler = new DataBaseHandling();
-    let result = await handler.newContactMessage(body["name"], body["prename"], body["email"], body["topic"], body["shortMsg"], body["longMsg"]);
+    const form = formidable.formidable({
+        maxFiles: 0,
+    });
+
+    let [fields, files] = await form.parse(req);
+
+    let name: string;
+    let prename: string;
+    let email: string;
+    let topic: string;
+    let shortMsg: string;
+    let longMsg: string;
+
+    try {
+        name = fields["name"]![0];
+        prename = fields["prename"]![0];
+        email = fields["email"]![0];
+        topic = fields["topic"]![0];
+        shortMsg = fields["shortMsg"]![0];
+        longMsg = fields["longMsg"]![0];
+    } catch (error) {
+        if (error instanceof TypeError) {
+            res.status(500).end("");
+        } else {
+            console.error(error);
+            console.trace();
+            res.sendStatus(500);
+        };
+        return;
+    };
+
+    let result = await handler.newContactMessage(
+        name, prename, email, topic, shortMsg, longMsg
+    );
 
     if (result) {
         res.status(201).end("Done");
     } else {
-        res.status(500).end("Something went wrong")
+        res.status(500).end("Something went wrong");
     };
 });
 
-apiRouter.post('/login', async (req, res) => {
+apiRouter.post('/login', async (req, res, next) => {
     const body = req.body;
     const handler = new DataBaseHandling();
-    
+    let err: HTTPError;
+    let username = body["username"]
+    let password = body["password"]
+
+    let isUserAuthenticated = false;
+
     try {
-        if (await handler.isUserValid(body["username"], body["password"])) {
-            req.session.token = handler.generateNewAuthToken();
-            res.redirect("/admin/");
-            return;
-        }
+        isUserAuthenticated = await handler.isUserValid(username, password);
     } catch (error) {
-        res.status(401).send("Invalid :(");
+        console.error(error);
+        err = new HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
+        next(err);
+    }
+
+    if (isUserAuthenticated) {
+        let token = handler.generateNewAuthToken();
+
+        res.cookie("authToken", token, { httpOnly: true });
+
+        res.redirect("/admin/");
+        return;
     }
 
     req.session.token = undefined;
-    res.status(401).send("Invalid");
+    res.status(401).end("Jetzt probieren wir das aber nochmal, was?");
 });
 
 apiRouter.get("/cookies", (req, res) => {
@@ -64,7 +115,6 @@ apiRouter.get("/cookies", (req, res) => {
 });
 
 apiRouter.get("/products/get", function (req, res) {
-    console.log("Getting all Products!!!");
     const handler = new DataBaseHandling();
     const allProducts = handler.getAllProducts();
 
@@ -83,27 +133,70 @@ apiRouter.get("/products/get", function (req, res) {
             title: value.title,
             description: value.description,
             price: value.price,
-            imgAlt: value.img_alt,
             stats: value.stats,
         } as returnedData;
     });
     res.json(toReturn as returnedData[]);
 });
 
-apiRouter.get("/product/image/get/:id", function (req, res) {
+apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
     const handler = new DataBaseHandling();
-    var imagePath = handler.getProductImagePath(Number(productId));
 
-    console.log(`The path for the image of product with id ${productId} is ${imagePath}`);
+    try {
+        var image = handler.getProductImagePathAndAlt(Number(productId));
 
-    if (imagePath) {
-        imagePath = path.join(__dirname, imagePath);
-        res.sendFile(imagePath);
+        if (image !== null) {
+            image.filename = path.join(__dirname, image.filename);
+            res.setHeader("x-image-alt", image.alt);
+            res.sendFile(image.filename);
+        } else {
+            res.sendStatus(404);
+        }
+    } catch (e) {
+        res.status(404).end("The requested image could not be found");
+    }
+});
+
+apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.Response) {
+
+    const id = Number(req.params.id);
+    const handler = new DataBaseHandling();
+
+    if (Number.isNaN(id)) {
+        res.status(400).end("Provide a valid product ID");
         return;
-    };
-    res.status(404).end("The requested image could not be found");
+    }
+
+    let stats = handler.getProductStats(id);
+
+    res.json(stats);
 })
+
+apiRouter.post("/admin/product/:id/stats", async function(req: express.Request, res: express.Response) {
+    console.error("Product Stats!");
+    const handling = new DataBaseHandling();
+    const formidablee = formidable.formidable({
+        maxFiles: 0
+    });
+    const form = await formidablee.parse(req);
+
+    let formFields = form[0];
+
+    let field = formFields["stats"]![0];
+
+    const stats = JSON.parse(field as unknown as string) as {id: number, name: string, unit: string | null, value: string | number}[];
+    const productId: number = Number(req.params.id);
+
+    console.log(`Creating stats for Product ${productId}`)
+    console.log(stats)
+    let returnValue = handling.replaceStats(stats, productId);
+    if (returnValue) {
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(501);
+    }
+});
 
 apiRouter.post('/users/new', async (req, res) => {
     const body = req.body;
@@ -123,7 +216,6 @@ apiRouter.post('/users/new', async (req, res) => {
 });
 
 apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
-    console.log("Requested Messages!")
     const handler = new DataBaseHandling();
 
     let result = await handler.getContactMessages();
@@ -133,29 +225,78 @@ apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Re
 
 apiRouter.post("/admin/products/new", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
-    const body = req.body;
 
-    const newProduct = {
-        name: body.name,
-        description: body.description,
-        filename: body.filename,
-        alt: body.alt
-    };
+    const incommingForm = formidable.formidable(formidableConfig);
+    incommingForm.parse(req, async (err, fields: formidable.Fields<string>, files: formidable.Files) => {
+        let productId: number = -1;
+        let productTitle: string;
+        let productDescription: string;
+        let productPrice: number;
+        let productImage: formidable.File;
+        let productAlt: string;
 
-    let productId = handler.newProduct(newProduct.name, newProduct.description, newProduct.filename, newProduct.alt);
+        let tmpFile = files.image ? files.image[0] : undefined;
+        if (tmpFile === undefined) { throw new Error("No Image provided!"); };
 
-    if (Number.isNaN(productId)) {
-        res.status(500).end("Something went wrong :(");
-    } else {
-        res.status(201).end("Success");
-    };
+        productImage = tmpFile;
+
+        let keys = Object.keys(fields);
+
+        console.log("Fields: 📋");
+        keys.forEach((value) => {
+            console.log(value, fields[value]);
+            const fieldValue = fields[value]![0];
+            if (value === "title") {
+                productTitle = fieldValue;
+            } else if (value === "description") {
+                productDescription = fieldValue;
+            } else if (value === "price") {
+                productPrice = Number(fieldValue);
+            } else if (value === "alt") {
+                productAlt = fieldValue;
+            };
+        });
+        console.log("That's it!");
+
+        let PathToImage = `./uploads/${productImage.newFilename}`
+
+        productId = (await handler.newProduct(productTitle!, productDescription!, productPrice!, '', productAlt!)) as number;
+
+        await handleImageUpload(productImage, productAlt!, productId);
+
+        if (Number.isNaN(productId) || productId < 0) {
+            res.status(500).end("Something went wrong :(");
+        } else {
+            res.status(201).json({
+                status: "success",
+                productId: productId
+            });
+        };
+    });
+
 });
+
+apiRouter.delete("/admin/product/:id/delete", (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const productId = req.params.id;
+    console.log("Deleting Product " + String(productId));
+    if (productId.length <= 0) { res.sendStatus(400); return; };
+    const id = Number(productId);
+    if (Number.isNaN(id)) { res.sendStatus(400); return; };
+
+    const handler = new DataBaseHandling();
+    let dbRes = handler.deleteProduct(id);
+
+    if (dbRes) {
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(500);
+    }
+})
 
 apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
     const body = req.body;
 
-    console.log(body);
     let id: number[];
     if (body["multiple"]) {
         id = body["ids"];
@@ -178,47 +319,98 @@ apiRouter.get("/admin/products/get", (req: express.Request, res: express.Respons
     res.json(response);
 });
 
-apiRouter.post("/admin/products/update", async function(req: express.Request, res: express.Response) {
-
-    type uploadBody = {
-        id: number,
-        title: string,
-        description: string,
-        price: number,
-        image: fileUpload.UploadedFile,
-        image_alt: string
-    };
+apiRouter.put("/admin/product/:id/update", async function(req: express.Request, res: express.Response, next: express.NextFunction) {
 
     const handler = new DataBaseHandling();
-    const body = req.body as uploadBody;
-
-    console.log(`Body: ${body}`);
-
+    const form = new formidable.Formidable(formidableConfig);
     let id: number;
     let title: string;
     let description: string;
     let price: number;
-    let image: fileUpload.UploadedFile;
-    let image_alt: string;
+
+    form.parse(req, async (err: any, fields: formidable.Fields, files: formidable.Files) => {
+        if (err) {
+            next(err);
+            return;
+        }
+        let titleField = fields["title"];
+        let descrField = fields["description"];
+        let priceField = fields["price"];
+
+        if (titleField && descrField && priceField) {
+            title = titleField[0];
+            description = descrField[0];
+            price = Number(priceField[0]);
+        } else {
+            let err = new HTTPError(500);
+            next(err);
+            return;
+        }
+
+        id = Number(req.params.id);
+    
+        let success = await handler.updateProduct(id, title, description, price);
+    
+        if (success) {
+            res.status(200).end("Success");
+        } else {
+            res.status(500).end("Something went wrong :(");
+        }
+    })
+
 
     
-    id = body.id;
-    title = body.title;
-    description = body.description;
-    price = body.price;
-    if (!req.files) {
-        console.error("Req.files not available!");
-        return;
-    } else {
-        image = req.files.image as UploadedFile;
-    }
-    image_alt = body.image_alt
-    
-    let success = await handler.updateProduct(id, title, description, price, image, image_alt);
+})
 
-    if (success) {
-        res.status(200).end("Success");
+apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const form = new formidable.Formidable(formidableConfig);
+
+    const handler = new DataBaseHandling();
+    const productId = req.params.id;
+
+    form.parse(req, async (err: any, fields: formidable.Fields<string>, files: formidable.Files<string>) => {
+        if (err) {
+            next(err);
+        }
+
+        let alt = fields["alt"] ? fields["alt"][0] : "";
+        let filename = fields["filename"];
+        let file = files["image"];
+        if (file === undefined) {
+            throw new Error();
+        }
+        let singlefile = file[0];
+
+        handleImageUpload(singlefile, alt, Number(productId)).then((returnValue) => {
+            handler.cleanImageLeftovers();
+        })
+
+        res.sendStatus(201);
+    })
+});
+
+apiRouter.get("/admin/images/purge", async (req: express.Request, res: express.Response) => {
+    const handler = new DataBaseHandling();
+    if (await handler.cleanImageLeftovers()) {
+        res.sendStatus(200);
     } else {
-        res.status(500).end("Something went wrong :(");
+        res.sendStatus(500);
     }
 })
+
+
+async function handleImageUpload(image: formidable.File, alt?: string, productId?: number): Promise<number | Error> {
+    const handler = new DataBaseHandling();
+    let filenameOfFile = `./uploads/${image.newFilename}`;
+
+    if (!alt || alt.length <= 0) {
+        alt = image.originalFilename ? image.originalFilename : '???';
+    }
+
+    let res = await handler.updateProductImage(
+        filenameOfFile,
+        alt,
+        Number(productId)
+    );
+    return res;
+}

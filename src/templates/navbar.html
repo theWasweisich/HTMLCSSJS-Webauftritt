@@ -1,19 +1,20 @@
-<div id="nav-wrap">
-    <nav>
-        <a href="#" class="closebtn">&times;</a>
+<nav id="primary-nav-bar" class="">
+    <button id="navtoggle" aria-expanded="false" aria-controls="nav-wrap">
+        <svg viewBox="0 0 100 100" fill="var(--nav-btn-clr)" class="burger">
+            <rect class="line top" width="80" height="10" x="10" y="25" rx="5">
+            </rect>
+            <rect class="line middle" width="80" height="10" x="10" y="45" rx="5">
+            </rect>
+            <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5">
+            </rect>
+        </svg>
+    </button>
+    <ul class="navigation-bar">
+        <span class="spacer"></span>
         <a href="/index/">Home</a>
         <a href="/produkte/">Unsere Produkte</a>
         <a href="/stearken/">Unsere Stärken</a>
         <a href="/ueberuns/">&Uuml;ber uns</a>
-        <a href="/lustigerknopf/">Lustiger Knopf</a>
         <a href="/login/">Anmelden</a>
-    </nav>
-    <div id="navtoggle">
-        <svg viewBox="0 0 24 24" fill="none" class="burger">
-            <path d="M 4 7  L 20 7 " stroke-width="1.5" stroke-linecap="round" class="burger-line" />
-            <path d="M 4 12 L 20 12" stroke-width="1.5" stroke-linecap="round" class="burger-line rotate" />
-            <path d="M 4 12 L 20 12" stroke-width="1.5" stroke-linecap="round" class="burger-line rotate" />
-            <path d="M 4 17 L 20 17" stroke-width="1.5" stroke-linecap="round" class="burger-line" />
-        </svg>
-    </div>
-</div>
+    </ul>
+</nav>

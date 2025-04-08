@@ -1,0 +1,75 @@
+2025-03-29 23:24:36 [INFO]: 	Listening on Port 3000
+2025-03-29 23:24:43 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:24:43 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:24:43 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:24:43 [INFO]: 	Trying to get stats for product id: 0
+2025-03-29 23:24:43 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:24:43 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:24:43 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:24:43 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:24:43 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:24:43 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:24:43 [INFO]: 	Trying to get stats for product id: 1
+2025-03-29 23:24:43 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:24:43 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:24:43 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:24:43 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:24:43 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:24:43 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:26:08 [INFO]: 	Listening on Port 3000
+2025-03-29 23:26:15 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:26:15 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:26:15 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:26:15 [INFO]: 	Trying to get stats for product id: 0
+2025-03-29 23:26:15 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:26:15 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:26:15 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:26:15 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:26:15 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:26:15 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:26:15 [INFO]: 	Trying to get stats for product id: 1
+2025-03-29 23:26:15 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:26:15 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:26:15 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:26:16 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:26:16 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:26:16 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:31:08 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:31:08 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:31:08 [INFO]: 	Trying to get stats for product id: 0
+2025-03-29 23:31:08 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:31:08 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	The image id for Product 0 is 10
+2025-03-29 23:31:08 [INFO]: 	0 -> ./uploads/fahrrad1.jpg
+2025-03-29 23:31:08 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad1.jpg
+2025-03-29 23:31:08 [INFO]: 	Trying to get stats for product id: 1
+2025-03-29 23:31:08 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:31:08 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	The image id for Product 1 is 13
+2025-03-29 23:31:08 [INFO]: 	1 -> ./uploads/fahrrad2.jpg
+2025-03-29 23:31:08 [INFO]: 	Path: C:\Users\langb\Documents\GitHubRepos\HTMLCSSJS-Webauftritt\uploads\fahrrad2.jpg
+2025-03-29 23:31:19 [INFO]: 	Requested Messages!
+2025-03-29 23:34:55 [INFO]: 	Listening on Port 3000
+2025-03-29 23:45:41 [INFO]: 	Listening on Port 3000
+2025-03-29 23:50:21 [INFO]: 	Listening on Port 3000
+2025-03-29 23:50:30 [INFO]: 	Listening on Port 3000
+2025-03-29 23:50:43 [INFO]: 	Listening on Port 3000
+2025-03-29 23:51:11 [INFO]: 	Listening on Port 3000
+2025-03-29 23:51:37 [INFO]: 	Listening on Port 3000
+2025-03-29 23:51:38 [WARN]: 	Getting products!
+2025-03-29 23:54:38 [INFO]: 	Listening on Port 3000
+2025-03-29 23:54:57 [INFO]: 	Listening on Port 3000
+2025-03-29 23:54:59 [WARN]: 	Getting products!
+2025-03-29 23:55:40 [INFO]: 	Listening on Port 3000
+2025-03-29 23:55:42 [WARN]: 	Getting products!
+2025-03-29 23:56:00 [INFO]: 	Listening on Port 3000
+2025-03-29 23:56:01 [WARN]: 	Getting products!
+2025-03-29 23:57:27 [INFO]: 	Listening on Port 3000
+2025-03-29 23:57:29 [WARN]: 	Getting products!
+2025-03-29 23:57:49 [INFO]: 	Listening on Port 3000
+2025-03-29 23:57:50 [WARN]: 	Getting products!
+2025-03-30 00:00:38 [INFO]: 	Listening on Port 3000
+2025-03-30 00:00:40 [WARN]: 	Getting products!

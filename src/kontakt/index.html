@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kontakt</title>
 
+    <link rel="shortcut icon" href="" type="image/x-icon">
+
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="/kontakt/style.css">
 
@@ -24,7 +26,7 @@
             <div class="wrapper-padding">
                 <h2>FAQ</h2>
                 <div class="faq-list">
-                    <li>Mit welcher Lieferzeit kann gerechnet werden?</li>
+                    <li>Mit welchen Lieferzeiten kann gerechnet werden?</li>
                     <span class="faq-answer">Die Lieferzeiten varriieren zwischen einem Tag und 2 Jahren</span>
                     <li>Wie lange läuft die Garantie?</li>
                     <span class="faq-answer">Bei uns gibt es keine Garantie auf garnichts</span>
@@ -38,24 +40,57 @@
                 <h2>Kontaktformular</h2>
                 <form action="#">
                     <label for="prename-inp">Vorname</label>
-                    <input type="text" name="prename" id="prename-inp" autocomplete="given-name" class="accent-purple" aria-required="true">
+                    <input type="text"
+                            name="prename" id="prename-inp"
+                            autocomplete="given-name"
+                            class="accent-purple"
+                            aria-required="true"
+                            placeholder="Vorname"
+                    >
+
                     <label for="name-inp">Nachname</label>
-                    <input type="text" name="name" id="name-inp" autocomplete="family-name" class="accent-purple" aria-required="true">
+                    <input type="text" name="name" id="name-inp"
+                            autocomplete="family-name"
+                            class="accent-purple"
+                            aria-required="true"
+                            placeholder="Nachname"
+                    >
+
                     <label for="email-inp">Email</label>
-                    <input type="email" name="email" id="email-inp" autocomplete="email" class="accent-purple">
+                    <input type="email"
+                            name="email"
+                            id="email-inp"
+                            autocomplete="email"
+                            class="accent-purple"
+                            placeholder="Email"
+                    >
+
                     <label for="topic-sel">Ihr Anliegen</label>
                     <select name="topic" id="topic-sel" class="accent-purple">
                         <option value="" selected disabled hidden>-- Bitte Option auswählen --</option>
+                        <hr>
                         <option value="fahrradkauf">Fahrradkauf</option>
+                        <hr>
                         <option value="probefahrt">Probefahrt</option>
+                        <hr>
                         <option value="erstattung">Rückerstattung</option>
+                        <hr>
                         <option value="garantie">Garantie</option>
+                        <hr>
                         <option value="allgemein">allgemeine Frage</option>
                     </select>
+
                     <label for="short-inp">Kurzbeschreibung</label>
-                    <input type="text" name="short" id="short-inp" maxlength="25" class="accent-purple">
+                    <input type="text"
+                            name="short"
+                            id="short-inp"
+                            maxlength="50"
+                            class="accent-purple"
+                    >
+
                     <label for="long-inp">Ihre Nachricht</label>
                     <textarea name="long" id="long-inp" cols="50" rows="10" class="accent-purple"></textarea>
+
                     <input type="submit" value="Absenden" class="accent-purple">
                 </form>
             </div>
@@ -72,11 +107,20 @@
         </form>
     </dialog>
     <dialog id="failed-msg">
-        <h1>&#128544; Ihre Nachricht ist verlohren gegangen!</h1>
+        <h1>Ihre Nachricht ist verlohren gegangen! 😡</h1>
         <p>Leider hat ihre Nachricht unsere Server nicht erreicht</p>
         <p>Eventuell war Ihre Nachricht einfach nicht stark genug, um sich durch die tiefen Weiten des Internets zu
             kämpfen</p>
         <p>Rüsten Sie ihre Nachricht das nächste Mal besser aus!</p>
+        <form method="dialog">
+            <button type="submit">Fertig</button>
+        </form>
+    </dialog>
+    <dialog id="wait-msg">
+        <h1>Bitte haben Sie etwas Geduld! 😴</h1>
+        <p>Sie haben vor kurzem bereits schon einmal eine Kontaktnachricht versandt!</p>
+        <p>Wenn Sie zu viele Nachrichten schicken, überlasten Sie das Internet, weil das braucht auch manchmal eine Pause.</p>
+        <p>Haben Sie also etwas Geduld, sonst könnten Sie mit ihren Kontaktnachrichten eventuell das Internet für die ganze Stadt kaputt machen!</p>
         <form method="dialog">
             <button type="submit">Fertig</button>
         </form>

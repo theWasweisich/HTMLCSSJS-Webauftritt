@@ -1,34 +1,46 @@
 
 class NavCommander {
-    static navtoggle: HTMLElement;
+    static navtoggle: HTMLButtonElement;
     static navbar: HTMLElement;
+    static navList: HTMLUListElement;
     private static _navState: boolean;
 
     static set navbarState(value: boolean) {
         this._navState = value;
-        (NavCommander.navtoggle.querySelector('svg') as SVGElement).classList.toggle('open', this._navState);
-        (NavCommander.navtoggle.classList.toggle("open", this._navState));
-        (document.querySelector('nav') as HTMLElement).classList.toggle('show', this._navState);
-    }
+        if (!value) { (document.activeElement as HTMLElement).blur(); };
+        // this.navbar.classList.toggle('show', this._navState);
+
+        if (this._navState) {
+            this.navtoggle.setAttribute("aria-expanded", "true");
+
+            this.navbar.classList.add("open");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.add("opened");
+                this.navbar.classList.remove("open");
+            }, { once: true })
+        } else {
+            this.navtoggle.setAttribute("aria-expanded", "false");
+
+            this.navbar.classList.add('close');
+            this.navbar.classList.remove("open", "opened");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.remove('close');
+            }, { once: true })
+        };
+    };
 
     static get navbarState() {
         return this._navState;
     }
 
     static setup() {
-        NavCommander.navtoggle = document.getElementById('navtoggle') as HTMLElement;
-        NavCommander.navbar = document.querySelector('#nav-wrap > nav') as HTMLElement;
+        NavCommander.navtoggle = document.getElementById('navtoggle') as HTMLButtonElement;
+        NavCommander.navbar = document.querySelector('#primary-nav-bar') as HTMLElement;
+        NavCommander.navList = this.navbar.querySelector("ul") as HTMLUListElement;
 
-        const navCloser: HTMLSpanElement = document.querySelector('nav .closebtn') as HTMLSpanElement;
-
-
-        navCloser.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            NavCommander.navbarState = false;
-        })
 
         NavCommander.navtoggle.addEventListener('click', () => {
-            NavCommander.navbarState = true;
+            NavCommander.navbarState = this.navbarState ? false : true;
         });
 
         window.addEventListener('mousedown', this.mouseDownHandler);
@@ -67,6 +79,9 @@ class NavCommander {
         // Wenn m (für "menü") gedrückt wird, toggle navbar
         if (event.key === "m") {
             NavCommander.navbarState = !NavCommander.navbarState;
+            if (NavCommander.navbarState) {
+                (NavCommander.navbar.querySelector("a[href]") as HTMLAnchorElement | undefined)?.focus();
+            }
         };
     };
 }
@@ -196,7 +211,8 @@ class consentMgr {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    document.body.querySelectorAll("& > [hidden]").forEach(elem => { elem.removeAttribute("hidden") });
     await PartialsLoader.loadPartials();
     NavCommander.setup();
     consentMgr.ensureConsent();
-})
+});

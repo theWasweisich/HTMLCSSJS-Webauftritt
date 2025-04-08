@@ -12,12 +12,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.checkAuthMiddleware = checkAuthMiddleware;
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_session_1 = __importDefault(require("express-session"));
 const apiEndpoints_1 = __importDefault(require("./apiEndpoints"));
 const node_fs_1 = __importDefault(require("node:fs"));
 const dataHandling_1 = require("./dataHandling");
+const utils_1 = require("./utils");
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config({
+    debug: true
+});
+// console.log(process.env);
+process.env.NODE_ENV = "production";
 const app = (0, express_1.default)();
 var port = 3000;
 var customPort = process.argv[2];
@@ -28,45 +37,46 @@ if (customPort !== undefined) {
 var feature__flags;
 (0, dataHandling_1.getFeatureFlags)().then((flags) => {
     feature__flags = flags;
+    console.log(feature__flags);
 });
 app.use((0, morgan_1.default)("common", {
     stream: node_fs_1.default.createWriteStream("./access.log", { encoding: "utf-8", flags: 'a' })
 }));
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
+const twoDaysInMS = 48 * 60 * 60 * 1000;
 app.use((0, express_session_1.default)({
     secret: "dies ist sehr geheim",
-    cookie: { maxAge: 172800 }, // Das sind 2 Tage
+    cookie: { maxAge: twoDaysInMS },
     resave: false,
     saveUninitialized: false
 }));
+app.use((0, cookie_parser_1.default)());
 function checkAuthMiddleware(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
-        const isAuthNeeded = req.path.startsWith("/admin/") || req.path.startsWith("/api/admin/");
-        if (isAuthNeeded) {
-            console.log("Auth is needed");
-            if (!req.session.token) {
-                res.redirect(307, "/login/");
-                return;
-            }
-            if (req.session.token) {
-                try {
-                    const db = new dataHandling_1.DataBaseHandling();
-                    let res = yield db.isAuthTokenKnown(req.session.token);
-                    console.log("DB res: " + res);
-                    if (res) {
-                        next();
-                        return;
-                    }
-                }
-                catch (e) {
-                }
-            }
-            ;
-            res.redirect(307, "/login/");
+        if (!req.url.includes("admin")) {
+            next();
             return;
         }
-        next();
+        const db = new dataHandling_1.DataBaseHandling();
+        var result;
+        if (!req.cookies.authToken) {
+            let error = new utils_1.HTTPError(401, "No session token available! Aborting...");
+            next(error);
+        }
+        else {
+            try {
+                result = db.isAuthTokenValid(req.cookies.authToken);
+            }
+            catch (e) {
+                next(e);
+            }
+            if (result) {
+                console.info("AuthToken is valid, continuing with request");
+                next();
+            }
+        }
+        ;
     });
 }
 ;
@@ -75,12 +85,11 @@ app.use((req, res, next) => {
         res.status(500).end("Initialization not finished!");
         return;
     }
-    if (feature__flags === null || feature__flags === void 0 ? void 0 : feature__flags.checkAuth) {
-        checkAuthMiddleware(req, res, next);
-    }
     next();
 });
+app.use(checkAuthMiddleware);
 app.get('/', (_req, res) => {
+    console.log(_req.cookies);
     res.redirect("/index/");
 });
 app.get("/favicon.ico", (req, res) => {
@@ -88,6 +97,15 @@ app.get("/favicon.ico", (req, res) => {
 });
 app.use("/api/", apiEndpoints_1.default);
 app.use(express_1.default.static("src/"));
+app.use((err, req, res, next) => {
+    if (err instanceof utils_1.HTTPError && err.status === 401) {
+        return res.redirect('/login');
+    }
+    ;
+    const status = err instanceof utils_1.HTTPError ? err.status : 500;
+    const message = err instanceof utils_1.HTTPError ? err.message : "Server error";
+    res.status(status).send(message);
+});
 app.listen(port, () => {
-    console.log(`Listening on Port ${port}`);
+    console.log(`Listening on Port http://localhost:${port}`);
 });

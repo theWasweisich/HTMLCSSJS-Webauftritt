@@ -11,20 +11,12 @@ interface contactMessage {
     elem?: HTMLElement,
 }
 
-interface productResponse {
-    id: number,
-    title: string,
-    description: string,
-    price: number,
-    image_filename: string,
-    image_alt: string
-}
 
 class singleContactMessage {
-    public elem: HTMLElement | undefined;
-    private selectElems: {label: HTMLLabelElement, input: HTMLInputElement};
+    public elem: HTMLElement | undefined = undefined;
+    private selectElems: {label: HTMLLabelElement, input: HTMLInputElement} | undefined;
 
-    constructor(
+    private constructor(
         public id: number,
         public timestamp: Date,
         public name: string,
@@ -33,35 +25,96 @@ class singleContactMessage {
         public topic: string,
         public shortMsg: string,
         public longMsg: string,
-        elem: HTMLElement
     ) {
-        this.elem = elem;
 
-        this.selectElems = {
-            label: elem.querySelector("label") as HTMLLabelElement,
-            input: elem.querySelector("input") as HTMLInputElement
-        }
     }
 
-    public setup(viewManager: ViewerManager, selectChangeHandler: CallableFunction) {
+    public static async newContactMessage(
+        id: number, timestamp: Date, name: string, prename: string,
+        email: string, topic: string, shortMsg: string, longMsg: string
+    ): Promise<singleContactMessage> {
+        let msg = new singleContactMessage(id, timestamp, name, prename, email, topic, shortMsg, longMsg);
+        msg.setup(viewer);
+        return msg;
+    }
+    
+    public setup(viewManager: MessagesViewer) {
+        this.createElement();
         if (!this.elem) { return }
 
         const selectId = `checkbox-${this.id}`;
+
+        if (!this.selectElems) { throw new Error("selectElems not set!") };
+
         this.selectElems.input.id = selectId;
         this.selectElems.input.name = selectId;
         this.selectElems.label.htmlFor = selectId;
 
-
-        this.selectElems.input.addEventListener('change', ev => { selectChangeHandler(viewManager, this, this.selectElems) })
+        if (this.selectElems !== undefined) {
+            this.selectElems.input.addEventListener('change', ev => { viewManager.selectChangeHandler(this, this.selectElems!) })
+        } else {
+            throw new Error("this.selectElems are undefined!");
+        }
     };
 
+    public createElement() {
+        this.elem = this.setTemplateFields();
+        this.selectElems = {
+            label: this.elem.querySelector("label") as HTMLLabelElement,
+            input: this.elem.querySelector("input") as HTMLInputElement
+        }
+
+        MessagesViewer.displayContainer.appendChild(this.elem);
+    }
+    
     public setOpenState(isOpen: boolean) {
         this.elem?.classList.toggle("open", isOpen);
     }
 
     public setSelectState(isSelected: boolean) {
+        if (!this.selectElems) { throw new Error("Need Select Elements") };
         this.selectElems.input.checked = isSelected;
     }
+    
+    private setTemplateFields(): HTMLElement {
+        const template = document.getElementById("message-template") as HTMLTemplateElement;
+        const clone = template.content.cloneNode(true) as HTMLElement;
+        const toappend = clone.querySelector(".message") as HTMLElement;
+
+
+        let insertableElements = clone.querySelectorAll("[data-field]") as NodeListOf<HTMLElement>;
+        insertableElements.forEach(elem => {
+
+            let timeYear = this.timestamp.getFullYear();
+            let timeMonth = this.timestamp.getMonth();
+            let timeDay = this.timestamp.getDate();
+            let timeHour = this.timestamp.getHours();
+            let timeMinute = this.timestamp.getMinutes();
+
+            function timePadding(value: number): string {
+                return value < 10 ? `0${value}` : String(value);
+            }
+
+            let timeString = `${timePadding(timeDay)}.${timePadding(timeMonth)}.${timePadding(timeYear)} um ${timePadding(timeHour)}:${timePadding(timeMinute)}`;
+
+            if (elem.dataset.field === "name") {
+                elem.innerText = `${this.name}, ${this.prename}`
+            } else if (elem.dataset.field === "email") {
+                elem.innerText = this.email;
+                (elem as HTMLAnchorElement).href = `mailto:${this.email}`;
+            } else if (elem.dataset.field === "topic") {
+                elem.innerText = this.topic;
+            } else if (elem.dataset.field === "short") {
+                elem.innerText = this.shortMsg;
+            } else if (elem.dataset.field === "message") {
+                elem.innerText = this.longMsg;
+            } else if (elem.dataset.field === "timestamp") {
+                elem.innerText = timeString;
+            }
+        });
+
+        return toappend;
+    };
 }
 
 interface contactMessages {
@@ -69,12 +122,16 @@ interface contactMessages {
 }
 
 class MessagesViewer {
+    public static displayContainer: HTMLElement = document.getElementById("contactMsg-output") as HTMLElement;
     public messagesElems: Array<HTMLElement> = [];
     public messages: Array<singleContactMessage> = [];
     public selectedMessages: Array<singleContactMessage> = [];
+    public visibleMessage: singleContactMessage | undefined = undefined;
+
+    public bulkDeleteElem = document.getElementById("bulkdelete-btn") as HTMLButtonElement;
+    public bulkCheckbox = document.getElementById("bulk-select-inp") as HTMLInputElement;
 
     constructor(
-        public displayContainer: HTMLElement,
     ) {
         this.setup();
     }
@@ -84,13 +141,16 @@ class MessagesViewer {
         let json = await resp.json();
         let messages = this.parseMessagesResponse(json);
 
-        this.displayContainer.innerHTML = "";
+        MessagesViewer.displayContainer.innerHTML = "";
+
+        let counterElem = document.querySelector(".messages-container h2 .counter");
+        if (counterElem) {
+            counterElem.textContent = "(" + String(messages.length) + ")"
+        }
+
 
         for (const message of messages) {
-            let toappend = this.setTemplateFields(message);
-            let done = this.displayContainer.appendChild(toappend);
-            message.elem = done;
-            this.messages.push(new singleContactMessage(
+            let singleMessage = await singleContactMessage.newContactMessage(
                 message.id,
                 message.timestamp,
                 message.name,
@@ -98,11 +158,10 @@ class MessagesViewer {
                 message.email,
                 message.topic,
                 message.shortMsg,
-                message.longMsg,
-                done)
-            );
-            this.messagesElems.push(done);
+                message.longMsg);
+            this.messages.push(singleMessage);
         };
+        this.createListeners();
     }
 
     /**
@@ -137,33 +196,6 @@ class MessagesViewer {
         let resp = await fetch("/api/admin/contact/get");
         return resp;
     }
-
-    private setTemplateFields(message: contactMessage): HTMLElement {
-        const template = document.getElementById("message-template") as HTMLTemplateElement;
-        const clone = template.content.cloneNode(true) as HTMLElement;
-        const toappend = clone.querySelector(".message") as HTMLElement;
-
-
-        let insertableElements = clone.querySelectorAll("[data-field]") as NodeListOf<HTMLElement>;
-        insertableElements.forEach(elem => {
-            if (elem.dataset.field === "name") {
-                elem.innerText = `${message.name}, ${message.prename}`
-            } else if (elem.dataset.field === "email") {
-                elem.innerText = message.email;
-                (elem as HTMLAnchorElement).href = `mailto:${message.email}`;
-            } else if (elem.dataset.field === "topic") {
-                elem.innerText = message.topic;
-            } else if (elem.dataset.field === "short") {
-                elem.innerText = message.shortMsg;
-            } else if (elem.dataset.field === "message") {
-                elem.innerText = message.longMsg;
-            } else if (elem.dataset.field === "timestamp") {
-                elem.innerText = message.timestamp.toLocaleString();
-            }
-        });
-
-        return toappend;
-    };
 
     protected static async deleteMessage(message: singleContactMessage) {
         const confirmationMessage = `Soll die Nachricht vom ${message.timestamp.toDateString()} wirklich gelöscht werden?`
@@ -206,29 +238,17 @@ class MessagesViewer {
             return;
         };
         window.location.reload();
-        
     }
-}
-
-class ViewerManager extends MessagesViewer {
-    public visibleMessage: singleContactMessage | undefined = undefined;
-    public bulkDeleteElem = document.getElementById("bulkdelete-btn") as HTMLButtonElement;
-    public bulkCheckbox = document.getElementById("bulk-select-inp") as HTMLInputElement;
     
-    constructor(displayContainer: HTMLElement) {
-        super(displayContainer);
-        this.createListeners();
-    }
-
     protected createListeners(delayed?: boolean) {
-
+    
         // HACK: Naja, immerhin funktionierts :)
         if (!delayed) {
             setTimeout(() => {this.createListeners(true); }, 250);
             return;
         }
         
-
+    
         for (const msg of this.messages) {
             if (!msg.elem) {
                 throw new Error("aaaaaaaaaaaaaaaahhhhhhhhhhhhhhhhhhhhh");
@@ -237,36 +257,33 @@ class ViewerManager extends MessagesViewer {
             let titleElem = msg.elem.querySelector(".message-header h3") as HTMLElement;
     
             titleElem.addEventListener('click', (ev) => {this.clickListener(ev, msg);});
-
-            msg.setup(this, this.selectChangeHandler);            
         }
         
         this.bulkCheckbox.addEventListener('change', () => { this.bulkSelectChangeHandler(); })
         this.bulkDeleteElem.addEventListener('click', () => { this.bulkDeleteHandler(); })
     };
-
-    protected selectChangeHandler(
-        manager: ViewerManager,
+    public selectChangeHandler(
         msg: singleContactMessage,
         selectElems: {input: HTMLInputElement, label: HTMLLabelElement}
     ) {
         if (selectElems.input.checked) {
-            manager.selectedMessages.push(msg);
+            this.selectedMessages.push(msg);
         } else {
-            const id = manager.selectedMessages.indexOf(msg);
+            const id = this.selectedMessages.indexOf(msg);
             if (id > -1) {
-                manager.selectedMessages.splice(id, 1);
+                this.selectedMessages.splice(id, 1);
             }
         };
-
-        manager.setBulkDeleteElems();
+    
+        this.setBulkDeleteElems();
     };
-
+    
     protected setBulkDeleteElems() {
         const amountOfSelectedMessages = this.selectedMessages.length;
         const bulkdeleteDefaultText = this.bulkDeleteElem.dataset.default as string;
-
-        if (0 === amountOfSelectedMessages) {
+        const bulkdeleteActiveText = this.bulkDeleteElem.dataset.active as string;
+    
+        if (amountOfSelectedMessages === 0) {
             this.bulkDeleteElem.disabled = true;
             this.bulkDeleteElem.textContent = bulkdeleteDefaultText;
             this.bulkCheckbox.checked = false;
@@ -274,27 +291,33 @@ class ViewerManager extends MessagesViewer {
         } else {
             this.bulkDeleteElem.disabled = false;
         }
-
+    
         if (amountOfSelectedMessages === this.messages.length) {
             this.bulkCheckbox.checked = true;
-        };
+        } else {
+            this.bulkCheckbox.checked = false;
+        }
 
-        this.bulkDeleteElem.textContent = bulkdeleteDefaultText + ` (${amountOfSelectedMessages})`;
+        if (amountOfSelectedMessages === 1) {
+            this.bulkDeleteElem.textContent = bulkdeleteDefaultText + ` (${amountOfSelectedMessages})`;
+        } else {
+            this.bulkDeleteElem.textContent = bulkdeleteActiveText + ` (${amountOfSelectedMessages})`;
+        }
     }
-
+    
     protected bulkDeleteHandler() {
         const msgsToDelete = this.selectedMessages;
-
+    
         if (!confirm(`Möchten Sie wirklich ${msgsToDelete.length} Nachrichten löschen?`)) {
             return
         };
-
+    
         MessagesViewer.performDeletion(msgsToDelete);
     }
-
+    
     protected clickListener(ev: MouseEvent, msg: singleContactMessage) {
         const msgOpen: boolean = msg.elem?.classList.contains("open") as boolean;
-
+    
         if (this.visibleMessage) {
             let elemPrevious = this.visibleMessage.elem;
             if (elemPrevious && elemPrevious !== msg.elem) {
@@ -304,7 +327,7 @@ class ViewerManager extends MessagesViewer {
         msg.setOpenState(!msgOpen);
         this.visibleMessage = msgOpen ? undefined : msg;
     };
-
+    
     protected bulkSelectChangeHandler() {
         let bulkSelectAll = this.bulkCheckbox.checked;
         if (bulkSelectAll) {
@@ -322,6 +345,7 @@ class ViewerManager extends MessagesViewer {
     }
 }
 
-var viewer: ViewerManager;
 
-viewer = new ViewerManager(document.getElementById("contactMsg-output") as HTMLElement);
+var viewer: MessagesViewer;
+
+viewer = new MessagesViewer();

@@ -12,23 +12,39 @@ var _a;
 class NavCommander {
     static set navbarState(value) {
         this._navState = value;
-        NavCommander.navtoggle.querySelector('svg').classList.toggle('open', this._navState);
-        (NavCommander.navtoggle.classList.toggle("open", this._navState));
-        document.querySelector('nav').classList.toggle('show', this._navState);
+        if (!value) {
+            document.activeElement.blur();
+        }
+        ;
+        // this.navbar.classList.toggle('show', this._navState);
+        if (this._navState) {
+            this.navtoggle.setAttribute("aria-expanded", "true");
+            this.navbar.classList.add("open");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.add("opened");
+                this.navbar.classList.remove("open");
+            }, { once: true });
+        }
+        else {
+            this.navtoggle.setAttribute("aria-expanded", "false");
+            this.navbar.classList.add('close');
+            this.navbar.classList.remove("open", "opened");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.remove('close');
+            }, { once: true });
+        }
+        ;
     }
+    ;
     static get navbarState() {
         return this._navState;
     }
     static setup() {
         NavCommander.navtoggle = document.getElementById('navtoggle');
-        NavCommander.navbar = document.querySelector('#nav-wrap > nav');
-        const navCloser = document.querySelector('nav .closebtn');
-        navCloser.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            NavCommander.navbarState = false;
-        });
+        NavCommander.navbar = document.querySelector('#primary-nav-bar');
+        NavCommander.navList = this.navbar.querySelector("ul");
         NavCommander.navtoggle.addEventListener('click', () => {
-            NavCommander.navbarState = true;
+            NavCommander.navbarState = this.navbarState ? false : true;
         });
         window.addEventListener('mousedown', this.mouseDownHandler);
         window.addEventListener('keydown', this.keyDownHandler);
@@ -47,6 +63,7 @@ class NavCommander {
     }
     ;
     static keyDownHandler(event) {
+        var _b;
         const target = event.target;
         const exceptType = [
             HTMLInputElement,
@@ -67,6 +84,9 @@ class NavCommander {
         // Wenn m (für "menü") gedrückt wird, toggle navbar
         if (event.key === "m") {
             NavCommander.navbarState = !NavCommander.navbarState;
+            if (NavCommander.navbarState) {
+                (_b = NavCommander.navbar.querySelector("a[href]")) === null || _b === void 0 ? void 0 : _b.focus();
+            }
         }
         ;
     }
@@ -186,6 +206,7 @@ consentMgr.storageName = {
 consentMgr.validForHrs = 2;
 consentMgr.consentValidForMS = _a.validForHrs * 60 * 60 * 1000;
 document.addEventListener('DOMContentLoaded', () => __awaiter(void 0, void 0, void 0, function* () {
+    document.body.querySelectorAll("& > [hidden]").forEach(elem => { elem.removeAttribute("hidden"); });
     yield PartialsLoader.loadPartials();
     NavCommander.setup();
     consentMgr.ensureConsent();

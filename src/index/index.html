@@ -6,12 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webauftritt</title>
 
-    <link rel="shortcut icon" href="/assets/icons/favicon-dark.svg" type="image/svg"
-        media="(prefers-color-scheme: no-preference)">
-    <link rel="shortcut icon" href="/assets/icons/favicon-white.svg" type="image/svg"
-        media="(prefers-color-scheme: dark)">
-    <link rel="shortcut icon" href="/assets/icons/favicon-dark.svg" type="image/svg"
-        media="(prefers-color-scheme: light)">
+    <link rel="shortcut icon" href="" type="image/x-icon">
 
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="/index/style.css">
@@ -21,8 +16,9 @@
 </head>
 
 <body>
+    <noscript>Ey, jetz hosch mal zu! Wir haben das 21. Jahrhundert, also mach dein JavaScript an gefälligst! Lebste hinterm Mond oder was?</noscript>
     <nav data-load="true"></nav>
-    <main>
+    <main hidden>
         <div class="content">
             <header>
                 <img src="/assets/icons/logo.svg" alt="FahrradShop Logo">
@@ -103,19 +99,21 @@
             </section>
             <section id="kundenstimmen">
                 <div class="wrapper-padding">
-                    <h2>Das sagen unsere Kunden</h2>
+                    <h2>Das sagen unsere Kunden<sup>&trade;</sup></h2>
                     <figure class="kundenstimme">
-                        <blockquote>Ich verwende dieses Fahrrad jetzt schon seit einigen Tagen, und ich habe nichts zu
-                            bemängeln</blockquote>
+                        <blockquote>Diese Fahrräder sind einfach der Hammer! Die neue BikeAI hat mir schon so viel geholfen, ich glaube nicht, dass ich noch ohne sie fahren könnte!</blockquote>
+                        <p>- <cite>Noémie Fogg</cite></p>
                     </figure>
                     <figure class="kundenstimme">
                         <blockquote>Ich verwende dieses Fahrrad jetzt schon seit einigen Tagen, und ich habe nichts zu
                             bemängeln</blockquote>
+                        <p>- <cite>Marlène Isaksson</cite></p>
                     </figure>
                     <figure class="kundenstimme">
                         <blockquote>Ich verwende dieses Fahrrad jetzt schon seit einigen Tagen, und ich habe nichts zu
                             bemängeln</blockquote>
-                    </figure>
+                        <p>- <cite>Pénélope Girone</cite></p>
+                        </figure>
                 </div>
             </section>
             <section id="rating">
@@ -123,18 +121,18 @@
                     <h2>Kundenbewertung</h2>
                     <figure class="rating-wrapper" aria-label="5 von 5 Sternen">
                         <figcaption hidden>5 von 5 Sternen</figcaption>
-                        <div class="rating-star"><img src="/assets/icons/star-filled.svg" alt="" /></div>
-                        <div class="rating-star"><img src="/assets/icons/star-filled.svg" alt="" /></div>
-                        <div class="rating-star"><img src="/assets/icons/star-filled.svg" alt="" /></div>
-                        <div class="rating-star"><img src="/assets/icons/star-filled.svg" alt="" /></div>
-                        <div class="rating-star"><img src="/assets/icons/star-filled.svg" alt="" /></div>
+                        <div class="rating-star hidden"><img src="/assets/icons/star-filled.svg" alt="" /></div>
+                        <div class="rating-star hidden"><img src="/assets/icons/star-filled.svg" alt="" /></div>
+                        <div class="rating-star hidden"><img src="/assets/icons/star-filled.svg" alt="" /></div>
+                        <div class="rating-star hidden"><img src="/assets/icons/star-filled.svg" alt="" /></div>
+                        <div class="rating-star hidden"><img src="/assets/icons/star-filled.svg" alt="" /></div>
                     </figure>
                 </div>
             </section>
         </div>
     </main>
-    <footer data-load="true"></footer>
-    <footer>
+    <footer hidden data-load="true"></footer>
+    <footer hidden>
         <p>* Das haben wir uns gerade ausgedacht</p>
         <div class="footerbtns">
 

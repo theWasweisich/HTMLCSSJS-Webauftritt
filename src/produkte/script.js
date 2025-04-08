@@ -55,7 +55,12 @@ class Bicycle {
         imageElem.src = this.image.url;
         imageElem.alt = this.image.alt;
         sectionheading.textContent = this.name;
-        description.textContent = this.description;
+        let broken = this.description.split("\n");
+        broken.forEach((str) => {
+            let para = document.createElement("p");
+            para.textContent = str;
+            description.appendChild(para);
+        });
         let statsWrapper = clone.querySelector('div.stats');
         this.stats.forEach(stat => {
             let keyElem = document.createElement("span");
@@ -96,12 +101,82 @@ function getNewData() {
                 });
             });
             cycles.push(new Bicycle(data.title, data.description, {
-                url: `/api/product/image/get/${data.id}`,
+                url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
             }, stats));
         });
     });
 }
+class SingularTicker {
+    set x(value) {
+        this.element.style.left = String(value) + "px";
+    }
+    get x() { return this.elementBoundingBox.left; }
+    ;
+    set y(value) {
+        this.element.style.top = String(value) + "px";
+    }
+    get y() { return this.elementBoundingBox.top; }
+    ;
+    constructor(element, index) {
+        this.element = element;
+        this.index = index;
+        this.elementBoundingBox = element.getBoundingClientRect();
+        this.x = this.elementBoundingBox.left;
+        this.y = 0;
+    }
+    ;
+    positionNextTo(element) {
+        let box = element.getBoundingClientRect();
+        this.x = box.x + box.width;
+    }
+}
+;
+class NewsTicker {
+    constructor(tickerBar) {
+        this.singleTickers = [];
+        this.boundingWidth = 0;
+        this.biggestTickerWidth = 0;
+        this.tickerBar = tickerBar;
+        this.setup();
+        this.boundingWidth = tickerBar.getBoundingClientRect().width;
+    }
+    ;
+    setup() {
+        let tickerList = this.tickerBar.querySelectorAll("span.ticker");
+        tickerList.forEach((ticker) => {
+            if (ticker.getBoundingClientRect().width > this.biggestTickerWidth) {
+                this.biggestTickerWidth = ticker.getBoundingClientRect().width;
+            }
+            this.singleTickers.push(new SingularTicker(ticker, this.singleTickers.length));
+        });
+        this.tickerBar.style.height = String(this.singleTickers[0].elementBoundingBox.height) + "px";
+    }
+    ;
+    startMove() {
+        this.singleTickers.forEach((ticker) => {
+            ticker.element.animate({});
+        });
+    }
+    spaceOutTickers(spacing) {
+        console.log("Spacing out...");
+        console.log(this.singleTickers);
+        for (let index = 0; index < this.singleTickers.length; index++) {
+            if (index === 0) {
+                continue;
+            }
+            ;
+            const thisElement = this.singleTickers[index];
+            const prevElement = this.singleTickers[index - 1];
+            thisElement.positionNextTo(prevElement.element);
+        }
+    }
+    ;
+}
+NewsTicker.settings = {
+    tickerSpeed: 50,
+};
+;
 function parseJson(data) {
     let id = data["id"];
     let name = data["name"];
@@ -140,3 +215,4 @@ function main() {
     loadBicycles();
 }
 main();
+// let tickerBar = new NewsTicker(document.getElementById("newsticker") as HTMLElement);

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Produkte</title>
 
+    <link rel="shortcut icon" href="" type="image/x-icon">
+
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="./styles.css">
     <link rel="stylesheet" href="../style.css">
@@ -24,6 +26,9 @@
                 <h1>Admin-Seite - Kontaktanfragen</h1>
             </div>
         </header>
+        <div class="wrapper-padding">
+            <button id="openNewProductBtn">Neues Produkt</button>
+        </div>
         <div class="wrapper-padding">
             <section class="product-view">
                 <h2>Produkte</h2>
@@ -51,11 +56,58 @@
             <label class="file-picker-label">
                 <div class="wrapper">
                     <img data-field="image">
+                    <input type="text"> <!-- Dies ist der Input für den alt Text -->
                     <button class="change-image-btn">Bild ändern</button>
                 </div>
             </label>
+            <h3>Eigenschaften</h3>
+            <div class="stats-list">
+                <div class="stat">
+                    <input autocomplete="off" id="stat-template-name-" type="text" class="nameInput">
+                    <input autocomplete="off" id="stat-template-value-" type="text" class="valueInput">
+                    <select autocomplete="off" id="stat-template-unit-" class="unitInput">
+                        <option value=""></option>
+                        <option value="kmh">km/h</option>
+                        <option value="kmh">kg</option>
+                    </select>
+                    <button class="addButton">+</button>
+                </div>
+            </div>
         </div>
         <button class="save-btn">Speichern</button>
+        <button class="delete-btn" title="Nachricht löschen">
+            <img src="/assets/icons/trash.svg" alt="Mülleimer">
+        </button>
     </div>
 </template>
+<dialog id="newProduct">
+    <div class="new-wrapper">
+        <form method="dialog">
+            <div class="input-wrapper">
+                <label for="new-title-inp">Titel</label>
+                <input type="text" name="new-title" id="new-title-inp">
+
+                <label for="new-description-inp">Beschreibung</label>
+                <textarea name="new-description" id="new-description-inp"></textarea>
+
+                <label for="new-price-inp">Preis</label>
+                <input type="number" name="new-price" id="new-price-inp" min="0" step="1" />
+
+                <label for="new-image-inp">Bild</label>
+                <div class="img-input-wrapper">
+                    <input type="file" name="new-image" id="new-image-inp" accept=".jpg,.jpeg,.png" />
+                    <img src="" alt="">
+                </div>
+
+                <label for="new-image-alt-inp">Bildbeschreibung</label>
+                <input type="text" name="new-image-alt" id="new-image-alt-inp">
+
+                <div class="controlBtns">
+                    <button id="addProductAbortBtn">Abbrechen</button>
+                    <button id="addProductConfirmBtn">Erstellen</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</dialog>
 </html>

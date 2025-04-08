@@ -1,13 +1,17 @@
 .product {
     --_img-max-width: 50%;
     margin-block: 2em;
-    padding: .5em;
-    background-color: darkblue;
+    padding: 2em;
+    border-radius: 1em;
+    overflow: hidden;
+    background-color: purple;
+    position: relative;
 
     img {
         display: block;
     }
 
+    
     [data-field="price"] {
         text-align: right;
     }
@@ -19,12 +23,94 @@
         visibility: hidden;
     }
     
+    input, textarea {
+        min-width: 50%;
+    }
+
+    textarea {
+        min-height: 5rem;
+    }
+
     .file-picker-label {
+        max-width: 31.25em;
+        display: block;
         .wrapper {
-            max-width: var(--_img-max-width);
+            width: 100%;
             display: flex;
             flex-direction: column;
             gap: .5em;
+        }
+    }
+    
+    &::after {
+        content: '';
+        width: .5em;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: red;
+        opacity: 0;
+    }
+
+    &.edited::after {
+        opacity: 1;
+    }
+}
+
+.delete-btn {
+    display: block;
+    float: right;
+    min-width: 2em;
+    aspect-ratio: 1;
+    img {
+        width: fit-content;
+        width: fit-content;
+        height: fit-content;
+    }
+}
+
+.stats-list {
+
+    .heading, .stat {
+        display: flex;
+        flex-direction: row;
+    }
+}
+
+body.modalOpen {
+    overflow: hidden;
+}
+
+#newProduct {
+    padding: 3em;
+    label {
+        display: block;
+    }
+
+    .controlBtns {
+        margin-top: 1em;
+    }
+
+    .input-wrapper {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        row-gap: 1.2em;
+        column-gap: .5em;
+    }
+
+    #new-description-inp {
+        min-height: 5lh;
+    }
+
+    img {
+        width: 13.125em;
+        aspect-ratio: 1;
+        object-fit: contain;
+        visibility: hidden;
+
+        &.show {
+            visibility: visible;
         }
     }
 }

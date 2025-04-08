@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="style.css">
 
+    <link rel="shortcut icon" href="" type="image/x-icon">
+
     <!-- Polyfill for MathMl
      async=false, weil sonst die math tags manchmal nicht richtig angezeigt werden
      -->
@@ -17,13 +19,14 @@
     <script defer src="./script.js"></script>
 </head>
 <body>
+    <noscript>Ey, jetz hosch mal zu! Wir haben das 21. Jahrhundert, also mach dein JavaScript an gefälligst! Lebste hinterm Mond oder was?</noscript>
     <nav data-load="true"></nav>
-    <main>
+    <main hidden>
         <div id="newsticker">
             <div class="newsmove">
-                <span>+++ Wilkommen +++</span>
-                <span>+++ Kaufen kaufen kaufen!!! +++</span>
-                <span>+++ Neu! 0% Rabatt auf alles! +++</span>
+                <span class="ticker">+++ Wilkommen +++</span>
+                <span class="ticker">+++ Kaufen kaufen kaufen!!! +++</span>
+                <span class="ticker">+++ Neu! 0% Rabatt auf alles! +++</span>
             </div>
         </div>
         <div id="cards-grid" class="cards-grid">
@@ -31,8 +34,8 @@
                 <div class="card">
                     <div class="img-wrap"><img src alt /></div>
                     <div class="section-text">
-                        <h2 class="product-title">Fahrrad 1</h2>
-                        <p class="product-descr">Dies ist ein besonders schönes Modell. Gefertigt wird es per Hand im tiefen Schwarzwald, wodurch es sein rustikales <span class="strike">Geschmack</span> Aussehen erhält</p>
+                        <h2 class="product-title"></h2>
+                        <p class="product-descr"></p>
                         <div class="stats"></div>
                     </div>
                     <button class="buybtn">Kaufen</button>

@@ -65,7 +65,12 @@ class Bicycle {
 
 
         sectionheading.textContent = this.name;
-        description.textContent = this.description;
+        let broken = this.description.split("\n");
+        broken.forEach((str) => {
+            let para = document.createElement("p");
+            para.textContent = str;
+            description.appendChild(para);
+        })
 
         let statsWrapper = clone.querySelector('div.stats') as HTMLDivElement;
 
@@ -115,7 +120,7 @@ async function getNewData() {
         price: number,
         imgAlt: string,
         stats: {name: string, unit: string, value: string}[]
-    };
+    }
 
     const fetchRes = await fetch("/api/products/get");
     const dataList = (await fetchRes.json()) as returnedData[];
@@ -134,13 +139,88 @@ async function getNewData() {
             data.title,
             data.description,
             {
-                url: `/api/product/image/get/${data.id}`,
+                url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
             },
             stats
         ))
     })
 }
+
+class SingularTicker {
+    public elementBoundingBox: DOMRect;
+
+    public set x(value: number) {
+        this.element.style.left = String(value) + "px";
+    }
+    public get x() { return this.elementBoundingBox.left; };
+
+    public set y(value: number) {
+        this.element.style.top = String(value) + "px";
+    }
+    public get y() { return this.elementBoundingBox.top; };
+
+    constructor(
+        public element: HTMLElement,
+        public index: number,
+    ) {
+        this.elementBoundingBox = element.getBoundingClientRect();
+        this.x = this.elementBoundingBox.left;
+        this.y = 0;
+    };
+
+    public positionNextTo(element: HTMLElement) {
+        let box = element.getBoundingClientRect();
+        this.x = box.x + box.width;
+    }
+};
+
+class NewsTicker {
+    public static settings = {
+        tickerSpeed: 50,
+    };
+
+    public tickerBar: HTMLElement;
+    private singleTickers: SingularTicker[] = [];
+    private boundingWidth: number = 0;
+    private biggestTickerWidth: number = 0;
+
+    constructor(tickerBar: HTMLElement) {
+        this.tickerBar = tickerBar;
+        this.setup();
+        this.boundingWidth = tickerBar.getBoundingClientRect().width;
+    };
+
+    private setup() {
+        let tickerList = this.tickerBar.querySelectorAll("span.ticker") as NodeListOf<HTMLSpanElement>;
+        tickerList.forEach((ticker) => {
+            if (ticker.getBoundingClientRect().width > this.biggestTickerWidth) {
+                this.biggestTickerWidth = ticker.getBoundingClientRect().width;
+            }
+            this.singleTickers.push(new SingularTicker(ticker, this.singleTickers.length));
+        });
+        this.tickerBar.style.height = String(this.singleTickers[0].elementBoundingBox.height) + "px";
+    };
+
+    private startMove() {
+        this.singleTickers.forEach((ticker) => {
+            ticker.element.animate({});
+        })
+    }
+
+    private spaceOutTickers(spacing: number) {
+        console.log("Spacing out...");
+        console.log(this.singleTickers);
+
+        for (let index = 0; index < this.singleTickers.length; index++) {
+            if (index === 0) { continue };
+            const thisElement = this.singleTickers[index];
+            const prevElement = this.singleTickers[index - 1];
+
+            thisElement.positionNextTo(prevElement.element);
+        }
+    };
+};
 
 function parseJson(data: any) {
     let id = data["id"];
@@ -186,3 +266,4 @@ function main() {
 }
 
 main();
+// let tickerBar = new NewsTicker(document.getElementById("newsticker") as HTMLElement);

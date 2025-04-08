@@ -1,7 +1,5 @@
 
 .cards-grid {
-    margin: 2rem;
-    margin-inline: 5em;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(25em, 1fr));
     grid-template-rows: masonry; /* Wenn Support? 😕 */
@@ -18,7 +16,7 @@
         'btn';
 
     border-radius: 2em;
-    border: .1em solid black;
+    /* border: .1em solid black; */
     box-shadow: 0 .5em 1em black;
     overflow: hidden;
 
@@ -43,10 +41,16 @@
 
 .card .section-text {
     padding-inline: 1em;
-    padding-bottom: 1em;
+    padding-block: 1em;
 
     span.strike {
         text-decoration: line-through;
+    }
+
+    .product-descr {
+        > p {
+            margin: 0;
+        }
     }
 }
 
@@ -68,13 +72,16 @@
     background-color: var(--btn-bg-clr);
 
     display: block;
+    appearance: none;
     width: 100%;
     height: 3rem;
     font-size: 2em;
     transition: all 500ms;
+
 }
 
-.card .buybtn:hover {
+.card .buybtn:hover,
+.card .buybtn:focus {
     color: var(--btn-bg-clr);
     background-color: var(--btn-fg-clr);
 }
@@ -92,11 +99,14 @@
 
     background-color: black;
 
+    &:hover > .newsmove {
+        animation-play-state: paused;
+    }
+
     >.newsmove {
         display: flex;
 
         >span {
-            /* background-color: yellow; */
             color: white;
             padding-inline-start: 30%;
             flex-shrink: 0;
@@ -104,9 +114,6 @@
 
         animation: newstickermove 30s linear infinite forwards;
 
-        &:hover {
-            animation-play-state: paused;
-        }
     }
 }
 
@@ -117,5 +124,12 @@
 
     100% {
         transform: translateX(-170%);
+    }
+}
+
+@media only screen and (min-width: 37.5rem) {
+    .cards-grid {
+        margin: 2em;
+        margin-inline: 5em;
     }
 }
