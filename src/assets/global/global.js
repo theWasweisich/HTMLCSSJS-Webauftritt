@@ -19,29 +19,23 @@ class NavCommander {
         // this.navbar.classList.toggle('show', this._navState);
         if (this._navState) {
             this.navtoggle.setAttribute("aria-expanded", "true");
-            this.changeLinksFocusability(true);
             this.navbar.classList.add("open");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.add("opened");
+                this.navbar.classList.remove("open");
+            }, { once: true });
         }
         else {
             this.navtoggle.setAttribute("aria-expanded", "false");
-            this.changeLinksFocusability(false);
+            this.navbar.classList.add('close');
             this.navbar.classList.remove("open", "opened");
+            this.navbar.addEventListener('animationend', (ev) => {
+                this.navbar.classList.remove('close');
+            }, { once: true });
         }
         ;
     }
     ;
-    static changeLinksFocusability(focusable) {
-        let childs = this.navList.querySelectorAll("a");
-        // console.log("🛠️ Changing focusability", childs);
-        childs.forEach((elem) => {
-            if (focusable) {
-                elem.removeAttribute("tabindex");
-            }
-            else {
-                elem.setAttribute("tabindex", "-1");
-            }
-        });
-    }
     static get navbarState() {
         return this._navState;
     }

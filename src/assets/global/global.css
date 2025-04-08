@@ -129,9 +129,26 @@ nav {
         }
     }
 
-    &:is(.open) ul {
-        height: auto;
+    &:is(.open, .opened) ul {
+        animation: navOpen var(--nav-duration_open) linear 1 forwards;
     }
+
+    &:is(.close, :not(.open, .opened)) ul {
+        animation: navClose var(--nav-duration_open) linear 1 forwards;
+    }
+
+    &:is(:not(.close, .open, .opened)) ul {
+        display: none;
+    }
+}
+
+@keyframes navOpen {
+    0% { height: 0; }
+    100% { height: auto; }
+}
+@keyframes navClose {
+    0% { height: auto; }
+    100% { height: 0; }
 }
 
 main {
