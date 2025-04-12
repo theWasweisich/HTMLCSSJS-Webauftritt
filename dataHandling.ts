@@ -281,14 +281,16 @@ export class DataBaseHandling {
 
     public getProductImagePathAndAlt(id: number): {filename: string, alt: string} | null {
         const getImgIdStmt = this.db.prepare("SELECT image FROM products WHERE id=?");
-        const getImgPathStmt = this.db.prepare("SELECT filename, alt FROM images WHERE id=?");
+        const getImgPathStmt = this.db.prepare("SELECT id, filename, alt FROM images WHERE id=?");
 
         try {
             let imgId = (getImgIdStmt.get(id.toFixed(0)) as { image: number }).image;            
-            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { filename: string, alt: string };
+            let imgFileNameRow = getImgPathStmt.get(imgId.toFixed(0)) as { id: number, filename: string, alt: string };
             let imgFileName = imgFileNameRow.filename;
             let imgAlt = imgFileNameRow.alt;
-            console.error("Image Alt:", imgAlt);
+            if (imgAlt === undefined) {
+                console.error(`Image Alt is undefined (Image: ${imgFileNameRow.id})`);
+            }
             return {filename: imgFileName, alt: imgAlt};
         } catch (e) {
             return null;

@@ -3,9 +3,11 @@ import { DataBaseHandling, FeatureFlags, getFeatureFlags } from "./dataHandling"
 import * as formidable from "formidable";
 import { checkAuthMiddleware } from "./app";
 import path from "node:path";
-import { HTTPError } from "./utils";
+import { HTTPError, StatusCodes } from "./utils";
 
 const apiRouter = express.Router();
+
+apiRouter.use(checkAuthMiddleware);
 
 const formidableConfig: formidable.Options = {
     multiples: false,
@@ -53,11 +55,11 @@ apiRouter.post('/contact/new', async (req, res) => {
         longMsg = fields["longMsg"]![0];
     } catch (error) {
         if (error instanceof TypeError) {
-            res.status(500).end("");
+            res.status(StatusCodes.internalServerError).end("");
         } else {
             console.error(error);
             console.trace();
-            res.sendStatus(500);
+            res.sendStatus(StatusCodes.internalServerError);
         };
         return;
     };
@@ -69,7 +71,7 @@ apiRouter.post('/contact/new', async (req, res) => {
     if (result) {
         res.status(201).end("Done");
     } else {
-        res.status(500).end("Something went wrong");
+        res.status(StatusCodes.internalServerError).end("Something went wrong");
     };
 });
 
@@ -86,7 +88,7 @@ apiRouter.post('/login', async (req, res, next) => {
         isUserAuthenticated = await handler.isUserValid(username, password);
     } catch (error) {
         console.error(error);
-        err = new HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
+        err = new HTTPError(StatusCodes.internalServerError, "Irgendwas hat nicht so funktioniert wie es soll!");
         next(err);
     }
 
@@ -105,7 +107,7 @@ apiRouter.post('/login', async (req, res, next) => {
 
 apiRouter.get("/cookies", (req, res) => {
     if (!feature__flags) {
-        res.status(500).end("?");
+        res.status(StatusCodes.internalServerError).end("?");
         return;
     };
     if (!feature__flags.cookieBanner) {
@@ -192,9 +194,9 @@ apiRouter.post("/admin/product/:id/stats", async function(req: express.Request, 
     console.log(stats)
     let returnValue = handling.replaceStats(stats, productId);
     if (returnValue) {
-        res.sendStatus(200);
+        res.sendStatus(StatusCodes.ok);
     } else {
-        res.sendStatus(501);
+        res.sendStatus(StatusCodes.internalServerError);
     }
 });
 
@@ -205,13 +207,13 @@ apiRouter.post('/users/new', async (req, res) => {
     let usrname = body["username"];
     let psswd = body["password"];
 
-    if (!(usrname && psswd)) { res.status(400).end("Username and Password need to be provided!"); return; };
+    if (!(usrname && psswd)) { res.status(StatusCodes.forbidden).end("Username and Password need to be provided!"); return; };
 
     let result = await handler.createUser(usrname, psswd);
     if (result) {
-        res.status(201).end("User created");
+        res.status(StatusCodes.created).end("User created");
     } else {
-        res.status(500).end("Something went wrong :(");
+        res.status(StatusCodes.internalServerError).end("Something went wrong :(");
     }
 });
 
@@ -265,7 +267,7 @@ apiRouter.post("/admin/products/new", (req: express.Request, res: express.Respon
         await handleImageUpload(productImage, productAlt!, productId);
 
         if (Number.isNaN(productId) || productId < 0) {
-            res.status(500).end("Something went wrong :(");
+            res.status(StatusCodes.internalServerError).end("Something went wrong :(");
         } else {
             res.status(201).json({
                 status: "success",
@@ -289,7 +291,7 @@ apiRouter.delete("/admin/product/:id/delete", (req: express.Request, res: expres
     if (dbRes) {
         res.sendStatus(200);
     } else {
-        res.sendStatus(500);
+        res.sendStatus(StatusCodes.internalServerError);
     }
 })
 
@@ -309,7 +311,7 @@ apiRouter.delete("/admin/contact/delete", (req: express.Request, res: express.Re
     if (success) {
         res.status(200).end("Success");
     } else {
-        res.status(500).end(":(");
+        res.status(StatusCodes.internalServerError).end(":(");
     }
 })
 
@@ -342,7 +344,7 @@ apiRouter.put("/admin/product/:id/update", async function(req: express.Request, 
             description = descrField[0];
             price = Number(priceField[0]);
         } else {
-            let err = new HTTPError(500);
+            let err = new HTTPError(StatusCodes.internalServerError);
             next(err);
             return;
         }
@@ -354,7 +356,7 @@ apiRouter.put("/admin/product/:id/update", async function(req: express.Request, 
         if (success) {
             res.status(200).end("Success");
         } else {
-            res.status(500).end("Something went wrong :(");
+            res.status(StatusCodes.internalServerError).end("Something went wrong :(");
         }
     })
 
@@ -373,8 +375,14 @@ apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: expr
             next(err);
         }
 
-        let alt = fields["alt"] ? fields["alt"][0] : "";
-        let filename = fields["filename"];
+        let alt;
+        if (!fields["alt"]) {
+            alt = "";
+        } else {
+            alt = fields["alt"][0];
+        }
+
+        // let filename = fields["filename"];
         let file = files["image"];
         if (file === undefined) {
             throw new Error();
@@ -383,7 +391,7 @@ apiRouter.put("/admin/product/:id/image", async (req: express.Request, res: expr
 
         handleImageUpload(singlefile, alt, Number(productId)).then((returnValue) => {
             handler.cleanImageLeftovers();
-        })
+        });
 
         res.sendStatus(201);
     })
@@ -394,7 +402,7 @@ apiRouter.get("/admin/images/purge", async (req: express.Request, res: express.R
     if (await handler.cleanImageLeftovers()) {
         res.sendStatus(200);
     } else {
-        res.sendStatus(500);
+        res.sendStatus(StatusCodes.internalServerError);
     }
 })
 

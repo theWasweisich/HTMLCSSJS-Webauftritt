@@ -5,6 +5,11 @@
     grid-template-rows: masonry; /* Wenn Support? 😕 */
     gap: 2em;
     font-size: 1.2rem;
+    justify-items: center;
+}
+.cards-grid {
+    margin: 2em;
+    margin-inline: min(2em, auto);
 }
 
 .card {
@@ -16,7 +21,6 @@
         'btn';
 
     border-radius: 2em;
-    /* border: .1em solid black; */
     box-shadow: 0 .5em 1em black;
     overflow: hidden;
 
@@ -124,12 +128,5 @@
 
     100% {
         transform: translateX(-170%);
-    }
-}
-
-@media only screen and (min-width: 37.5rem) {
-    .cards-grid {
-        margin: 2em;
-        margin-inline: 5em;
     }
 }

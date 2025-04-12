@@ -48,9 +48,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dataHandling_1 = require("./dataHandling");
 const formidable = __importStar(require("formidable"));
+const app_1 = require("./app");
 const node_path_1 = __importDefault(require("node:path"));
 const utils_1 = require("./utils");
 const apiRouter = express_1.default.Router();
+apiRouter.use(app_1.checkAuthMiddleware);
 const formidableConfig = {
     multiples: false,
     uploadDir: './uploads',
@@ -90,12 +92,12 @@ apiRouter.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, f
     }
     catch (error) {
         if (error instanceof TypeError) {
-            res.status(500).end("");
+            res.status(utils_1.StatusCodes.internalServerError).end("");
         }
         else {
             console.error(error);
             console.trace();
-            res.sendStatus(500);
+            res.sendStatus(utils_1.StatusCodes.internalServerError);
         }
         ;
         return;
@@ -106,7 +108,7 @@ apiRouter.post('/contact/new', (req, res) => __awaiter(void 0, void 0, void 0, f
         res.status(201).end("Done");
     }
     else {
-        res.status(500).end("Something went wrong");
+        res.status(utils_1.StatusCodes.internalServerError).end("Something went wrong");
     }
     ;
 }));
@@ -122,7 +124,7 @@ apiRouter.post('/login', (req, res, next) => __awaiter(void 0, void 0, void 0, f
     }
     catch (error) {
         console.error(error);
-        err = new utils_1.HTTPError(500, "Irgendwas hat nicht so funktioniert wie es soll!");
+        err = new utils_1.HTTPError(utils_1.StatusCodes.internalServerError, "Irgendwas hat nicht so funktioniert wie es soll!");
         next(err);
     }
     if (isUserAuthenticated) {
@@ -136,7 +138,7 @@ apiRouter.post('/login', (req, res, next) => __awaiter(void 0, void 0, void 0, f
 }));
 apiRouter.get("/cookies", (req, res) => {
     if (!feature__flags) {
-        res.status(500).end("?");
+        res.status(utils_1.StatusCodes.internalServerError).end("?");
         return;
     }
     ;
@@ -203,10 +205,10 @@ apiRouter.post("/admin/product/:id/stats", function (req, res) {
         console.log(stats);
         let returnValue = handling.replaceStats(stats, productId);
         if (returnValue) {
-            res.sendStatus(200);
+            res.sendStatus(utils_1.StatusCodes.ok);
         }
         else {
-            res.sendStatus(501);
+            res.sendStatus(utils_1.StatusCodes.internalServerError);
         }
     });
 });
@@ -216,16 +218,16 @@ apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
     let usrname = body["username"];
     let psswd = body["password"];
     if (!(usrname && psswd)) {
-        res.status(400).end("Username and Password need to be provided!");
+        res.status(utils_1.StatusCodes.forbidden).end("Username and Password need to be provided!");
         return;
     }
     ;
     let result = yield handler.createUser(usrname, psswd);
     if (result) {
-        res.status(201).end("User created");
+        res.status(utils_1.StatusCodes.created).end("User created");
     }
     else {
-        res.status(500).end("Something went wrong :(");
+        res.status(utils_1.StatusCodes.internalServerError).end("Something went wrong :(");
     }
 }));
 apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -273,7 +275,7 @@ apiRouter.post("/admin/products/new", (req, res) => {
         productId = (yield handler.newProduct(productTitle, productDescription, productPrice, '', productAlt));
         yield handleImageUpload(productImage, productAlt, productId);
         if (Number.isNaN(productId) || productId < 0) {
-            res.status(500).end("Something went wrong :(");
+            res.status(utils_1.StatusCodes.internalServerError).end("Something went wrong :(");
         }
         else {
             res.status(201).json({
@@ -304,7 +306,7 @@ apiRouter.delete("/admin/product/:id/delete", (req, res, next) => {
         res.sendStatus(200);
     }
     else {
-        res.sendStatus(500);
+        res.sendStatus(utils_1.StatusCodes.internalServerError);
     }
 });
 apiRouter.delete("/admin/contact/delete", (req, res) => {
@@ -322,7 +324,7 @@ apiRouter.delete("/admin/contact/delete", (req, res) => {
         res.status(200).end("Success");
     }
     else {
-        res.status(500).end(":(");
+        res.status(utils_1.StatusCodes.internalServerError).end(":(");
     }
 });
 apiRouter.get("/admin/products/get", (req, res) => {
@@ -352,7 +354,7 @@ apiRouter.put("/admin/product/:id/update", function (req, res, next) {
                 price = Number(priceField[0]);
             }
             else {
-                let err = new utils_1.HTTPError(500);
+                let err = new utils_1.HTTPError(utils_1.StatusCodes.internalServerError);
                 next(err);
                 return;
             }
@@ -362,7 +364,7 @@ apiRouter.put("/admin/product/:id/update", function (req, res, next) {
                 res.status(200).end("Success");
             }
             else {
-                res.status(500).end("Something went wrong :(");
+                res.status(utils_1.StatusCodes.internalServerError).end("Something went wrong :(");
             }
         }));
     });
@@ -375,8 +377,14 @@ apiRouter.put("/admin/product/:id/image", (req, res, next) => __awaiter(void 0, 
         if (err) {
             next(err);
         }
-        let alt = fields["alt"] ? fields["alt"][0] : "";
-        let filename = fields["filename"];
+        let alt;
+        if (!fields["alt"]) {
+            alt = "";
+        }
+        else {
+            alt = fields["alt"][0];
+        }
+        // let filename = fields["filename"];
         let file = files["image"];
         if (file === undefined) {
             throw new Error();
@@ -394,7 +402,7 @@ apiRouter.get("/admin/images/purge", (req, res) => __awaiter(void 0, void 0, voi
         res.sendStatus(200);
     }
     else {
-        res.sendStatus(500);
+        res.sendStatus(utils_1.StatusCodes.internalServerError);
     }
 }));
 function handleImageUpload(image, alt, productId) {
