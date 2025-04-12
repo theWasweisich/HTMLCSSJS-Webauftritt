@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HTTPError = exports.COLORS = void 0;
+exports.StatusCodes = exports.HTTPError = exports.COLORS = void 0;
 exports.getCookies = getCookies;
 exports.COLORS = {
     Reset: "\x1b[0m",
@@ -49,3 +49,37 @@ function getCookies(req) {
     });
     return cookieObjs;
 }
+var StatusCodes;
+(function (StatusCodes) {
+    StatusCodes[StatusCodes["success"] = 200] = "success";
+    StatusCodes[StatusCodes["ok"] = 200] = "ok";
+    StatusCodes[StatusCodes["created"] = 201] = "created";
+    StatusCodes[StatusCodes["accepted"] = 202] = "accepted";
+    StatusCodes[StatusCodes["noContent"] = 204] = "noContent";
+    StatusCodes[StatusCodes["resetContent"] = 205] = "resetContent";
+    StatusCodes[StatusCodes["partialContent"] = 206] = "partialContent";
+    StatusCodes[StatusCodes["imUsed"] = 226] = "imUsed";
+    StatusCodes[StatusCodes["multipleChoices"] = 300] = "multipleChoices";
+    StatusCodes[StatusCodes["movedPermanently"] = 301] = "movedPermanently";
+    StatusCodes[StatusCodes["found"] = 302] = "found";
+    StatusCodes[StatusCodes["seeOther"] = 303] = "seeOther";
+    StatusCodes[StatusCodes["notModified"] = 304] = "notModified";
+    StatusCodes[StatusCodes["temporaryRedirect"] = 307] = "temporaryRedirect";
+    StatusCodes[StatusCodes["permanentRedirect"] = 308] = "permanentRedirect";
+    StatusCodes[StatusCodes["badRequest"] = 400] = "badRequest";
+    StatusCodes[StatusCodes["unauthorized"] = 401] = "unauthorized";
+    StatusCodes[StatusCodes["paymentRequired"] = 402] = "paymentRequired";
+    StatusCodes[StatusCodes["forbidden"] = 403] = "forbidden";
+    StatusCodes[StatusCodes["notFound"] = 404] = "notFound";
+    StatusCodes[StatusCodes["methodNotAllowed"] = 405] = "methodNotAllowed";
+    StatusCodes[StatusCodes["notAcceptable"] = 406] = "notAcceptable";
+    StatusCodes[StatusCodes["requestTimeout"] = 408] = "requestTimeout";
+    StatusCodes[StatusCodes["conflict"] = 409] = "conflict";
+    StatusCodes[StatusCodes["gone"] = 410] = "gone";
+    StatusCodes[StatusCodes["lengthRequired"] = 411] = "lengthRequired";
+    StatusCodes[StatusCodes["imATeapot"] = 418] = "imATeapot";
+    StatusCodes[StatusCodes["tooManyRequests"] = 429] = "tooManyRequests";
+    StatusCodes[StatusCodes["unavailableForLegalReasons"] = 451] = "unavailableForLegalReasons";
+    StatusCodes[StatusCodes["internalServerError"] = 500] = "internalServerError";
+    StatusCodes[StatusCodes["notImplemented"] = 501] = "notImplemented";
+})(StatusCodes || (exports.StatusCodes = StatusCodes = {}));

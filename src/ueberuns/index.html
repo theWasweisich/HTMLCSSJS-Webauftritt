@@ -10,9 +10,11 @@
     <link rel="stylesheet" href="/assets/global/global.css">
     <link rel="stylesheet" href="style.css">
 
+    <script>var exports={};</script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/assets/global/global.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="script.js" ></script>
 </head>
 
 <body>
@@ -31,7 +33,6 @@
             </div>
             <div class="canvas-wrapper">
                 <canvas id="transparenz-diagram"></canvas>
-                <script defer src="./transparenz.js"></script>
             </div>
         </section>
         <section>
@@ -40,7 +41,6 @@
             </div>
             <div class="canvas-wrapper">
                 <canvas id="gewinnverteilung-diagram"></canvas>
-                <script defer src="./gewinn.js"></script>
             </div>
         </section>
         <footer data-load="true"></footer>

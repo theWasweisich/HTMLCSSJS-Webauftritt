@@ -56,3 +56,39 @@ export function getCookies(req: express.Request): {key: string, value: string}[]
     })
     return cookieObjs;
 }
+
+export enum StatusCodes {
+    success = 200,
+    ok = 200,
+    created = 201,
+    accepted = 202,
+    noContent = 204,
+    resetContent = 205,
+    partialContent = 206,
+    imUsed = 226,
+    
+    multipleChoices = 300,
+    movedPermanently = 301,
+    found = 302,
+    seeOther = 303,
+    notModified = 304,
+    temporaryRedirect = 307,
+    permanentRedirect = 308,
+    
+    badRequest = 400,
+    unauthorized = 401,
+    paymentRequired = 402,
+    forbidden = 403,
+    notFound = 404,
+    methodNotAllowed = 405,
+    notAcceptable = 406,
+    requestTimeout = 408,
+    conflict = 409,
+    gone = 410,
+    lengthRequired = 411,
+    imATeapot = 418,
+    tooManyRequests = 429,
+    unavailableForLegalReasons = 451,
+    internalServerError = 500,
+    notImplemented = 501,
+}
