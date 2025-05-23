@@ -1,5 +1,5 @@
-import { getFeatureFlags } from './dataHandling';
+import { DataBaseHandling } from "./dataHandling";
 
-(async () => {
-    console.log(await getFeatureFlags());
-})();
+const db = new DataBaseHandling();
+
+db.createUser("ich", "ich");

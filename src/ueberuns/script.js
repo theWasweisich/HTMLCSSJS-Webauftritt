@@ -34,21 +34,31 @@ const dataGewinn = {
     labels: ["Gewinnverteilung"],
     datasets: [{
         label: "Gehälter der Eigentümer",
-        data: .6,
+        data: 60,
         backgroundColor: 'rgb(255, 0, 255)',
     },
     {
         label: "Gehälter der Mitarbeiter",
-        data: .25,
+        data: 25,
         backgroundColor: 'rgb(0, 255, 0)',
     },
     {
         label: "Produktentwicklung",
-        data: .5,
+        data: 50,
         backgroundColor: 'rgb(255, 255, 0)',
     },
-],
-};
+]};
+
+/** @type { import('chart.js').ChartData} */
+const dataGewinnAlt = {
+    labels: ['Verkauf Ihrer Daten', 'Steuerhinterzieung', 'Fahrradverkäufe'],
+    datasets: [
+        {
+            label: "Gewinn",
+            data: [60, 39, 1]
+        }
+    ]
+}
 
 
 /** @type {Chart.Chart} */
@@ -69,13 +79,10 @@ function createTransparenzChart() {
 
 function createGewinnChart() {
     gewinnChart = new Chart.Chart(gewinnChartElem, {
-        type: "bar",
-        data: dataGewinn,
+        type: "pie",
+        data: dataGewinnAlt,
         options: {
-            responsive: true,
-            scales: {
-                y: true
-            }
+            responsive: true
         }
     
     })

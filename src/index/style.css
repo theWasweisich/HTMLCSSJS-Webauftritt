@@ -47,7 +47,7 @@ main>.content {
             width: 100%;
             height: var(--height);
 
-            background-image: linear-gradient(to right, transparent, blue, rgb(66, 0, 128), transparent);
+            background-image: linear-gradient(to left, transparent, blue, rgb(66, 0, 128), transparent);
             border-radius: calc(var(--height)/2);
         }
 

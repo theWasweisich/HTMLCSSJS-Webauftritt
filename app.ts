@@ -3,6 +3,7 @@ import express from 'express';
 import morgan from 'morgan';
 import session from "express-session";
 import apiRouter from './apiEndpoints';
+import userRouter from "./usersRoute";
 import fs from 'node:fs';
 import { FeatureFlags, getFeatureFlags, DataBaseHandling } from "./dataHandling";
 import { HTTPError, getCookies } from './utils';
@@ -17,6 +18,8 @@ process.env.NODE_ENV = "production";
 
 const app = express();
 
+app.set('view engine', 'ejs');
+
 declare module 'express-session' {
     interface SessionData {
         token: string
@@ -28,7 +31,7 @@ var port = 3000;
 
 var customPort = process.argv[2];
 
-if (customPort !== undefined) {
+if (customPort !== undefined && !Number.isNaN(Number(customPort))) {
     port = Number(customPort);
 };
 
@@ -95,6 +98,7 @@ app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
 })
 
 app.use("/api/", apiRouter);
+app.use("/user/", userRouter);
 
 app.use(express.static("src/"));
 
