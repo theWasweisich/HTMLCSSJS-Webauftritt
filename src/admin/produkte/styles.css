@@ -76,6 +76,10 @@
         display: flex;
         flex-direction: row;
     }
+
+    input {
+        min-width: 10%;
+    }
 }
 
 body.modalOpen {
