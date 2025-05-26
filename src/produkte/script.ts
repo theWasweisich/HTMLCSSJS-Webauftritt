@@ -14,6 +14,7 @@ class Bicycle {
     static cardsGrid = document.getElementById('cards-grid') as HTMLDivElement;
 
     constructor(
+        public id: number,
         public name: string,
         public description: string,
         public image: BicycleImage,
@@ -59,6 +60,7 @@ class Bicycle {
         let imageElem = clone.querySelector('.card img') as HTMLImageElement;
         let sectionheading = sectiontext.querySelector('h2') as HTMLHeadingElement;
         let description = sectiontext.querySelector('.product-descr') as HTMLParagraphElement;
+        let buyButton = clone.querySelector("button.buybtn") as HTMLButtonElement;
 
         imageElem.src = this.image.url;
         imageElem.alt = this.image.alt;
@@ -96,6 +98,10 @@ class Bicycle {
 
         });
         Bicycle.cardsGrid.appendChild(clone);
+
+        buyButton.addEventListener("click", () => {
+            window.location.href = `/checkout?id=${this.id}`;
+        })
     }
 }
 
@@ -136,6 +142,7 @@ async function getNewData() {
             })
         });
         cycles.push(new Bicycle(
+            data.id,
             data.title,
             data.description,
             {
@@ -244,7 +251,7 @@ function parseJson(data: any) {
         stats.push(stat);
     };
 
-    let cycle = new Bicycle(name, description, image, stats);
+    let cycle = new Bicycle(id, name, description, image, stats);
     console.groupCollapsed("Neues Radl");
     console.log(cycle);
     console.groupEnd();
@@ -261,6 +268,7 @@ async function loadBicycles() {
 
 var cycles: Array<Bicycle> = [];
 
+// @ts-ignore
 function main() {
     loadBicycles();
 }

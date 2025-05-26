@@ -1,6 +1,7 @@
 var usernameInp: HTMLInputElement;
 var username: string | undefined = "";
 
+// @ts-ignore
 async function main() {
     usernameInp = document.getElementById("username-inp") as HTMLInputElement;
     let form = document.getElementById("username-form") as HTMLFormElement;

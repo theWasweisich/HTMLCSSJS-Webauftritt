@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warenkorb & Kasse</title>
+
+    <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="shortcut icon" href="" type="image/x-icon">
+
+
+    <script src="/assets/global/global.js"></script>
+    <script defer src="./script.js"></script>
+</head>
+
+<body>
+    <nav data-load="true"></nav>
+    <main>
+        <header>
+            <div class="wrapper-padding">
+                <h1>Checkout</h1>
+            </div>
+        </header>
+        <div class="wrapper-padding">
+            <h2>Produkt</h2>
+            <section class="checkout-card">
+                <img src="" alt="" id="product-image">
+                <div class="card-content">
+                    <h3 id="product-name"></h3>
+                    <p id="product-description"></p>
+                    <p id="product-price"></p>
+                    <button id="buy-btn">Bezahlen</button>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer data-load="true"></footer>
+</body>
+<dialog id="confirmation-dialog">
+    <h2>Herzlichen Glückwunsch!</h2>
+    <p>Wir haben ihre Bestellung empfangen, <span class="pricetag"></span> € von ihrem Konto abgezogen (&pm; 5000 €) und werden ihnen Ihr Fahrrad eventuell irgendwann dann zustellen, mal sehen</p>
+    <p>Sie wundern sich, woher wir Ihre Adresse kennen? Konsultieren Sie bitte unsere wunderbare <a href="/datenschutz">Datenschutzerklärung</a>.</p>
+</dialog>
+
+</html>

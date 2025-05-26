@@ -161,6 +161,23 @@ apiRouter.get("/products/get", function (req, res) {
     });
     res.json(toReturn);
 });
+apiRouter.get("/products/getSingle", (req, res) => {
+    const productId = Number(req.query.id);
+    const handler = new dataHandling_1.DataBaseHandling();
+    handler.getAllProducts().forEach((product) => {
+        if (product.id === productId) {
+            res.json({
+                id: product.id,
+                title: product.title,
+                description: product.description,
+                price: product.price,
+                stats: product.stats
+            });
+            return;
+        }
+        ;
+    });
+});
 apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
     const handler = new dataHandling_1.DataBaseHandling();

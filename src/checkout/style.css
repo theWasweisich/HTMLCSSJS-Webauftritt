@@ -1,0 +1,26 @@
+
+
+.checkout-card {
+    overflow: hidden;
+    background-color: gray;
+    max-width: 60%;
+    border-radius: 2em;
+    
+    .card-content {
+        padding: 2em;
+
+    }
+
+    img {
+        max-width: 100%;
+        overflow: hidden;
+        object-fit: contain;
+        transform-origin: center;
+    }
+
+    #buy-btn {
+        padding: 2em;
+        border-radius: 5em;
+        font-size: large;
+    }
+}

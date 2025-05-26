@@ -9,7 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 class Bicycle {
-    constructor(name, description, image, stats) {
+    constructor(id, name, description, image, stats) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.image = image;
@@ -52,6 +53,7 @@ class Bicycle {
         let imageElem = clone.querySelector('.card img');
         let sectionheading = sectiontext.querySelector('h2');
         let description = sectiontext.querySelector('.product-descr');
+        let buyButton = clone.querySelector("button.buybtn");
         imageElem.src = this.image.url;
         imageElem.alt = this.image.alt;
         sectionheading.textContent = this.name;
@@ -80,6 +82,9 @@ class Bicycle {
             statsWrapper.append(valueElem);
         });
         Bicycle.cardsGrid.appendChild(clone);
+        buyButton.addEventListener("click", () => {
+            window.location.href = `/checkout?id=${this.id}`;
+        });
     }
 }
 Bicycle.cardsGrid = document.getElementById('cards-grid');
@@ -100,7 +105,7 @@ function getNewData() {
                     value: stat.value
                 });
             });
-            cycles.push(new Bicycle(data.title, data.description, {
+            cycles.push(new Bicycle(data.id, data.title, data.description, {
                 url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
             }, stats));
@@ -196,7 +201,7 @@ function parseJson(data) {
         stats.push(stat);
     }
     ;
-    let cycle = new Bicycle(name, description, image, stats);
+    let cycle = new Bicycle(id, name, description, image, stats);
     console.groupCollapsed("Neues Radl");
     console.log(cycle);
     console.groupEnd();
@@ -211,6 +216,7 @@ function loadBicycles() {
     });
 }
 var cycles = [];
+// @ts-ignore
 function main() {
     loadBicycles();
 }
