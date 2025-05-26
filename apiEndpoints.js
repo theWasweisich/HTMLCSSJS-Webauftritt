@@ -237,6 +237,7 @@ apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void
 }));
 apiRouter.post("/admin/products/new", (req, res) => {
     const handler = new dataHandling_1.DataBaseHandling();
+    console.warn("New Product arrived!");
     const incommingForm = formidable.formidable(formidableConfig);
     incommingForm.parse(req, (err, fields, files) => __awaiter(void 0, void 0, void 0, function* () {
         let productId = -1;

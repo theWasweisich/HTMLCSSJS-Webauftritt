@@ -227,6 +227,7 @@ apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Re
 
 apiRouter.post("/admin/products/new", (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
+    console.warn("New Product arrived!");
 
     const incommingForm = formidable.formidable(formidableConfig);
     incommingForm.parse(req, async (err, fields: formidable.Fields<string>, files: formidable.Files) => {

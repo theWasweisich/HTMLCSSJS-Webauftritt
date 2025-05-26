@@ -21,10 +21,13 @@ class NewProductDialog {
         const abortBtn = NewProductDialog.formElems.abortBtn;
         const dialogElem = NewProductDialog.dialogElem;
         const form = dialogElem.querySelector("form");
-        submitBtn.addEventListener("click", (ev) => {
+        console.log(openBtn, submitBtn, abortBtn, form);
+        form.addEventListener('submit', (ev) => {
             ev.preventDefault();
+            console.log("Form submitted!");
             this.submitHandler().then((value) => {
                 NewProductDialog.dialogElem.close(`Value: ${value}`);
+                console.debug(`Value: ${value}`);
             });
         });
         abortBtn.addEventListener('click', (ev) => {
@@ -80,10 +83,24 @@ class NewProductDialog {
             this.newValues.description = descriptionInp.value;
             this.newValues.price = Number(priceInp.value);
             this.newValues.imageAlt = altInp.value;
-            if (this.newValues.title.length <= 0 ||
-                this.newValues.description.length <= 0 ||
-                Number.isNaN(this.newValues.price) ||
-                this.newValues.imageAlt.length <= 0) {
+            if (!this.newValues.imageAlt) {
+                if (NewProductDialog.formElems.imageInp.files) {
+                    let filename = NewProductDialog.formElems.imageInp.files[0].name;
+                    this.newValues.imageAlt = filename;
+                }
+            }
+            if (this.newValues.title.length <= 0) {
+                console.error("Title too short!");
+                return false;
+            }
+            ;
+            if (this.newValues.description.length <= 0) {
+                console.error("Description too short!");
+                return false;
+            }
+            ;
+            if (Number.isNaN(this.newValues.price)) {
+                console.error("Price invalid!");
                 return false;
             }
             ;
@@ -124,6 +141,7 @@ class NewProductDialog {
             formdata.append("price", this.newValues.price.toString());
             formdata.append("image", this.newValues.image);
             formdata.append("alt", this.newValues.imageAlt);
+            console.info(formdata);
             const reqRes = yield fetch("/api/admin/products/new", {
                 body: formdata,
                 method: 'POST'
