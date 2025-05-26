@@ -17,6 +17,7 @@ const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_session_1 = __importDefault(require("express-session"));
 const apiEndpoints_1 = __importDefault(require("./apiEndpoints"));
+const usersRoute_1 = __importDefault(require("./usersRoute"));
 const node_fs_1 = __importDefault(require("node:fs"));
 const dataHandling_1 = require("./dataHandling");
 const utils_1 = require("./utils");
@@ -28,9 +29,10 @@ dotenv_1.default.config({
 // console.log(process.env);
 process.env.NODE_ENV = "production";
 const app = (0, express_1.default)();
+app.set('view engine', 'ejs');
 var port = 3000;
 var customPort = process.argv[2];
-if (customPort !== undefined) {
+if (customPort !== undefined && !Number.isNaN(Number(customPort))) {
     port = Number(customPort);
 }
 ;
@@ -55,6 +57,10 @@ app.use((0, cookie_parser_1.default)());
 function checkAuthMiddleware(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!req.url.includes("admin")) {
+            next();
+            return;
+        }
+        if (!req.url.startsWith("/admin/")) {
             next();
             return;
         }
@@ -95,8 +101,9 @@ app.get('/', (_req, res) => {
 app.get("/favicon.ico", (req, res) => {
     return res.redirect(308, "/assets/icons/favicon-dark.svg");
 });
-app.use("/api/", apiEndpoints_1.default);
 app.use(express_1.default.static("src/"));
+app.use("/user/", usersRoute_1.default);
+app.use("/api/", apiEndpoints_1.default);
 app.use((err, req, res, next) => {
     if (err instanceof utils_1.HTTPError && err.status === 401) {
         return res.redirect('/login');

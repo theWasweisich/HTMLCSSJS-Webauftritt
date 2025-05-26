@@ -217,6 +217,18 @@ apiRouter.post('/users/new', async (req, res) => {
     }
 });
 
+apiRouter.delete('/users/password', async (req, res) => {
+    const handler = new DataBaseHandling();
+    const username = req.query.user; // /users/password?user=BENUTZERNAME
+    if (typeof username !== "string") { res.sendStatus(400); return;};
+    let status = await handler.resetUserPassword(username as string, "password");
+    if (status) {
+        res.status(200).end("Password has been reset");
+    } else {
+        res.sendStatus(500);
+    };
+});
+
 apiRouter.get("/admin/contact/get", async (req: express.Request, res: express.Response) => {
     const handler = new DataBaseHandling();
 

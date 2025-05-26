@@ -96,6 +96,28 @@ class DataBaseHandling {
             return true;
         });
     }
+    doesUserExist(username) {
+        const selectStmt = "SELECT id FROM users WHERE username = ?";
+        const stmt = this.db.prepare(selectStmt);
+        let result = stmt.get(username);
+        if (!result) {
+            return null;
+        }
+        ;
+        return result.id;
+    }
+    resetUserPassword(username_1) {
+        return __awaiter(this, arguments, void 0, function* (username, newPassword = "password") {
+            const resetStmt = "UPDATE users SET hash = ? WHERE username = ?";
+            const defaultHash = yield bcrypt_1.default.hash(newPassword, DataBaseHandling.saltRounds);
+            const stmt = this.db.prepare(resetStmt);
+            let info = stmt.run(defaultHash, username);
+            if (info.changes !== 1) {
+                return false;
+            }
+            return true;
+        });
+    }
     /**
      *
      * @param username The user provided username

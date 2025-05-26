@@ -230,6 +230,23 @@ apiRouter.post('/users/new', (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(utils_1.StatusCodes.internalServerError).end("Something went wrong :(");
     }
 }));
+apiRouter.delete('/users/password', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const handler = new dataHandling_1.DataBaseHandling();
+    const username = req.query.user; // /users/password?user=BENUTZERNAME
+    if (typeof username !== "string") {
+        res.sendStatus(400);
+        return;
+    }
+    ;
+    let status = yield handler.resetUserPassword(username, "password");
+    if (status) {
+        res.status(200).end("Password has been reset");
+    }
+    else {
+        res.sendStatus(500);
+    }
+    ;
+}));
 apiRouter.get("/admin/contact/get", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const handler = new dataHandling_1.DataBaseHandling();
     let result = yield handler.getContactMessages();

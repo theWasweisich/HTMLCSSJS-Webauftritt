@@ -5,39 +5,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%- include('../src/templates/head.html') %>
+
+    <link rel="stylesheet" href="/assets/global/global.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="/assets/global/global.js"></script>
+    <script src="/user/script.js"></script>
 </head>
 
 <body>
-    <nav id="primary-nav-bar" class="">
-        <button id="navtoggle" aria-expanded="false" aria-controls="nav-wrap">
-            <svg viewBox="0 0 100 100" fill="var(--nav-btn-clr)" class="burger">
-                <rect class="line top" width="80" height="10" x="10" y="25" rx="5">
-                </rect>
-                <rect class="line middle" width="80" height="10" x="10" y="45" rx="5">
-                </rect>
-                <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5">
-                </rect>
-            </svg>
-        </button>
-        <ul class="navigation-bar">
-            <span class="spacer"></span>
-            <a href="/index/">Home</a>
-            <a href="/produkte/">Unsere Produkte</a>
-            <a href="/stearken/">Unsere Stärken</a>
-            <a href="/ueberuns/">&Uuml;ber uns</a>
-            <a href="/login/">Anmelden</a>
-        </ul>
-    </nav>
+    <%- include('../src/templates/navbar.html') %>
     <main>
-        <%= username %>
+        <header>
+            <div class="wrapper-padding">
+                <h1>Benutzerseite</h1>
+            </div>
+        </header>
+        <section>
+            <h2>Benutzername</h2>
+            <form id="username-form">
+                <p>Aktuell: <%= username %></p>
+                <label for="">Nutzername</label>
+                <input type="text" name="username-inp" id="username-inp">
+                <button type="submit">Ändern</button>
+            </form>
+        </section>
+        <section>
+            <h2>Passwort</h2>
+            <button id="btn-reset-passwd">Passwort zurücksetzen</button>
+        </section>
     </main>
-    <footer class="stick">
-        <div class="wrapper">
-            <a href="/impressum/">Impressum</a>
-            <a href="/datenschutz/">Datenschutz</a>
-            <a href="/kontakt/">Kontakt</a>
-        </div>
-    </footer>
+    <%- include('../src/templates/footer.html') %>
 </body>
 
 </html>

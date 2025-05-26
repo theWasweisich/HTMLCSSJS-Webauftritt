@@ -59,6 +59,7 @@ app.use(cookieParser());
 
 export async function checkAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
     if (!req.url.includes("admin")) { next(); return; }
+    if (!req.url.startsWith("/admin/")) { next(); return; }
     const db = new DataBaseHandling();
 
     var result;
@@ -97,10 +98,10 @@ app.get("/favicon.ico", (req: express.Request, res: express.Response) => {
     return res.redirect(308, "/assets/icons/favicon-dark.svg");
 })
 
-app.use("/api/", apiRouter);
-app.use("/user/", userRouter);
-
 app.use(express.static("src/"));
+app.use("/user/", userRouter);
+app.use("/api/", apiRouter);
+
 
 app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof HTTPError && err.status === 401) {

@@ -99,6 +99,25 @@ export class DataBaseHandling {
         return true;
     }
 
+    public doesUserExist(username: string): null | number {
+        const selectStmt = "SELECT id FROM users WHERE username = ?";
+        const stmt = this.db.prepare(selectStmt);
+
+        let result = stmt.get(username) as {id: number} | undefined;
+        if (!result) { return null };
+        return result.id;
+    }
+
+    public async resetUserPassword(username: string, newPassword: string = "password") {
+        const resetStmt = "UPDATE users SET hash = ? WHERE username = ?";
+        const defaultHash = await bcrypt.hash(newPassword, DataBaseHandling.saltRounds);
+        const stmt = this.db.prepare(resetStmt);
+
+        let info = stmt.run(defaultHash, username);
+        if (info.changes !== 1) { return false; }
+        return true;
+    }
+
     /**
      * 
      * @param username The user provided username
