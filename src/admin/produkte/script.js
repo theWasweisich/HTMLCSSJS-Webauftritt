@@ -324,14 +324,14 @@ class ProductDisplay {
         }
         // console.log(`Statname: ${stat.name}`);
         nameInput.value = stat.name;
-        nameInput.classList.add("nameInput");
+        nameInput.classList.add("nameInput", "statinput");
         nameInput.id = `stat-name-${stat.id}`;
         // console.log(`Statvalue: ${stat.value}`);
         valueInput.value = String(stat.value);
-        valueInput.classList.add("valueInput");
+        valueInput.classList.add("valueInput", "statinput");
         valueInput.id = `stat-value-${stat.id}`;
         let removeBtn = document.createElement("button");
-        removeBtn.classList.add("removeBtn");
+        removeBtn.classList.add("removeBtn", "statinput");
         removeBtn.textContent = "-";
         removeBtn.addEventListener('click', () => {
             if (!this.productStats) {
