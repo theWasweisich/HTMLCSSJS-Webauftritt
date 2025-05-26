@@ -41,6 +41,7 @@ class CartManager {
     protected async fetchProductDetails() {
         const endpoint = `/api/products/getSingle?id=${this.bikeId}`;
         const response = await fetch(endpoint);
+        if (response.status === 404) { window.location.href = "/produkte"; return false; }
         if (!response.ok) { console.error("Something went wrong!"); return false; };
         const returnedData = await response.json();
         console.log(returnedData);
@@ -81,11 +82,19 @@ var cart: CartManager;
 // @ts-ignore
 function main() {
     const urlParams = new URLSearchParams(window.location.search);
-    const bikeId = urlParams.get("id");
+    var bikeId = urlParams.get("id");
+    console.log("BikeId", bikeId);
 
-    cart = new CartManager(Number(bikeId));
-
-    console.log(`BikeId: ${bikeId}`);
+    if (bikeId !== null && parseInt(bikeId) !== null) {
+        var id = Number(bikeId);
+    
+        cart = new CartManager(id);
+    
+        console.log(`BikeId: ${bikeId}`);
+        return
+    }
+    
+    window.location.href = "/produkte";
 };
 
 document.addEventListener('DOMContentLoaded', () => {

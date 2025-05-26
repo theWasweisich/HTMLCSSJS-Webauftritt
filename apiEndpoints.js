@@ -177,6 +177,8 @@ apiRouter.get("/products/getSingle", (req, res) => {
         }
         ;
     });
+    res.sendStatus(404);
+    return;
 });
 apiRouter.get("/product/:id/image/get/", function (req, res, next) {
     const productId = req.params.id;
