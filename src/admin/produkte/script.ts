@@ -286,6 +286,10 @@ class ProductDisplay {
 
         newStatBtn.addEventListener("click", () => {
             this.statAddBtnListener();
+            let inputs = newStatBtn.parentElement?.querySelectorAll("input, select") as NodeListOf<HTMLInputElement | HTMLSelectElement>;
+            inputs?.forEach((elem) => {
+                elem.value = "";
+            })
         });
 
         this.generateStatElems();

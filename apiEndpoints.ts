@@ -196,6 +196,65 @@ apiRouter.get("/product/stats/:id", function(req: express.Request, res: express.
     res.json(stats);
 })
 
+apiRouter.post("/cart/add", async (req, res) => {
+    const handling = new DataBaseHandling();
+    const formidablee = formidable.formidable({
+        maxFiles: 0
+    });
+    const form = await formidablee.parse(req);
+    const formfields = form[0];
+    if (!(formfields["cart"] && formfields["product"])) {
+        res.status(400).end("Please provide both cart and product ID"); return;
+    };
+
+    let cartId = Number(formfields["cart"][0]);
+    const productId = Number(formfields["product"][0]);
+
+    if (cartId === -1) {
+        cartId = Number(handling.createNewCart());
+    }
+
+    let success = handling.insertProductInCart(cartId, productId);
+
+    if (success) {
+        res.status(201).json({
+            cartId: cartId
+        });
+    } else {
+        res.status(500).end("Unknown");
+    }
+});
+
+apiRouter.get("/cart/get", (req, res) => {
+    const handling = new DataBaseHandling();
+    const cartId = Number(req.query.cart);
+    console.log("CartId", cartId);
+    if (cartId === -1) {
+        res.sendStatus(400);
+        return;
+    }
+    const productIds = handling.getAllProductsInCart(cartId);
+    const meta = handling.getCartMetaData(cartId);
+
+    res.setHeader("x-cart-total", meta.total);
+
+    res.json(productIds);
+});
+
+apiRouter.get("/cart/delete", (req, res) => {
+    const handling = new DataBaseHandling();
+    const cartId = Number(req.query.cart);
+    console.log("CartId to delete", cartId);
+    if (cartId === -1) { res.sendStatus(400); return; };
+
+    const success = handling.deleteCart(cartId);
+    if (success) {
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(500);
+    }
+})
+
 apiRouter.post("/admin/product/:id/stats", async function(req: express.Request, res: express.Response) {
     console.error("Product Stats!");
     const handling = new DataBaseHandling();

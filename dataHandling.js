@@ -72,7 +72,7 @@ class DataBaseHandling {
     }
     ;
     openDB() {
-        let better_db = new better_sqlite3_1.default(DataBaseHandling.filename, { verbose: undefined });
+        let better_db = new better_sqlite3_1.default(DataBaseHandling.filename, { verbose: console.debug });
         better_db.pragma('journal_mode = WAL');
         return better_db;
     }
@@ -444,6 +444,66 @@ class DataBaseHandling {
             var cleanUpSuccessfull = true;
             return cleanUpSuccessfull;
         });
+    }
+    createNewCart() {
+        const insertStmt = "INSERT INTO carts (total, timestamp) VALUES (0, ?)";
+        const stmt = this.db.prepare(insertStmt);
+        let timestamp = new Date().toISOString();
+        let runRes = stmt.run(timestamp);
+        return runRes.changes >= 0 ? runRes.lastInsertRowid : -1;
+    }
+    ;
+    deleteCart(cartId) {
+        const deleteProductsStmt = "DELETE FROM cart_product WHERE cartIdent = ?";
+        const deleteCartStmt = "DELETE FROM carts WHERE id = ?";
+        const stmtDeleteProducts = this.db.prepare(deleteProductsStmt);
+        const stmtDeleteCart = this.db.prepare(deleteCartStmt);
+        const productRes = stmtDeleteProducts.run(cartId);
+        const cartRes = stmtDeleteCart.run(cartId);
+        return (productRes.changes >= 0 && cartRes.changes == 1);
+    }
+    insertProductInCart(cartId, productId) {
+        const insertStmt = "INSERT INTO cart_product (cartIdent, productId) VALUES (?, ?)";
+        const selectCurrentTotalStmt = "SELECT total FROM carts WHERE id = ?";
+        const selectProductPrice = "SELECT price FROM products WHERE id = ?";
+        const updateNewTotal = "UPDATE carts SET total = ? WHERE id = ?";
+        const stmtInsert = this.db.prepare(insertStmt);
+        const stmtCurrentTotal = this.db.prepare(selectCurrentTotalStmt);
+        const stmtProductPrice = this.db.prepare(selectProductPrice);
+        const stmtNewTotal = this.db.prepare(updateNewTotal);
+        const currentTotal = stmtCurrentTotal.get(cartId);
+        console.log(currentTotal);
+        let oldTotal = stmtCurrentTotal.get(cartId).total;
+        let price = stmtProductPrice.get(productId).price;
+        let newTotal = oldTotal + price;
+        console.info(`Old Total (${oldTotal} + Price (${price}) = New Total (${newTotal}))`);
+        let runResTotal = stmtNewTotal.run(newTotal, cartId);
+        let runResInsert = stmtInsert.run(cartId, productId);
+        if (runResTotal.changes === 1 && runResInsert.changes === 1) {
+            return true;
+        }
+        ;
+        return false;
+    }
+    ;
+    getAllProductsInCart(cartId) {
+        const selectStmt = "SELECT productId FROM cart_product WHERE cartIdent = ?";
+        const stmt = this.db.prepare(selectStmt);
+        var allProductIds = [];
+        const results = stmt.all(cartId);
+        results.forEach((value) => {
+            allProductIds.push(value.productId);
+        });
+        return allProductIds;
+    }
+    ;
+    getCartMetaData(cartId) {
+        const selectStmt = "SELECT total FROM carts WHERE id=?";
+        const stmt = this.db.prepare(selectStmt);
+        let result = stmt.get(cartId);
+        return {
+            total: result.total
+        };
     }
 }
 exports.DataBaseHandling = DataBaseHandling;

@@ -25,15 +25,30 @@
             </div>
         </header>
         <div class="wrapper-padding">
-            <h2>Produkt</h2>
+            <h2>Produkte</h2>
             <section class="checkout-card">
-                <img src="" alt="" id="product-image">
-                <div class="card-content">
-                    <h3 id="product-name"></h3>
-                    <p id="product-description"></p>
-                    <p id="product-price"></p>
-                    <button id="buy-btn">Bezahlen</button>
-                </div>
+                <button id="reset-cart-btn"><img src="/assets/icons/undo.svg" alt="Zurücksetzen"></button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th>Anzahl</th>
+                            <th>Stückpreis</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="checkout-total"></p>
+                <button id="checkout-pay-btn">Bezahlen</button>
+            </section>
+        </div>
+        <div class="wrapper-padding">
+            <section class="checkout-notice">
+                <h2>Hinweis</h2>
+                <p>Aufgrund eines technischen Fehlers ist es <span title="sehr wahrscheinlich">möglich*</span>, dass ihre Bestellung von unseren Servern automatisch gelöscht werden. Ihr Geld, das ziehen wir trotzdem ein. Sie erhalten dann aber kein Produkt</p>
+                <p>Sollten Sie es auch nur wagen, anschließend über unser Kontaktformular Beschwerde einzulegen, werden wir Sie umgehend wegen Ruhestörung in Grund und Boden klagen</p>
+                <p>Wenn Sie dennoch auf sich aufmerksam machen möchten, schreiben Sie uns doch gerne eine Email unter <a href="mailto:diesistdefinitivkeinhoneypot@fahrrad-shop.de" target="_blank">diesistdefinitivkeinhoneypot@fahrrad-shop.de</a></p>
             </section>
         </div>
     </main>

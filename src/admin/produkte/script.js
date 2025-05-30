@@ -248,7 +248,12 @@ class ProductDisplay {
         }
         ;
         newStatBtn.addEventListener("click", () => {
+            var _a;
             this.statAddBtnListener();
+            let inputs = (_a = newStatBtn.parentElement) === null || _a === void 0 ? void 0 : _a.querySelectorAll("input, select");
+            inputs === null || inputs === void 0 ? void 0 : inputs.forEach((elem) => {
+                elem.value = "";
+            });
         });
         this.generateStatElems();
     }

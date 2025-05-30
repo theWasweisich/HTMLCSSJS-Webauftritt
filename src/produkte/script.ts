@@ -1,4 +1,7 @@
 
+var cycles: Array<Bicycle> = [];
+var currentCart: CartOrganizer;
+
 type BicycleImage = {
     url: string,
     alt: string
@@ -17,6 +20,7 @@ class Bicycle {
         public id: number,
         public name: string,
         public description: string,
+        public price: number,
         public image: BicycleImage,
         public stats: Array<BicycleStat>,
     ) { };
@@ -100,8 +104,119 @@ class Bicycle {
         Bicycle.cardsGrid.appendChild(clone);
 
         buyButton.addEventListener("click", () => {
-            window.location.href = `/checkout?id=${this.id}`;
+            currentCart.addToCart(this.id);
         })
+    }
+}
+
+//@ts-ignore
+class CartOrganizer {
+    public cartId: number = -1;
+    public productIds: number[] = [];
+    public products: {product: Bicycle, amount: number, total: number}[] = [];
+    public cartTotal: number = 0;
+
+    constructor(cartId?: number) {
+        if (cartId) {
+            this.cartId = cartId;
+        }
+
+        if (cartId !== -1) {
+            this.getCartProducts();
+        }
+    }
+
+    public async addToCart(productId: number) {
+        const endpoint = "/api/cart/add";
+        const form = new FormData();
+
+        form.append("cart", String(this.cartId));
+        form.append("product", String(productId));
+
+        let result = await fetch(endpoint, {
+            body: form,
+            method: "POST"
+        });
+
+        if (!result.ok) { console.error("Not ok!"); return; }
+
+        let cartId = (await result.json())["cartId"];
+
+        if (isNaN(parseInt(cartId))) {
+            return
+        }
+
+        if (this.cartId !== Number(cartId)) {
+            this.cartId = Number(cartId);
+            console.log("New CartId:", this.cartId);
+            localStorage.setItem("cartId", cartId);
+        };
+
+        console.log(result);
+        this.getCartProducts();
+    };
+
+    public async getCartProducts() {
+        const endpoint = `/api/cart/get?cart=${this.cartId}`;
+        const res = await fetch(endpoint);
+        if (!res.ok) { console.error("Fetching problems..."); return; };
+        const productIds = (await res.json()) as number[];
+        this.productIds = productIds;
+
+        let totalStr = res.headers.get("x-cart-total");
+        this.cartTotal = Number(totalStr);
+
+        this.dataGetter();
+    };
+
+    protected dataGetter() {
+        this.products.length = 0;
+        const counts: {[bikeId: number]: number} = {};
+        const products: {product: Bicycle, amount: number, total: number}[] = [];
+
+        for (const bike of this.productIds) {
+            counts[bike] = counts[bike] ? counts[bike] + 1 : 1;
+        };
+
+
+        for (const cycle of cycles) {
+            if (cycle.id in counts) {
+                products.push({
+                    product: cycle,
+                    amount: counts[cycle.id],
+                    total: cycle.price * counts[cycle.id]
+                });
+            }
+        };
+
+        this.products = products;
+        this.populateDisplay();
+    };
+
+    protected populateDisplay() {
+        const tableBody = document.querySelector(".cart-info table tbody") as HTMLTableSectionElement;
+        tableBody.innerHTML = "";
+
+        for (const product of this.products) {
+            const name = product.product.name;
+            const amount = product.amount;
+            const total = product.total;
+
+            const rowElem = document.createElement("tr");
+            const nameElem = document.createElement("td");
+            const amountElem = document.createElement("td");
+            const totalElem = document.createElement("td");
+
+            nameElem.innerText = name;
+            amountElem.innerText = `${amount}x`
+            totalElem.innerText = `${total} €`;
+
+            rowElem.appendChild(nameElem);
+            rowElem.appendChild(amountElem);
+            rowElem.appendChild(totalElem);
+
+            tableBody.appendChild(rowElem);
+        }
     }
 }
 
@@ -145,6 +260,7 @@ async function getNewData() {
             data.id,
             data.title,
             data.description,
+            data.price,
             {
                 url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
@@ -233,6 +349,7 @@ function parseJson(data: any) {
     let id = data["id"];
     let name = data["name"];
     let description = data["description"];
+    let price = data["price"];
     let image_filename = data["image"]["file"];
 
 
@@ -251,7 +368,7 @@ function parseJson(data: any) {
         stats.push(stat);
     };
 
-    let cycle = new Bicycle(id, name, description, image, stats);
+    let cycle = new Bicycle(id, name, description, price, image, stats);
     console.groupCollapsed("Neues Radl");
     console.log(cycle);
     console.groupEnd();
@@ -266,11 +383,25 @@ async function loadBicycles() {
     });
 }
 
-var cycles: Array<Bicycle> = [];
+function saveCardId(cardId: number) {
+    localStorage.setItem("cartId", String(cardId));
+}
+
+function loadCardId(): number {
+    let storedValue = localStorage.getItem("cartId");
+    if (storedValue === null) {
+        return -1;
+    }
+    if (isNaN(parseInt(storedValue))) {
+        return -1;
+    }
+    return Number(storedValue);
+}
 
 // @ts-ignore
 function main() {
     loadBicycles();
+    currentCart = new CartOrganizer(loadCardId());
 }
 
 main();

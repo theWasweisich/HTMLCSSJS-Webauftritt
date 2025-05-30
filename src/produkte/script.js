@@ -8,11 +8,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var cycles = [];
+var currentCart;
 class Bicycle {
-    constructor(id, name, description, image, stats) {
+    constructor(id, name, description, price, image, stats) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.price = price;
         this.image = image;
         this.stats = stats;
     }
@@ -83,11 +86,114 @@ class Bicycle {
         });
         Bicycle.cardsGrid.appendChild(clone);
         buyButton.addEventListener("click", () => {
-            window.location.href = `/checkout?id=${this.id}`;
+            currentCart.addToCart(this.id);
         });
     }
 }
 Bicycle.cardsGrid = document.getElementById('cards-grid');
+//@ts-ignore
+class CartOrganizer {
+    constructor(cartId) {
+        this.cartId = -1;
+        this.productIds = [];
+        this.products = [];
+        this.cartTotal = 0;
+        if (cartId) {
+            this.cartId = cartId;
+        }
+        if (cartId !== -1) {
+            this.getCartProducts();
+        }
+    }
+    addToCart(productId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const endpoint = "/api/cart/add";
+            const form = new FormData();
+            form.append("cart", String(this.cartId));
+            form.append("product", String(productId));
+            let result = yield fetch(endpoint, {
+                body: form,
+                method: "POST"
+            });
+            if (!result.ok) {
+                console.error("Not ok!");
+                return;
+            }
+            let cartId = (yield result.json())["cartId"];
+            if (isNaN(parseInt(cartId))) {
+                return;
+            }
+            if (this.cartId !== Number(cartId)) {
+                this.cartId = Number(cartId);
+                console.log("New CartId:", this.cartId);
+                localStorage.setItem("cartId", cartId);
+            }
+            ;
+            console.log(result);
+            this.getCartProducts();
+        });
+    }
+    ;
+    getCartProducts() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const endpoint = `/api/cart/get?cart=${this.cartId}`;
+            const res = yield fetch(endpoint);
+            if (!res.ok) {
+                console.error("Fetching problems...");
+                return;
+            }
+            ;
+            const productIds = (yield res.json());
+            this.productIds = productIds;
+            let totalStr = res.headers.get("x-cart-total");
+            this.cartTotal = Number(totalStr);
+            this.dataGetter();
+        });
+    }
+    ;
+    dataGetter() {
+        this.products.length = 0;
+        const counts = {};
+        const products = [];
+        for (const bike of this.productIds) {
+            counts[bike] = counts[bike] ? counts[bike] + 1 : 1;
+        }
+        ;
+        for (const cycle of cycles) {
+            if (cycle.id in counts) {
+                products.push({
+                    product: cycle,
+                    amount: counts[cycle.id],
+                    total: cycle.price * counts[cycle.id]
+                });
+            }
+        }
+        ;
+        this.products = products;
+        this.populateDisplay();
+    }
+    ;
+    populateDisplay() {
+        const tableBody = document.querySelector(".cart-info table tbody");
+        tableBody.innerHTML = "";
+        for (const product of this.products) {
+            const name = product.product.name;
+            const amount = product.amount;
+            const total = product.total;
+            const rowElem = document.createElement("tr");
+            const nameElem = document.createElement("td");
+            const amountElem = document.createElement("td");
+            const totalElem = document.createElement("td");
+            nameElem.innerText = name;
+            amountElem.innerText = `${amount}x`;
+            totalElem.innerText = `${total} €`;
+            rowElem.appendChild(nameElem);
+            rowElem.appendChild(amountElem);
+            rowElem.appendChild(totalElem);
+            tableBody.appendChild(rowElem);
+        }
+    }
+}
 function craftImagePath(imageName) {
     const imagesRoot = "/assets/images/products/";
     return imagesRoot.concat(imageName);
@@ -105,7 +211,7 @@ function getNewData() {
                     value: stat.value
                 });
             });
-            cycles.push(new Bicycle(data.id, data.title, data.description, {
+            cycles.push(new Bicycle(data.id, data.title, data.description, data.price, {
                 url: `/api/product/${data.id}/image/get`,
                 alt: data.imgAlt
             }, stats));
@@ -186,6 +292,7 @@ function parseJson(data) {
     let id = data["id"];
     let name = data["name"];
     let description = data["description"];
+    let price = data["price"];
     let image_filename = data["image"]["file"];
     let image = {
         url: craftImagePath(id),
@@ -201,7 +308,7 @@ function parseJson(data) {
         stats.push(stat);
     }
     ;
-    let cycle = new Bicycle(id, name, description, image, stats);
+    let cycle = new Bicycle(id, name, description, price, image, stats);
     console.groupCollapsed("Neues Radl");
     console.log(cycle);
     console.groupEnd();
@@ -215,10 +322,23 @@ function loadBicycles() {
         });
     });
 }
-var cycles = [];
+function saveCardId(cardId) {
+    localStorage.setItem("cartId", String(cardId));
+}
+function loadCardId() {
+    let storedValue = localStorage.getItem("cartId");
+    if (storedValue === null) {
+        return -1;
+    }
+    if (isNaN(parseInt(storedValue))) {
+        return -1;
+    }
+    return Number(storedValue);
+}
 // @ts-ignore
 function main() {
     loadBicycles();
+    currentCart = new CartOrganizer(loadCardId());
 }
 main();
 // let tickerBar = new NewsTicker(document.getElementById("newsticker") as HTMLElement);

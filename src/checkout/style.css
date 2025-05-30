@@ -1,26 +1,54 @@
 
 
 .checkout-card {
-    overflow: hidden;
-    background-color: gray;
-    max-width: 60%;
+    padding: 2em;
+    table {
+        width: 100%;
+        border: 1px solid;
+    }
+
+    table, tr, td {
+        border-collapse: collapse;
+    }
+
+    th {
+        border-bottom: 2px solid;
+    }
+
+    td, th {
+        text-align: right;
+    }
+
+    tr:nth-child(2n) {
+        background-color: color-mix(in srgb, transparent 75%, gray);
+    }
+}
+
+#checkout-total {
+    text-align: right;
+}
+
+#checkout-pay-btn {
+    padding: 1.5em;
     border-radius: 2em;
-    
-    .card-content {
-        padding: 2em;
+    margin-left: auto;
+    display: flex;
+    &:hover {
+        transform: scale(1.1);
+    }
+}
 
+#reset-cart-btn {
+    color: black;
+    border-radius: 50%;
+    svg, svg * {
+        fill: black;
     }
 
-    img {
-        max-width: 100%;
-        overflow: hidden;
-        object-fit: contain;
-        transform-origin: center;
+    &:hover {
+        transform: scale(1.1);
     }
 
-    #buy-btn {
-        padding: 2em;
-        border-radius: 5em;
-        font-size: large;
-    }
+    display: flex;
+    margin-left: auto;
 }

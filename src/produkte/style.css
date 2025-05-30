@@ -1,4 +1,8 @@
 
+main {
+    position: relative;
+}
+
 .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(25em, 1fr));
@@ -128,5 +132,46 @@
 
     100% {
         transform: translateX(-170%);
+    }
+}
+
+.cart-info {
+    position: fixed;
+    bottom: 5em;
+    right: 10px;
+    z-index: 100;
+    background-color: chocolate;
+    padding: 1em;
+    border-radius: 1em;
+
+    table {
+        border: 1px solid;
+    }
+
+    table, td, th {
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 0;
+        padding-inline: .5em;
+    }
+
+    tr:nth-child(2n) {
+        background-color: color-mix(in srgb, transparent 50%, gray 50%);
+    }
+
+    a {
+        display: inline-block;
+        text-decoration: none;
+        background-color: yellow;
+        width: fit-content;
+        padding: 0.5em;
+        border-radius: 1em;
+    }
+
+    a svg {
+        /* display: inline-block; */
+        float: left;
     }
 }

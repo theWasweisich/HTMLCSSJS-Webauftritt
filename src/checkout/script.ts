@@ -1,100 +1,139 @@
 
-class CartManager {
-    public bikeId: number;
-    public bikeData: {title: string, description: string, price: number} | undefined
+var bikes: { id: number, name: string, price: number }[] = []
 
-    constructor (bikeid: number) {
-        this.bikeId = bikeid;
+// @ts-ignore
+class checkoutManager {
+    public cartTotal: number = 0;
+    protected productIds: number[] = [];
+    protected products: { product: {name: string, price: number}, amount: number, total: number }[] = [];
 
-        this.builder();
+    constructor(
+        public cartId: number
+    ) {
+        this.loadProducts();
     }
 
-    public async builder() {
-        const elemTitle = document.getElementById("product-name") as HTMLHeadingElement;
-        const elemDescription = document.getElementById("product-description") as HTMLParagraphElement;
-        const elemPrice = document.getElementById("product-price") as HTMLParagraphElement;
-        const elemPriceTags = document.getElementsByClassName("pricetag") as HTMLCollectionOf<HTMLSpanElement>;
-        const payButton = document.getElementById("buy-btn") as HTMLButtonElement;
+    public async loadProducts() {
+        const endpoint = `/api/cart/get?cart=${this.cartId}`;
+        const res = await fetch(endpoint);
+        if (!res.ok) { console.error("Fetching problems..."); return; };
+        const productIds = (await res.json()) as number[];
+        this.productIds = productIds;
 
-        console.log("Building...");
-        await this.fetchProductDetails();
+        let totalStr = res.headers.get("x-cart-total");
+        this.cartTotal = Number(totalStr);
 
-        if (!this.bikeData?.description) {console.error("Description"); return false;}
-        if (!this.bikeData?.price) {console.error("Price"); return false;}
-        if (!this.bikeData?.title) {console.error("Title"); return false;}
+        this.dataGetter();
+    }
 
-        elemDescription.innerText = this.bikeData.description;
-        elemPrice.innerText = `${this.bikeData.price} €`;
-        elemTitle.innerText = this.bikeData.title;
+    protected dataGetter() {
+        this.products.length = 0;
+        const counts: { [bikeId: number]: number } = {};
+        const products: { product: {name: string, price: number}, amount: number, total: number }[] = [];
 
-        for (const element of elemPriceTags) {
-            element.innerText = String(this.bikeData.price);
+        for (const bike of this.productIds) {
+            counts[bike] = counts[bike] ? counts[bike] + 1 : 1;
         };
 
-        payButton.addEventListener("click", (ev) => {
-            ev.preventDefault();
-            document.querySelector("dialog")?.showModal();
-            document.body.style.overflow = 'hidden';
+
+        for (const cycle of bikes) {
+            if (cycle.id in counts) {
+                products.push({
+                    product: cycle,
+                    amount: counts[cycle.id],
+                    total: cycle.price * counts[cycle.id]
+                });
+            }
+        };
+
+        this.products = products;
+        this.populateDisplay();
+    };
+
+    private populateDisplay() {
+        const tableBody = document.querySelector(".checkout-card table tbody");
+        this.products.forEach((product, index, array) => {
+            const nameElem = document.createElement("td");
+            const amountElem = document.createElement("td");
+            const itemizedPriceElem = document.createElement("td");
+            const totalElem = document.createElement("td");
+
+            nameElem.innerText = product.product.name;
+            amountElem.innerText = `${product.amount}x`;
+            itemizedPriceElem.innerText = `${product.product.price} €`;
+            totalElem.innerText = `${product.product.price * product.amount} €`;
+
+            const rowElem = document.createElement("tr");
+            rowElem.appendChild(nameElem);
+            rowElem.appendChild(amountElem);
+            rowElem.appendChild(itemizedPriceElem);
+            rowElem.appendChild(totalElem);
+
+            tableBody?.appendChild(rowElem);
+        });
+
+        const checkoutButton =document.getElementById("checkout-pay-btn");
+
+        document.getElementById("checkout-total")!.innerText = `${this.cartTotal}€`
+        checkoutButton?.addEventListener('click', (ev) => {
+            (document.getElementById("confirmation-dialog") as HTMLDialogElement).showModal();
+            document.body.style.overflow = "hidden";
+            this.resetCart();
+        });
+
+        const resetBtn = document.getElementById("reset-cart-btn") as HTMLButtonElement;
+
+        resetBtn.addEventListener("click", async (ev) => {
+            const res = await this.resetCart();
+            if (res) {
+                localStorage.removeItem("cartId");
+                window.location.reload();
+                return;
+            };
+            console.error("Resetting doesn't work?");
         })
+
     }
 
-    protected async fetchProductDetails() {
-        const endpoint = `/api/products/getSingle?id=${this.bikeId}`;
-        const response = await fetch(endpoint);
-        if (response.status === 404) { window.location.href = "/produkte"; return false; }
-        if (!response.ok) { console.error("Something went wrong!"); return false; };
-        const returnedData = await response.json();
-        console.log(returnedData);
-
-        this.bikeData = {
-            description: returnedData.description,
-            price: returnedData.price,
-            title: returnedData.title
-        };
-
-        this.fetchProductImage();
-    }
-
-    protected async fetchProductImage() {
-        const imgElem = document.getElementById("product-image") as HTMLImageElement;
-        const endpoint = `/api/product/${this.bikeId}/image/get`;
-
-        let response = await fetch(endpoint);
-        if (!response.ok) {
-            console.error("Fetching problems...");
-            return false;
-        };
-
-        let blob = await response.blob();
-
-        let imgUrl = URL.createObjectURL(blob);
-        console.debug(imgUrl);
-
-        let imgAlt = response.headers.get("x-image-alt");
-
-        imgElem.src = imgUrl;
-        imgElem.alt = imgAlt ? imgAlt : "";
+    private async resetCart() {
+        const endpoint = `/api/cart/delete?cart=${this.cartId}`;
+        const res = await fetch(endpoint);
+        return res.ok;
     }
 }
 
-var cart: CartManager;
+var cart: checkoutManager;
+
+async function loadAllBikes() {
+    type returnedData = {
+        id: number,
+        title: string,
+        description: string,
+        price: number,
+        imgAlt: string,
+        stats: { name: string, unit: string, value: string }[]
+    }
+
+    const fetchRes = await fetch("/api/products/get");
+    const dataList = await fetchRes.json() as returnedData[];
+
+    dataList.forEach((bike, index, array) => {
+        bikes.push({
+            id: bike.id,
+            name: bike.title,
+            price: bike.price
+        })
+    })
+}
 
 // @ts-ignore
 function main() {
-    const urlParams = new URLSearchParams(window.location.search);
-    var bikeId = urlParams.get("id");
-    console.log("BikeId", bikeId);
-
-    if (bikeId !== null && parseInt(bikeId) !== null) {
-        var id = Number(bikeId);
-    
-        cart = new CartManager(id);
-    
-        console.log(`BikeId: ${bikeId}`);
-        return
-    }
-    
-    window.location.href = "/produkte";
+    let cardId = localStorage.getItem("cartId");
+    if (cardId === null || cardId === "-1") {
+        window.location.href = "/produkte";
+    };
+    loadAllBikes();
+    cart = new checkoutManager(Number(cardId));
 };
 
 document.addEventListener('DOMContentLoaded', () => {
